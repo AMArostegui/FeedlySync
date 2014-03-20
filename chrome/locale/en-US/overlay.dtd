@@ -1,0 +1,8 @@
+<!ENTITY pruebita.label "Your localized menuitem">
+<!ENTITY pruebitaContext.label "Your Menuitem">
+<!ENTITY pruebitaContext.accesskey "Y">
+<!ENTITY pruebitaToolbarButton.label "Your Toolbar Button">
+<!ENTITY pruebitaToolbarButton.tooltip "This is your toolbar button!">
+<!ENTITY pruebitaSidebar.label "Your Sidebar">
+<!ENTITY pruebitaToolbar.name  "example">
+<!ENTITY pruebitaToolbar.label "This is an example toolbar. You can hide it under View &gt; toolbars &gt; &pruebitaToolbar.name;">

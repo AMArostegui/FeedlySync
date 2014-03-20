@@ -1,0 +1,3 @@
+"permissions": {
+  "cross-domain-content": ["http://sandbox.feedly.com, https://sandbox.feedly.com"]
+}
