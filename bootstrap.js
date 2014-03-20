@@ -262,7 +262,7 @@ var Synch = {
 	Compare : function () {
 		log("Compare");
 		
-		// Get the user's subscriptions
+		// Get the user's subscriptionss
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 							.createInstance(Components.interfaces.nsIXMLHttpRequest);		
 		var fullUrl = baseSslUrl + subsOp;
