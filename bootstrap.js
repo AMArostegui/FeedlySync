@@ -6,6 +6,8 @@ const Cu = Components.utils;
 let { Services } = Cu.import("resource://gre/modules/Services.jsm");
 
 Cu.import("resource://gre/modules/AddonManager.jsm");
+Cu.import("resource:///modules/iteratorUtils.jsm");
+Cu.import("resource:///modules/mailServices.js");
 
 var app = Cc["@mozilla.org/steel/application;1"]
 		  .getService(Components.interfaces.steelIApplication);
@@ -72,7 +74,7 @@ var authResTypeVal = "code";
 var authCliIdPar = "client_id";
 var authCliIdVal = "sandbox";
 var authCliSecPar = "client_secret";
-var authCliSecVal = "W60IW73DYSUIISZX4OUP";
+var authCliSecVal = "V0H9C3O75ODIXFSSX9OH";
 var authRedirPar = "redirect_uri";
 var authRedirVal = "http://localhost:8080";
 var authScopePar = "scope";
@@ -118,13 +120,14 @@ function init() {
 }
 
 function syncTBFeedly(wnd) {
-	init();	
-	if (tokenAccess == "" || tokenRefresh == "") {
-		window = wnd;
-		Auth.AuthGetCode();			
-	}
-	else
-		Synch.Compare();
+//	init();	
+//	if (tokenAccess == "" || tokenRefresh == "") {
+//		window = wnd;
+//		Auth.AuthGetCode();			
+//	}
+//	else
+//		Synch.Compare();
+	Synch.ListTB(); 
 }
 
 function log(str) {
@@ -284,4 +287,28 @@ var Synch = {
 		log("Compare. Url: " + fullUrl);
 		req.send(null);		
 	},
+	
+	ListTB : function () {
+		let accountKey = "server3";
+		let selServer = null;
+		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
+			let server = account.incomingServer;
+			if (server) {
+				if ("rss" == server.type &&
+					server.key == accountKey) {
+					selServer = server;
+					break;
+				}
+			}
+		}		
+		if (selServer == null)
+			return;		
+		
+		let folder = selServer.rootFolder;
+		if (folder.hasSubFolders) {
+			for each (let folder in fixIterator(folder.subFolders, Ci.nsIMsgFolder)) {
+				log(folder.prettiestName);							
+			}
+		};		
+	}
 };
