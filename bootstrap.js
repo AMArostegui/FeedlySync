@@ -9,9 +9,53 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/mailServices.js");
 
+const PREF_BRANCH = "extensions.FeedlySync.";
+const PREFS = {
+	// Global preferences
+	log : false,
+	baseUrl : "http://sandbox.feedly.com",
+	baseSslUrl : "https://sandbox.feedly.com",
+	
+	//Authentication preferences
+	getCodeOp : "/v3/auth/auth",
+	getTokenOp : "/v3/auth/token",
+	redirSetCode : "",				 // "/feedlySetCode"
+	redirSetToken : "", 			 // "/feedlySetToken"
+	redirGetCode : "/addOnGetCode",
+	redirGetToken : "/addOnGetToken",
+
+	resTypePar : "response_type",
+	resTypeVal : "code",
+	cliIdPar : "client_id",
+	cliIdVal : "sandbox",
+	cliSecPar : "client_secret",
+	cliSecVal : "V0H9C3O75ODIXFSSX9OH",
+	redirPar : "redirect_uri",
+	redirVal : "http://localhost:8080",
+	scopePar : "scope",
+	scopeVal : "https://cloud.feedly.com/subscriptions",
+	statePar : "state",
+	stateVal : "",
+	codePar : "code",
+	grantTypePar : "grant_type",
+	grantTypeVal : "authorization_code",
+
+	domainGoogle : "accounts.google.com",
+	domainTwitter : "twitterState",
+	domainLive : "login.live.com",
+	domainFacebook : "www.facebook.com",
+	domainRedir : "localhost",
+
+	retryMax : 20,
+	delayFirst : 3000,
+	delayRetry1 : 3000,
+	delayRetry2 : 6000,
+};
+
 var app = Cc["@mozilla.org/steel/application;1"]
 		  .getService(Components.interfaces.steelIApplication);
-
+var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+			.getService(Components.interfaces.nsIPrefService);
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const fileMenuitemID = "menu_SyncItem";
@@ -25,7 +69,9 @@ function include(aAddon, aPath) {
 
 function startup(data, reason) {	
 	theAddOn = data;
-	include(data, "includes/utils.js");	
+	include(data, "includes/utils.js");
+	include(data, "includes/prefs.js");
+	setDefaultPrefs();
 	watchWindows(attachMI, "mail:3pane");
 }
 
@@ -59,44 +105,6 @@ function attachMI(wnd) {
 	}
 }
 
-var baseUrl = "http://sandbox.feedly.com";
-var baseSslUrl = "https://sandbox.feedly.com";
-
-var authGetCodeOp = "/v3/auth/auth";
-var authGetTokenOp = "/v3/auth/token";
-var authRedirSetCode = ""; // "/feedlySetCode";
-var authRedirSetToken = ""; // "/feedlySetToken";
-var authRedirGetCode = "/addOnGetCode";
-var authRedirGetToken = "/addOnGetToken";
-
-var authResTypePar = "response_type";
-var authResTypeVal = "code";
-var authCliIdPar = "client_id";
-var authCliIdVal = "sandbox";
-var authCliSecPar = "client_secret";
-var authCliSecVal = "V0H9C3O75ODIXFSSX9OH";
-var authRedirPar = "redirect_uri";
-var authRedirVal = "http://localhost:8080";
-var authScopePar = "scope";
-var authScopeVal = "https://cloud.feedly.com/subscriptions";
-var authStatePar = "state";
-var authStateVal = "";
-var authCodePar = "code";
-var authGrantTypePar = "grant_type";
-var authGrantTypeVal = "authorization_code";
-
-var domainGoogle = "accounts.google.com";
-var domainTwitter = "twitterState";
-var domainLive = "login.live.com";
-var domainFacebook = "www.facebook.com";
-var domainRedir = "localhost";
-
-var retryCount = 0;
-const retryMax = 20;
-var delayFirst = 3000;
-var delayRetry1 = 3000;
-var delayRetry2 = 6000;
-
 var tokenParam = "Authorization";
 var tokenAccess;
 var tokenRefresh;
@@ -105,33 +113,19 @@ var expiresIn;
 
 var subsOp = "/v3/subscriptions";
 
-
 var window = null;
-
-function init() {
-	// Load tokens
-	tokenAccess = "";
-	tokenRefresh = "";
-	userId = "";
-	expiresIn = 0;	
-	
-	var userGuid = sessionId();
-	authStateVal = encodeURI(userGuid);	
-}
+var accountKey = "server3";
 
 function syncTBFeedly(wnd) {
-//	init();	
-//	if (tokenAccess == "" || tokenRefresh == "") {
-//		window = wnd;
-//		Auth.AuthGetCode();			
-//	}
-//	else
-//		Synch.Compare();
-	Synch.ListTB(); 
+	window = wnd;
+	Auth.Init();
+	
+	//Synch.ListTB("server3"); 
 }
 
 function log(str) {
-	app.console.log(str);
+	if (getPref("log"))
+		app.console.log(str);
 }
 
 function s4() {
@@ -145,45 +139,67 @@ function sessionId() {
 	s4() + '-' + s4() + s4() + s4();
 }
 
-var Auth = {
+var Auth = {		
+	Init : function () {
+		if (!this.FromDisk()) {			
+			var userGuid = sessionId();
+			this.stateVal = encodeURI(userGuid);
+			this.GetCode();			
+		}
+		else
+			Synch.Init();
+	},	
+		
+	// Step 1: Try to load authentication information locally
+	FromDisk : function () {
+		tokenAccess = "";
+		tokenRefresh = "";
+		userId = "";
+		expiresIn = 0;
+		
+		// TODO: Load from disk...
+		return false;
+	},
 	
-	// Step 1: Get authentication code
-	// 1-a: Feedly Request
-	AuthGetCode : function () {
-		var fullUrl = baseUrl + authGetCodeOp + "?" +					
-						authResTypePar + "=" + authResTypeVal + "&" +						 
-					    authCliIdPar + "=" + authCliIdVal + "&" +
-						authRedirPar + "=" + authRedirVal + authRedirSetCode + "&" +
-						authScopePar + "=" + authScopeVal + "&" +
-						authStatePar + "=" + authStateVal;
+	retryCount : 0,
+	
+	// Step 2: Get authentication code
+	// 2-a: Feedly Request
+	GetCode : function () {
+		var fullUrl = getPref("baseUrl") + getPref("getCodeOp") + "?" +					
+						getPref("resTypePar") + "=" + getPref("resTypeVal") + "&" +						 
+						getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
+						getPref("redirPar") + "=" + getPref("redirVal") + getPref("redirSetCode") + "&" +
+						getPref("scopePar") + "=" + getPref("scopeVal") + "&" +
+						getPref("statePar") + "=" + getPref("stateVal");
 		fullUrl = encodeURI(fullUrl);
-		log("AuthGetCode. Url: " +  fullUrl);
+		log("Auth.GetCode. Url: " +  fullUrl);
 		this.openURLInTab(fullUrl);
 		
 		// Wait a few seconds before trying to get results
-		retryCount = 0;
+		this.retryCount = 0;
 		var startingInterval = window.setInterval(function() {
 			window.clearInterval(startingInterval);
-			log("AuthGetCode. Access Redir Server");
+			log("Auth.GetCode. Access Redir Server");
 			Auth.RedirUrlGetCode();			
-		}, delayFirst);
-	},
+		}, getPref("delayFirst"));
+	},	
 	
-	// 1-b: Get code from Redir URL
+	// 2-b: Get code from Redir URL
 	RedirUrlGetCode : function () {		
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		  					.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = authRedirVal + authRedirGetCode + "?" + authStatePar + "=" + authStateVal;
+		var fullUrl = getPref("redirVal") + getPref("redirGetCode") + "?" + getPref("statePar") + "=" + getPref("stateVal");
 		fullUrl = encodeURI(fullUrl)
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
 			if (req.readyState == 4) {
-				log("RedirUrlGetCode. Status: " + req.status + " Response Text: " + req.responseText);
+				log("Auth.RedirUrlGetCode. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {					
 					var jsonResponse = JSON.parse(req.responseText);					
 					if (jsonResponse.error == "Success") {
-						retryCount = 0;
-						Auth.AuthGetTokens(jsonResponse.code);
+						this.retryCount = 0;
+						Auth.GetTokens(jsonResponse.code);
 					}
 					else
 						Auth.RetryRedirUrl(0);
@@ -192,65 +208,66 @@ var Auth = {
 					Auth.RetryRedirUrl(0);									
 			}			
 		};
-		req.onerror = this.RetryRedirUrl;
-		log("RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + retryCount);
-		retryCount++;
+		req.onerror = getPref("RetryRedirUrl");
+		log("Auth.RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + this.retryCount);
+		this.retryCount++;
 		req.send(null);	
 	},
 	
 	RetryRedirUrl : function (error) {		
-		if (retryCount < retryMax) {
-			var retryDelay = retryCount < retryMax / 2 ? delayRetry1 : delayRetry2;
+		if (this.retryCount < getPref("retryMax")) {
+			var retryDelay = this.retryCount < getPref("retryMax") / 2 ? getPref("delayRetry1") : getPref("delayRetry2");
 			var retryInterval = window.setInterval(function() {				
 				window.clearInterval(retryInterval);
-				log("RetryRedirUrl. Error: " + error + " Attempt: " + retryCount);
+				log("Auth.RetryRedirUrl. Error: " + error + " Attempt: " + this.retryCount);
 				Auth.RedirUrlGetCode();
 			}, retryDelay);
 		}
 		else
-			log("RetryRedirUrl. Error: " + error + " No more tries");
+			log("Auth.RetryRedirUrl. Error: " + error + " No more tries");
 	},
 
-	// Step 2: Use authentication code to get access and refresh tokens
-	AuthGetTokens : function (code) {
-		log("AuthGetTokens. Code: " + code);
+	// Step 3: Use authentication code to get access and refresh tokens
+	GetTokens : function (code) {
+		log("Auth.GetTokens. Code: " + code);
 		
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		var fullUrl = baseSslUrl + authGetTokenOp + "?" +
-		authCodePar + "=" + code + "&" +
-		authCliIdPar + "=" + authCliIdVal + "&" +
-		authCliSecPar + "=" + authCliSecVal + "&" +
-		authRedirPar + "=" + authRedirVal + authRedirSetToken + "&" +
-		authStatePar + "=" + authStateVal + "&" +
-		authGrantTypePar + "=" + authGrantTypeVal;
+		var fullUrl = getPref("baseSslUrl") + getPref("getTokenOp") + "?" +
+		getPref("codePar") + "=" + code + "&" +
+		getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
+		getPref("cliSecPar") + "=" + getPref("cliSecVal") + "&" +
+		getPref("redirPar") + "=" + getPref("redirVal") + getPref("redirSetToken") + "&" +
+		getPref("statePar") + "=" + getPref("stateVal") + "&" +
+		getPref("grantTypePar") + "=" + getPref("grantTypeVal");
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
 			if (req.readyState == 4) {
-				log("OnLoad. Status: " + req.status + " Response Text: " + req.responseText);
+				log("Auth.GetTokens.OnLoad. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {
 					var jsonResponse = JSON.parse(req.responseText);
 					tokenAccess = jsonResponse.access_token;
 					tokenRefresh = jsonResponse.refresh_token;
 					userId = jsonResponse.id;
 					expiresIn = jsonResponse.expires_in;
-					Synch.Compare();
+					log("Auth.GetTokens: Sucessfully authenticated");
+					Synch.Init();
 				}
 			}
 		};
 		req.onerror = function (error) {		
-			log("AuthGetTokens. Error: " + error);
+			log("Auth.GetTokens. Error: " + error);
 		};
-		log("AuthGetTokens. Url: " + fullUrl);
+		log("Auth.GetTokens. Url: " + fullUrl);
 		req.send(null);		
 	},	
 	
 	// Keep browsing within Thunderbird's tab
 	get _thunderbirdRegExp() {
-			return this._thunderbirdRegExp = new RegExp(domainGoogle +
-						"|" + domainTwitter + "|" + domainLive +
-						"|" + domainFacebook + "|" + domainRedir);
+			return this._thunderbirdRegExp = new RegExp(getPref("domainGoogle") +
+						"|" + getPref("domainTwitter") + "|" + getPref("domainLive") +
+						"|" + getPref("domainFacebook") + "|" + getPref("domainRedir"));
 	},
 
 	openURLInTab : function (url) {
@@ -262,34 +279,36 @@ var Auth = {
 };
 
 var Synch = {
-	Compare : function () {
-		log("Compare");
-		
-		// Get the user's subscriptionss
+	// Get the user's subscriptionss from Feedly
+	Init : function () {
+		log("Synch.Init");		
+
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 							.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = baseSslUrl + subsOp;
+		var fullUrl = getPref("baseSslUrl") + subsOp;
 		fullUrl = encodeURI(fullUrl)		
 		req.open("GET", fullUrl, true);
 		req.setRequestHeader(tokenParam, tokenAccess)
 		req.onload = function (e) {
 			if (req.readyState == 4) {
-				log("Compare. Status: " + req.status + " Response Text: " + req.responseText);
-				if (req.status == 200) {					
+				log("Synch.Init. Status: " + req.status + " Response Text: " + req.responseText);
+				if (req.status == 200) {
+					var jsonResponse = JSON.parse(req.responseText);
+					this.Update(jsonResponse);
 				}
 				else
 					return;									
 			}			
 		};
 		req.onerror = function (error) {		
-			log("Compare. Error: " + error);
+			log("Synch.Init. Error: " + error);
 		};
-		log("Compare. Url: " + fullUrl);
+		log("Synch.Init. Url: " + fullUrl);
 		req.send(null);		
 	},
 	
-	ListTB : function () {
-		let accountKey = "server3";
+	// Synchronize Thunderbird and Feedly	
+	Update : function (feedlySubs) {		
 		let selServer = null;
 		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
 			let server = account.incomingServer;
