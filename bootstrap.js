@@ -9,6 +9,10 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/mailServices.js");
 
+var scriptLoader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+					.getService(Components.interfaces.mozIJSSubScriptLoader);
+scriptLoader.loadSubScript("chrome://messenger-newsblog/content/utils.js");
+
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
 	// Global preferences
@@ -35,7 +39,6 @@ const PREFS = {
 	scopePar : "scope",
 	scopeVal : "https://cloud.feedly.com/subscriptions",
 	statePar : "state",
-	stateVal : "",
 	codePar : "code",
 	grantTypePar : "grant_type",
 	grantTypeVal : "authorization_code",
@@ -50,6 +53,17 @@ const PREFS = {
 	delayFirst : 3000,
 	delayRetry1 : 3000,
 	delayRetry2 : 6000,
+	
+	tokenAccess : "",
+	tokenRefresh : "",
+	userId : "",
+	expiresIn : 0,	
+	
+	// Synchronizing preferences	
+	tokenParam : "Authorization",
+	subsOp : "/v3/subscriptions",
+	accountKey : "server3",
+	downloadOnly : false,
 };
 
 var app = Cc["@mozilla.org/steel/application;1"]
@@ -105,16 +119,7 @@ function attachMI(wnd) {
 	}
 }
 
-var tokenParam = "Authorization";
-var tokenAccess;
-var tokenRefresh;
-var userId;
-var expiresIn;
-
-var subsOp = "/v3/subscriptions";
-
 var window = null;
-var accountKey = "server3";
 
 function syncTBFeedly(wnd) {
 	window = wnd;
@@ -161,6 +166,7 @@ var Auth = {
 		return false;
 	},
 	
+	stateVal : "",
 	retryCount : 0,
 	
 	// Step 2: Get authentication code
@@ -171,7 +177,7 @@ var Auth = {
 						getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
 						getPref("redirPar") + "=" + getPref("redirVal") + getPref("redirSetCode") + "&" +
 						getPref("scopePar") + "=" + getPref("scopeVal") + "&" +
-						getPref("statePar") + "=" + getPref("stateVal");
+						getPref("statePar") + "=" + this.stateVal;
 		fullUrl = encodeURI(fullUrl);
 		log("Auth.GetCode. Url: " +  fullUrl);
 		this.openURLInTab(fullUrl);
@@ -189,7 +195,7 @@ var Auth = {
 	RedirUrlGetCode : function () {		
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		  					.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = getPref("redirVal") + getPref("redirGetCode") + "?" + getPref("statePar") + "=" + getPref("stateVal");
+		var fullUrl = getPref("redirVal") + getPref("redirGetCode") + "?" + getPref("statePar") + "=" + this.stateVal;
 		fullUrl = encodeURI(fullUrl)
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
@@ -238,7 +244,7 @@ var Auth = {
 		getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
 		getPref("cliSecPar") + "=" + getPref("cliSecVal") + "&" +
 		getPref("redirPar") + "=" + getPref("redirVal") + getPref("redirSetToken") + "&" +
-		getPref("statePar") + "=" + getPref("stateVal") + "&" +
+		getPref("statePar") + "=" + this.stateVal + "&" +
 		getPref("grantTypePar") + "=" + getPref("grantTypeVal");
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
@@ -285,16 +291,16 @@ var Synch = {
 
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 							.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = getPref("baseSslUrl") + subsOp;
+		var fullUrl = getPref("baseSslUrl") + getPref("subsOp");
 		fullUrl = encodeURI(fullUrl)		
 		req.open("GET", fullUrl, true);
-		req.setRequestHeader(tokenParam, tokenAccess)
+		req.setRequestHeader(getPref("tokenParam"), tokenAccess)
 		req.onload = function (e) {
 			if (req.readyState == 4) {
 				log("Synch.Init. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {
 					var jsonResponse = JSON.parse(req.responseText);
-					this.Update(jsonResponse);
+					Synch.Update(jsonResponse);
 				}
 				else
 					return;									
@@ -308,26 +314,36 @@ var Synch = {
 	},
 	
 	// Synchronize Thunderbird and Feedly	
-	Update : function (feedlySubs) {		
+	Update : function (feedlySubs) {
+		// Get the folder's server we're synchronizing
 		let selServer = null;
 		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
 			let server = account.incomingServer;
 			if (server) {
 				if ("rss" == server.type &&
-					server.key == accountKey) {
+					server.key == getPref("accountKey")) {
 					selServer = server;
 					break;
 				}
 			}
 		}		
 		if (selServer == null)
-			return;		
+			return;
 		
-		let folder = selServer.rootFolder;
-		if (folder.hasSubFolders) {
-			for each (let folder in fixIterator(folder.subFolders, Ci.nsIMsgFolder)) {
-				log(folder.prettiestName);							
+		// Compare TB feeds with Feedly		
+		let rootfolder = selServer.rootFolder;
+		if (rootfolder.hasSubFolders) {
+			for each (let folder1 in fixIterator(rootfolder.subFolders, Ci.nsIMsgFolder)) {
+				//log(folder1.prettiestName);							
+				for each (let folder2 in fixIterator(folder1.subFolders, Ci.nsIMsgFolder)) {
+					//log(folder2.prettiestName);
+					tbSubs = FeedUtils.getFeedUrlsInFolder(folder2);
+					for (let i = 0; i < tbSubs.length; i++) {
+						if (tbSubs[i] != "")
+							log(tbSubs[i]);
+					}
+				}				
 			}
 		};		
-	}
+	},
 };

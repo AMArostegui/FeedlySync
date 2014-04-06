@@ -7,47 +7,49 @@ pref("extensions.FeedlySync.baseUrl", "http://mierda");
 pref("extensions.FeedlySync.baseSslUrl", "https://sandbox.feedly.com");
 
 //Authentication preferences
-pref("getCodeOp", "/v3/auth/auth");
-pref("getTokenOp", "/v3/auth/token");
-pref("redirSetCode", "");				 // "/feedlySetCode"
-pref("redirSetToken", ""); 			 // "/feedlySetToken"
-pref("redirGetCode", "/addOnGetCode");
-pref("redirGetToken", "/addOnGetToken");
+pref("extensions.FeedlySync.getCodeOp", "/v3/auth/auth");
+pref("extensions.FeedlySync.getTokenOp", "/v3/auth/token");
+pref("extensions.FeedlySync.redirSetCode", "");				 // "/feedlySetCode"
+pref("extensions.FeedlySync.redirSetToken", ""); 			 // "/feedlySetToken"
+pref("extensions.FeedlySync.redirGetCode", "/addOnGetCode");
+pref("extensions.FeedlySync.redirGetToken", "/addOnGetToken");
 
-pref("resTypePar", "response_type");
-pref("resTypeVal", "code");
-pref("cliIdPar", "client_id");
-pref("cliIdVal", "sandbox");
-pref("cliSecPar", "client_secret");
-pref("cliSecVal", "V0H9C3O75ODIXFSSX9OH");
-pref("redirPar", "redirect_uri");
-pref("redirVal", "http://localhost:8080");
-pref("scopePar", "scope");
-pref("scopeVal", "https://cloud.feedly.com/subscriptions");
-pref("statePar", "state");
-pref("stateVal", "");
-pref("codePar", "code");
-pref("grantTypePar", "grant_type");
-pref("grantTypeVal", "authorization_code");
+pref("extensions.FeedlySync.resTypePar", "response_type");
+pref("extensions.FeedlySync.resTypeVal", "code");
+pref("extensions.FeedlySync.cliIdPar", "client_id");
+pref("extensions.FeedlySync.cliIdVal", "sandbox");
+pref("extensions.FeedlySync.cliSecPar", "client_secret");
+pref("extensions.FeedlySync.cliSecVal", "V0H9C3O75ODIXFSSX9OH");
+pref("extensions.FeedlySync.redirPar", "redirect_uri");
+pref("extensions.FeedlySync.redirVal", "http://localhost:8080");
+pref("extensions.FeedlySync.scopePar", "scope");
+pref("extensions.FeedlySync.scopeVal", "https://cloud.feedly.com/subscriptions");
+pref("extensions.FeedlySync.statePar", "state");
+pref("extensions.FeedlySync.codePar", "code");
+pref("extensions.FeedlySync.grantTypePar", "grant_type");
+pref("extensions.FeedlySync.grantTypeVal", "authorization_code");
 
-pref("domainGoogle", "accounts.google.com");
-pref("domainTwitter", "twitterState");
-pref("domainLive", "login.live.com");
-pref("domainFacebook", "www.facebook.com");
-pref("domainRedir", "localhost");
+pref("extensions.FeedlySync.domainGoogle", "accounts.google.com");
+pref("extensions.FeedlySync.domainTwitter", "twitterState");
+pref("extensions.FeedlySync.domainLive", "login.live.com");
+pref("extensions.FeedlySync.domainFacebook", "www.facebook.com");
+pref("extensions.FeedlySync.domainRedir", "localhost");
 
-pref("retryMax", 20);
-pref("delayFirst", 3000);
-pref("delayRetry1", 3000);
-pref("delayRetry2", 6000);
+pref("extensions.FeedlySync.retryMax", 20);
+pref("extensions.FeedlySync.delayFirst", 3000);
+pref("extensions.FeedlySync.delayRetry1", 3000);
+pref("extensions.FeedlySync.delayRetry2", 6000);
 
+pref("extensions.FeedlySync.tokenAccess", "");
+pref("extensions.FeedlySync.tokenRefresh", "");
+pref("extensions.FeedlySync.userId", "");
+pref("extensions.FeedlySync.expiresIn", 0);	
 
-// Authentication preferences
-//pref("extensions.FeedlySync.Auth.getCodeOp", "/v3/auth/auth");
-//pref("extensions.FeedlySync.Auth.retryCount", 0);
-
-// Sync preferences
-//pref("extensions.FeedlySync.Sync.downloadOnly", false);
+// Synchronizing preferences
+pref("extensions.FeedlySync.tokenParam", "Authorization");
+pref("extensions.FeedlySync.subsOp", "/v3/subscriptions");
+pref("extensions.FeedlySync.accountKey", "");
+pref("extensions.FeedlySync.downloadOnly", false);
 
 // https://developer.mozilla.org/en/Localizing_extension_descriptions
 //pref("extensions.FeedlySync@AMArostegui.es.description", "chrome://pruebita/locale/overlay.properties");
