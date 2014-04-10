@@ -8,6 +8,8 @@ let { Services } = Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/mailServices.js");
+Cu.import("resource://gre/modules/FileUtils.jsm");
+Cu.import("resource://gre/modules/NetUtil.jsm");
 
 var scriptLoader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
 					.getService(Components.interfaces.mozIJSSubScriptLoader);
@@ -214,7 +216,9 @@ var Auth = {
 					Auth.RetryRedirUrl(0);									
 			}			
 		};
-		req.onerror = getPref("RetryRedirUrl");
+		req.onerror = function (error) {		
+			log("Auth.RedirUrlGetCode. Error: " + error);
+		};		
 		log("Auth.RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + this.retryCount);
 		this.retryCount++;
 		req.send(null);	
@@ -281,23 +285,48 @@ var Auth = {
 			contentPage: url,			
 			clickHandler: "specialTabs.siteClickHandler(event, Authentication._thunderbirdRegExp);",
 		});		
-	}		
+	},		
 };
 
 var Synch = {
-	// Get the user's subscriptionss from Feedly
+	// Get the user's subscriptions from Feedly
 	Init : function () {
-		log("Synch.Init");		
-
+		this.ReadStatusFile();
+	},
+	
+	feedStatus : null,
+	
+	ReadStatusFile : function() {
+		log("Synch.ReadStatusFile");
+		feedStatusXML = "";
+		
+		var addonId = "FeedlySync@AMArostegui";
+		var feedStatusFile = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);		
+		NetUtil.asyncFetch(feedStatusFile, function(inputStream, status) {
+			if (!Components.isSuccessCode(status)) {
+				log("Synch.ReadStatusFile. Error reading file");
+				return;
+			}
+			var feedStatusXML = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+			log("Synch.ReadStatusFile. Status XML = " + feedStatusXML);
+			var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+            			 .createInstance(Components.interfaces.nsIDOMParser);
+			feedStatus = parser.parseFromString(feedStatusXML, "text/xml");
+			Synch.GetFeedlySubs();
+		});		
+	},
+	
+	GetFeedlySubs : function() {
+		log("Synch.GetFeedlySubs");
 		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-							.createInstance(Components.interfaces.nsIXMLHttpRequest);		
+		.createInstance(Components.interfaces.nsIXMLHttpRequest);		
 		var fullUrl = getPref("baseSslUrl") + getPref("subsOp");
-		fullUrl = encodeURI(fullUrl)		
+		fullUrl = encodeURI(fullUrl);
 		req.open("GET", fullUrl, true);
-		req.setRequestHeader(getPref("tokenParam"), tokenAccess)
+		req.setRequestHeader(getPref("tokenParam"), tokenAccess);
 		req.onload = function (e) {
 			if (req.readyState == 4) {
-				log("Synch.Init. Status: " + req.status + " Response Text: " + req.responseText);
+				log("Synch.GetFeedlySubs. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {
 					var jsonResponse = JSON.parse(req.responseText);
 					Synch.Update(jsonResponse);
@@ -307,14 +336,14 @@ var Synch = {
 			}			
 		};
 		req.onerror = function (error) {		
-			log("Synch.Init. Error: " + error);
+			log("Synch.GetFeedlySubs. Error: " + error);
 		};
-		log("Synch.Init. Url: " + fullUrl);
+		log("Synch.GetFeedlySubs. Url: " + fullUrl);
 		req.send(null);		
 	},
 	
 	// Synchronize Thunderbird and Feedly	
-	Update : function (feedlySubs) {
+	Update : function (feedlySubs) {		
 		// Get the folder's server we're synchronizing
 		let selServer = null;
 		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
@@ -328,22 +357,92 @@ var Synch = {
 			}
 		}		
 		if (selServer == null)
-			return;
-		
-		// Compare TB feeds with Feedly		
+			return;				
 		let rootfolder = selServer.rootFolder;
-		if (rootfolder.hasSubFolders) {
-			for each (let folder1 in fixIterator(rootfolder.subFolders, Ci.nsIMsgFolder)) {
-				//log(folder1.prettiestName);							
-				for each (let folder2 in fixIterator(folder1.subFolders, Ci.nsIMsgFolder)) {
-					//log(folder2.prettiestName);
-					tbSubs = FeedUtils.getFeedUrlsInFolder(folder2);
-					for (let i = 0; i < tbSubs.length; i++) {
-						if (tbSubs[i] != "")
-							log(tbSubs[i]);
-					}
-				}				
-			}
-		};		
+		if (rootfolder == null)
+			return;			
+		
+		// First pass: Thunderbird subscriptions
+		for each (let folder1 in fixIterator(rootfolder.subFolders, Ci.nsIMsgFolder)) {
+			for each (let folder2 in fixIterator(folder1.subFolders, Ci.nsIMsgFolder)) {
+				tbSubs = FeedUtils.getFeedUrlsInFolder(folder2);
+				for (let i = 0; i < tbSubs.length; i++) {
+					// Why is the first element always empty?
+					if (tbSubs[i] != "") {
+						log(tbSubs[i]);
+						
+						// Seek current feed in Feedly					
+						let found = false;						
+					    for (var i = 0; i < feedlySubs.length; i++) {
+					        let feed = feedlySubs[i];
+					        let feedId = feed.id;
+					        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix					        
+					        if (feedId == tbSubs[i]) {					        	
+						        for (let j = 0; j < feedlySubs.categories.length; j++) {
+						        	if (feedlySubs.categories[j].label == folder2.prettiestName) {
+						        		found = true;
+						        		break;
+						        	}					        	
+						        }					        	
+					        }					        
+					    }
+					    
+					    // Subscribed in Thunderbird but not in Feedly
+					    if (!found) {
+					    	// Check whether current subscription was locally deleted
+							feedStatus.evaluate("/feeds/feed[id=" + tbSubs[i] + "]");
+							let node = feedStatus.getElementById("feed");
+							
+							// Not locally so it might've been on the server. Remove							
+							if (node != null) {								
+							}
+							
+							// Locally deleted. Remove on Feedly
+							else {
+								
+								
+//								let fullUrl = getPref("baseSslUrl") + getPref("subsOp");
+//								fullUrl = encodeURI(fullUrl);
+//								req.open("GET", fullUrl, true);
+//								req.setRequestHeader(getPref("tokenParam"), tokenAccess);
+//								req.onload = function (e) {
+//									if (req.readyState == 4) {
+//										log("Synch.GetFeedlySubs. Status: " + req.status + " Response Text: " + req.responseText);
+//										if (req.status == 200) {
+//											var jsonResponse = JSON.parse(req.responseText);
+//											Synch.Update(jsonResponse);
+//										}
+//										else
+//											return;									
+//									}			
+//								};
+//								req.onerror = function (error) {		
+//									log("Synch.GetFeedlySubs. Error: " + error);
+//								};
+//								log("Synch.GetFeedlySubs. Url: " + fullUrl);
+//								req.send(null);		
+								
+								
+								
+								
+								
+							}							
+							
+							// Entry already proccesed. Avoid second pass processing
+							feedlySubs.splice(i, 1);
+					    }					    
+					}							
+				}
+			}				
+		}
+		
+		// Second pass: Feedly subscriptions
+	    for (let j = 0; j < feedlySubs.length; j++) {
+	        let feed = feedlySubs[j];
+	        let feedId = feed.id;
+	        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix
+	        
+	        
+	    }		
 	},
 };
