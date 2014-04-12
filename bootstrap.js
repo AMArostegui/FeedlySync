@@ -15,6 +15,13 @@ var scriptLoader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
 					.getService(Components.interfaces.mozIJSSubScriptLoader);
 scriptLoader.loadSubScript("chrome://messenger-newsblog/content/utils.js");
 
+//var scriptLoader2 = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+//					.getService(Components.interfaces.mozIJSSubScriptLoader);
+//scriptLoader2.loadSubScript("chrome://messenger/folderPane.js");
+
+msgWindow = Components.classes["@mozilla.org/messenger/msgwindow;1"]
+			.createInstance(Components.interfaces.nsIMsgWindow);
+
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
 	// Global preferences
@@ -174,7 +181,7 @@ var Auth = {
 	// Step 2: Get authentication code
 	// 2-a: Feedly Request
 	GetCode : function () {
-		var fullUrl = getPref("baseUrl") + getPref("getCodeOp") + "?" +					
+		let fullUrl = getPref("baseUrl") + getPref("getCodeOp") + "?" +					
 						getPref("resTypePar") + "=" + getPref("resTypeVal") + "&" +						 
 						getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
 						getPref("redirPar") + "=" + getPref("redirVal") + getPref("redirSetCode") + "&" +
@@ -186,7 +193,7 @@ var Auth = {
 		
 		// Wait a few seconds before trying to get results
 		this.retryCount = 0;
-		var startingInterval = window.setInterval(function() {
+		let startingInterval = window.setInterval(function() {
 			window.clearInterval(startingInterval);
 			log("Auth.GetCode. Access Redir Server");
 			Auth.RedirUrlGetCode();			
@@ -195,16 +202,16 @@ var Auth = {
 	
 	// 2-b: Get code from Redir URL
 	RedirUrlGetCode : function () {		
-		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		  					.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = getPref("redirVal") + getPref("redirGetCode") + "?" + getPref("statePar") + "=" + this.stateVal;
+		let fullUrl = getPref("redirVal") + getPref("redirGetCode") + "?" + getPref("statePar") + "=" + this.stateVal;
 		fullUrl = encodeURI(fullUrl)
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
 			if (req.readyState == 4) {
 				log("Auth.RedirUrlGetCode. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {					
-					var jsonResponse = JSON.parse(req.responseText);					
+					let jsonResponse = JSON.parse(req.responseText);					
 					if (jsonResponse.error == "Success") {
 						this.retryCount = 0;
 						Auth.GetTokens(jsonResponse.code);
@@ -226,8 +233,8 @@ var Auth = {
 	
 	RetryRedirUrl : function (error) {		
 		if (this.retryCount < getPref("retryMax")) {
-			var retryDelay = this.retryCount < getPref("retryMax") / 2 ? getPref("delayRetry1") : getPref("delayRetry2");
-			var retryInterval = window.setInterval(function() {				
+			let retryDelay = this.retryCount < getPref("retryMax") / 2 ? getPref("delayRetry1") : getPref("delayRetry2");
+			let retryInterval = window.setInterval(function() {				
 				window.clearInterval(retryInterval);
 				log("Auth.RetryRedirUrl. Error: " + error + " Attempt: " + this.retryCount);
 				Auth.RedirUrlGetCode();
@@ -241,9 +248,9 @@ var Auth = {
 	GetTokens : function (code) {
 		log("Auth.GetTokens. Code: " + code);
 		
-		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		var fullUrl = getPref("baseSslUrl") + getPref("getTokenOp") + "?" +
+		let fullUrl = getPref("baseSslUrl") + getPref("getTokenOp") + "?" +
 		getPref("codePar") + "=" + code + "&" +
 		getPref("cliIdPar") + "=" + getPref("cliIdVal") + "&" +
 		getPref("cliSecPar") + "=" + getPref("cliSecVal") + "&" +
@@ -256,7 +263,7 @@ var Auth = {
 			if (req.readyState == 4) {
 				log("Auth.GetTokens.OnLoad. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {
-					var jsonResponse = JSON.parse(req.responseText);
+					let jsonResponse = JSON.parse(req.responseText);
 					tokenAccess = jsonResponse.access_token;
 					tokenRefresh = jsonResponse.refresh_token;
 					userId = jsonResponse.id;
@@ -294,33 +301,33 @@ var Synch = {
 		this.ReadStatusFile();
 	},
 	
-	feedStatus : null,
+	domFeedStatus : null,
 	
 	ReadStatusFile : function() {
 		log("Synch.ReadStatusFile");
-		feedStatusXML = "";
+		domFeedStatus = null;
 		
-		var addonId = "FeedlySync@AMArostegui";
-		var feedStatusFile = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);		
-		NetUtil.asyncFetch(feedStatusFile, function(inputStream, status) {
+		let addonId = "FeedlySync@AMArostegui";
+		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);		
+		NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
 			if (!Components.isSuccessCode(status)) {
 				log("Synch.ReadStatusFile. Error reading file");
 				return;
 			}
-			var feedStatusXML = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-			log("Synch.ReadStatusFile. Status XML = " + feedStatusXML);
-			var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+			let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+			log("Synch.ReadStatusFile. Status XML = " + xmlFeedStatus);
+			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
             			 .createInstance(Components.interfaces.nsIDOMParser);
-			feedStatus = parser.parseFromString(feedStatusXML, "text/xml");
+			domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
 			Synch.GetFeedlySubs();
 		});		
 	},
 	
 	GetFeedlySubs : function() {
 		log("Synch.GetFeedlySubs");
-		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		var fullUrl = getPref("baseSslUrl") + getPref("subsOp");
+		let fullUrl = getPref("baseSslUrl") + getPref("subsOp");
 		fullUrl = encodeURI(fullUrl);
 		req.open("GET", fullUrl, true);
 		req.setRequestHeader(getPref("tokenParam"), tokenAccess);
@@ -328,7 +335,7 @@ var Synch = {
 			if (req.readyState == 4) {
 				log("Synch.GetFeedlySubs. Status: " + req.status + " Response Text: " + req.responseText);
 				if (req.status == 200) {
-					var jsonResponse = JSON.parse(req.responseText);
+					let jsonResponse = JSON.parse(req.responseText);
 					Synch.Update(jsonResponse);
 				}
 				else
@@ -360,78 +367,107 @@ var Synch = {
 			return;				
 		let rootfolder = selServer.rootFolder;
 		if (rootfolder == null)
-			return;			
+			return;		
 		
 		// First pass: Thunderbird subscriptions
 		for each (let folder1 in fixIterator(rootfolder.subFolders, Ci.nsIMsgFolder)) {
 			for each (let folder2 in fixIterator(folder1.subFolders, Ci.nsIMsgFolder)) {
 				tbSubs = FeedUtils.getFeedUrlsInFolder(folder2);
+
 				for (let i = 0; i < tbSubs.length; i++) {
 					// Why is the first element always empty?
-					if (tbSubs[i] != "") {
-						log(tbSubs[i]);
-						
-						// Seek current feed in Feedly					
-						let found = false;						
-					    for (var i = 0; i < feedlySubs.length; i++) {
-					        let feed = feedlySubs[i];
-					        let feedId = feed.id;
-					        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix					        
-					        if (feedId == tbSubs[i]) {					        	
-						        for (let j = 0; j < feedlySubs.categories.length; j++) {
-						        	if (feedlySubs.categories[j].label == folder2.prettiestName) {
-						        		found = true;
-						        		break;
-						        	}					        	
-						        }					        	
-					        }					        
-					    }
-					    
-					    // Subscribed in Thunderbird but not in Feedly
-					    if (!found) {
-					    	// Check whether current subscription was locally deleted
-							feedStatus.evaluate("/feeds/feed[id=" + tbSubs[i] + "]");
-							let node = feedStatus.getElementById("feed");
-							
-							// Not locally so it might've been on the server. Remove							
-							if (node != null) {								
+					if (tbSubs[i] == "")
+						continue;
+					
+					log(tbSubs[i]);
+					
+					let feedId = "";
+					
+					// Seek current feed in Feedly					
+					let found = false;						
+				    for (var i = 0; i < feedlySubs.length; i++) {
+				        let feed = feedlySubs[i];
+				        feedId = feed.id;					        					        
+				        if (feedId.substring(0, 5) == tbSubs[i]) { // Keep in mind "feed/" prefix					        	
+					        for (let j = 0; j < feedlySubs.categories.length; j++) {
+					        	if (feedlySubs.categories[j].label == folder2.prettiestName) {
+					        		found = true;
+					        		break;
+					        	}					        	
+					        }					        	
+				        }					        
+				    }
+				    if (found)
+				    	continue;
+				    
+				    // Subscribed in Thunderbird but not in Feedly
+				    let domFiltered = domFeedStatus;
+					domFiltered.evaluate("/feeds/feed[id=" + tbSubs[i] + "]", domFeedStatus);
+					let nodeFeed = domFiltered.getElementById("feed");
+					
+			    	// Check whether this feed was previously synchronized. If so, delete locally							
+					if (nodeFeed != null) {
+						let nodeStatus = nodeFeed.getElementsByTagName("status");
+						if (nodeStatus == null || nodeStatus.count != 1) {
+							nodeStatus = nodeStatus[0];							
+							if (nodeStatus.nodeValue == 1) {
+								folder2.parent.propagateDelete(folder2, true, msgWindow);
+								
+								// Remove node from DOM and File
+								domFeedStatus.removeChild(nodeFeed);
+								let strDom = domFeedStatus;
+								let fileFeedStatus = FileUtils.getFile("ProfD",
+										["extensions", addonId, "data", "feeds.xml"], false);								
+								let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+								let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+								                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+								converter.charset = "UTF-8";
+								let inStream = converter.convertToInputStream(strDom);
+								NetUtil.asyncCopy(inStream, outStream);
+								
+								log("Synch.Update. Svr=0 TB=1. Deleted: " + folder2.prettiestName);
 							}
-							
-							// Locally deleted. Remove on Feedly
-							else {
-								
-								
-//								let fullUrl = getPref("baseSslUrl") + getPref("subsOp");
-//								fullUrl = encodeURI(fullUrl);
-//								req.open("GET", fullUrl, true);
-//								req.setRequestHeader(getPref("tokenParam"), tokenAccess);
-//								req.onload = function (e) {
-//									if (req.readyState == 4) {
-//										log("Synch.GetFeedlySubs. Status: " + req.status + " Response Text: " + req.responseText);
-//										if (req.status == 200) {
-//											var jsonResponse = JSON.parse(req.responseText);
-//											Synch.Update(jsonResponse);
-//										}
-//										else
-//											return;									
-//									}			
-//								};
-//								req.onerror = function (error) {		
-//									log("Synch.GetFeedlySubs. Error: " + error);
-//								};
-//								log("Synch.GetFeedlySubs. Url: " + fullUrl);
-//								req.send(null);		
-								
-								
-								
-								
-								
-							}							
-							
-							// Entry already proccesed. Avoid second pass processing
-							feedlySubs.splice(i, 1);
-					    }					    
+							else
+								log("Synch.Update. Svr=0 TB=1. Removing: " + folder2.prettiestName +
+										" Ctrl file may be corrupted 2");							
+						}
+						else
+							log("Synch.Update. Svr=0 TB=1. Removing: " + folder2.prettiestName +
+									" Ctrl file may be corrupted 1");					
+					}
+					
+					// Not synchronized. Add to Feedly
+					else {								
+						let fullUrl = getPref("baseSslUrl") + getPref("subsOp");
+						fullUrl = encodeURI(fullUrl);
+						req.open("POST", fullUrl, true);
+						req.setRequestHeader(getPref("tokenParam"), tokenAccess);
+						req.setRequestHeader("Content-Type", "application/json");
+						let jsonSubscribe = "{\n";
+						jsonSubscribe += "\t\"categories\" : [\n";
+						jsonSubscribe += "\t\t{\n";
+						jsonSubscribe += "\t\t\t\"id\" : \"user/" + getPref("userId") + 
+										"/category/" + folder1.prettiestName + "\"\n";
+						jsonSubscribe += "\t\t\t\"label\" : " + folder1.prettiestName + "/category/" + + "\n";
+						jsonSubscribe += "\t\t},\n";
+						jsonSubscribe += "\t],\n";
+						jsonSubscribe += "\t\"id\" : \"feed/" + tbSubs[i] + "\"\n";
+						jsonSubscribe += "\t\"title\" : \"" + folder2.prettiestName + "\"\n";
+						jsonSubscribe += "}";						
+						req.onload = function (e) {
+							if (req.readyState == 4) {
+								log("Synch.Update. Svr=0 TB=1. Add to Feedly. Status: " + req.status + " Response Text: " + req.responseText);
+							}			
+						};
+						req.onerror = function (error) {		
+							log("Synch.Update. Svr=0 TB=1. Add to Feedly. Error: " + error);
+						};
+						log("Synch.Update. Svr=0 TB=1. Add to Feedly. Url: " + fullUrl);
+						req.send(jsonSubscribe);
 					}							
+					
+					// Entry already proccesed. Avoid second pass processing
+					feedlySubs.splice(i, 1);							
 				}
 			}				
 		}
@@ -441,8 +477,6 @@ var Synch = {
 	        let feed = feedlySubs[j];
 	        let feedId = feed.id;
 	        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix
-	        
-	        
 	    }		
 	},
 };
