@@ -18,6 +18,7 @@ scriptLoader.loadSubScript("chrome://messenger-newsblog/content/utils.js");
 //var scriptLoader2 = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
 //					.getService(Components.interfaces.mozIJSSubScriptLoader);
 //scriptLoader2.loadSubScript("chrome://messenger/folderPane.js");
+scriptLoader.loadSubScript("chrome://messenger-newsblog/content/feed-subscriptions.js");
 
 msgWindow = Components.classes["@mozilla.org/messenger/msgwindow;1"]
 			.createInstance(Components.interfaces.nsIMsgWindow);
@@ -133,8 +134,6 @@ var window = null;
 function syncTBFeedly(wnd) {
 	window = wnd;
 	Auth.Init();
-	
-	//Synch.ListTB("server3"); 
 }
 
 function log(str) {
@@ -365,40 +364,46 @@ var Synch = {
 		}		
 		if (selServer == null)
 			return;				
-		let rootfolder = selServer.rootFolder;
-		if (rootfolder == null)
-			return;		
+		let rootFolder = selServer.rootFolder;
+		if (rootFolder == null)
+			return;
 		
+		const FEED_LOCALSTATUS_SYNC = 1;
+		const FEED_LOCALSTATUS_DEL = 2;		
+		
+		// TODO: Hay que ver qué se hace con los uncategorized
 		// First pass: Thunderbird subscriptions
-		for each (let folder1 in fixIterator(rootfolder.subFolders, Ci.nsIMsgFolder)) {
-			for each (let folder2 in fixIterator(folder1.subFolders, Ci.nsIMsgFolder)) {
-				tbSubs = FeedUtils.getFeedUrlsInFolder(folder2);
+		for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
+			for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
+				tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
 
 				for (let i = 0; i < tbSubs.length; i++) {
 					// Why is the first element always empty?
 					if (tbSubs[i] == "")
 						continue;
 					
-					log(tbSubs[i]);
-					
-					let feedId = "";
-					
-					// Seek current feed in Feedly					
+					// Seek pair feed-category in Feedly					
 					let found = false;						
-				    for (var i = 0; i < feedlySubs.length; i++) {
-				        let feed = feedlySubs[i];
-				        feedId = feed.id;					        					        
+				    for (var j = 0; j < feedlySubs.length; j++) {
+				        let feed = feedlySubs[j];
+				        let feedId = feed.id;					        					        
 				        if (feedId.substring(0, 5) == tbSubs[i]) { // Keep in mind "feed/" prefix					        	
-					        for (let j = 0; j < feedlySubs.categories.length; j++) {
-					        	if (feedlySubs.categories[j].label == folder2.prettiestName) {
+					        for (var k = 0; k < feedlySubs.categories.length; k++) {
+					        	if (feedlySubs.categories[k].label == fldCategory.prettiestName) {
 					        		found = true;
 					        		break;
 					        	}					        	
 					        }					        	
-				        }					        
+				        }
 				    }
-				    if (found)
-				    	continue;
+				    
+				    // Feed-category found on both server and client. Won't be processed in second pass
+				    if (found) { 
+						feedlySubs[j].splice(k, 1);
+						if (feedlySubs[j].categories.length == 0)
+							feedlySubs.splice(j, 1);
+				    	continue;				    	
+				    }				    	
 				    
 				    // Subscribed in Thunderbird but not in Feedly
 				    let domFiltered = domFeedStatus;
@@ -410,10 +415,10 @@ var Synch = {
 						let nodeStatus = nodeFeed.getElementsByTagName("status");
 						if (nodeStatus == null || nodeStatus.count != 1) {
 							nodeStatus = nodeStatus[0];							
-							if (nodeStatus.nodeValue == 1) {
-								folder2.parent.propagateDelete(folder2, true, msgWindow);
+							if (nodeStatus.nodeValue == FEED_LOCALSTATUS_SYNC) {
+								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
-								// Remove node from DOM and File
+								// Remove node from Ctrl file and DOM
 								domFeedStatus.removeChild(nodeFeed);
 								let strDom = domFeedStatus;
 								let fileFeedStatus = FileUtils.getFile("ProfD",
@@ -425,14 +430,14 @@ var Synch = {
 								let inStream = converter.convertToInputStream(strDom);
 								NetUtil.asyncCopy(inStream, outStream);
 								
-								log("Synch.Update. Svr=0 TB=1. Deleted: " + folder2.prettiestName);
+								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
 							else
-								log("Synch.Update. Svr=0 TB=1. Removing: " + folder2.prettiestName +
+								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
 										" Ctrl file may be corrupted 2");							
 						}
 						else
-							log("Synch.Update. Svr=0 TB=1. Removing: " + folder2.prettiestName +
+							log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
 									" Ctrl file may be corrupted 1");					
 					}
 					
@@ -447,12 +452,12 @@ var Synch = {
 						jsonSubscribe += "\t\"categories\" : [\n";
 						jsonSubscribe += "\t\t{\n";
 						jsonSubscribe += "\t\t\t\"id\" : \"user/" + getPref("userId") + 
-										"/category/" + folder1.prettiestName + "\"\n";
-						jsonSubscribe += "\t\t\t\"label\" : " + folder1.prettiestName + "/category/" + + "\n";
+										"/category/" + fldCategory.prettiestName + "\"\n";
+						jsonSubscribe += "\t\t\t\"label\" : " + fldCategory.prettiestName + "/category/" + + "\n";
 						jsonSubscribe += "\t\t},\n";
 						jsonSubscribe += "\t],\n";
 						jsonSubscribe += "\t\"id\" : \"feed/" + tbSubs[i] + "\"\n";
-						jsonSubscribe += "\t\"title\" : \"" + folder2.prettiestName + "\"\n";
+						jsonSubscribe += "\t\"title\" : \"" + fldName.prettiestName + "\"\n";
 						jsonSubscribe += "}";						
 						req.onload = function (e) {
 							if (req.readyState == 4) {
@@ -464,19 +469,103 @@ var Synch = {
 						};
 						log("Synch.Update. Svr=0 TB=1. Add to Feedly. Url: " + fullUrl);
 						req.send(jsonSubscribe);
-					}							
+					}				
 					
-					// Entry already proccesed. Avoid second pass processing
-					feedlySubs.splice(i, 1);							
+					// Several feeds for category, just one feed by folder					
+					break;
 				}
 			}				
 		}
 		
-		// Second pass: Feedly subscriptions
-	    for (let j = 0; j < feedlySubs.length; j++) {
-	        let feed = feedlySubs[j];
+		// Second pass: Feedly subscriptions.
+		// After first pass, remaining categories are guaranteed not to be present on Thunderbird
+	    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
+	        let feed = feedlySubs[subIdx];
 	        let feedId = feed.id;
-	        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix
+	        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix	        
+	        for (let categoryIdx = 0; categoryIdx < feedlySubs.categories.length; categoryIdx++) {
+	        	let categoryName = feedlySubs[subIdx].categories[categoryIdx].label;
+	        	
+			    let domFiltered = domFeedStatus;
+				domFiltered.evaluate("/feeds/feed[id=" + feedId + "]", domFeedStatus);
+				let nodeFeed = domFiltered.getElementById("feed");
+				
+				// Check whether this feed was locally deleted. If so, delete on server							
+				if (nodeFeed != null) {				
+					let nodeStatus = nodeFeed.getElementsByTagName("status");
+					if (nodeStatus == null || nodeStatus.count != 1) {
+						nodeStatus = nodeStatus[0];							
+						if (nodeStatus.nodeValue == FEED_LOCALSTATUS_DEL) {						
+							let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
+							fullUrl = encodeURI(fullUrl);
+							req.open("DELETE", fullUrl, true);
+							req.setRequestHeader(getPref("tokenParam"), tokenAccess);
+							req.onload = function (e) {
+								if (req.readyState == 4) {
+									log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " + req.status + " Response Text: " + req.responseText);
+								}			
+							};
+							req.onerror = function (error) {		
+								log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
+							};
+							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
+							req.send(null);
+						}
+						else
+							log("Synch.Update. Svr=1 TB=0. Removing from Feedly: " + feedId +
+									" Ctrl file may be corrupted 2");							
+					}
+					else
+						log("Synch.Update. Svr=1 TB=0. Removing from Feedly: " + feedId +
+								" Ctrl file may be corrupted 1");					
+				}
+				
+				// Feed not synchronized. Add to Thunderbird
+				else {					
+					// Seek category folder. According to nsIMsgFolder documentation, findSubFolder()
+					// may return an object even for an unexisting folder. I'd better use a loop
+					let fldCategory = null;
+					for each (let fldCurCat in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
+						if (fldCurCat.prettiestName == categoryName) {							
+							fldCategory = fldCurCat;
+							log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
+							break;
+						}					
+					}
+					if (fldCategory == null) {						
+						rootFolder.createSubFolder(categoryName, nMsgWindow);
+						fldCategory = rootFolder.findSubFolder(categoryName);
+						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
+					}						
+					
+					// Create feed folder and subscribe
+					let feedName = feedlySubs[feedIdx].title;
+					fldCategory.createSubFolder(feedName, nMsgWindow);
+					let fldFeed = fldCategory.findSubFolder(feedName);					
+					FeedSubscriptions.addFeed(feedId, fldFeed, true);
+					log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);				
+					
+					// Add to Ctrl file and DOM
+					let nodeFeed = domFeedStatus.createElement("feed");
+					let nodeStatus = nodeFeed.createElement("status");
+					nodeStatus.nodeValue = FEED_LOCALSTATUS_SYNC;
+					let nodeId = nodeFeed.createElement("id");
+					nodeId.nodeValue = feedId;
+					nodeFeed.appendChild(nodeStatus);
+					nodeFeed.appendChild(nodeId);
+					domFeedStatus.appendChild(nodeFeed);
+
+					let strDom = domFeedStatus;
+					let fileFeedStatus = FileUtils.getFile("ProfD",
+							["extensions", addonId, "data", "feeds.xml"], false);								
+					let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+					let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+					                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+					converter.charset = "UTF-8";
+					let inStream = converter.convertToInputStream(strDom);
+					NetUtil.asyncCopy(inStream, outStream);
+				}        	
+	        }	        
 	    }		
 	},
 };
