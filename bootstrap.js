@@ -386,8 +386,8 @@ var Synch = {
 					let found = false;						
 				    for (var j = 0; j < feedlySubs.length; j++) {
 				        let feed = feedlySubs[j];
-				        let feedId = feed.id;					        					        
-				        if (feedId.substring(0, 5) == tbSubs[i]) { // Keep in mind "feed/" prefix					        	
+				        let feedId = feed.id.substring(5, feed.id.length);					        					        
+				        if (feedId == tbSubs[i]) { // Keep in mind "feed/" prefix					        	
 					        for (var k = 0; k < feedlySubs.categories.length; k++) {
 					        	if (feedlySubs.categories[k].label == fldCategory.prettiestName) {
 					        		found = true;
@@ -481,43 +481,43 @@ var Synch = {
 		// After first pass, remaining categories are guaranteed not to be present on Thunderbird
 	    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 	        let feed = feedlySubs[subIdx];
-	        let feedId = feed.id;
-	        feedId = feedId.substring(0, 5); // Get rid of "feed/" prefix	        
-	        for (let categoryIdx = 0; categoryIdx < feedlySubs.categories.length; categoryIdx++) {
-	        	let categoryName = feedlySubs[subIdx].categories[categoryIdx].label;
+	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix	        	        
+	        for (let categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
+	        	let categoryName = feed.categories[categoryIdx].label;
 	        	
-			    let domFiltered = domFeedStatus;
-				domFiltered.evaluate("/feeds/feed[id=" + feedId + "]", domFeedStatus);
-				let nodeFeed = domFiltered.getElementById("feed");
-				
-				// Check whether this feed was locally deleted. If so, delete on server							
-				if (nodeFeed != null) {				
-					let nodeStatus = nodeFeed.getElementsByTagName("status");
-					if (nodeStatus == null || nodeStatus.count != 1) {
-						nodeStatus = nodeStatus[0];							
-						if (nodeStatus.nodeValue == FEED_LOCALSTATUS_DEL) {						
-							let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
-							fullUrl = encodeURI(fullUrl);
-							req.open("DELETE", fullUrl, true);
-							req.setRequestHeader(getPref("tokenParam"), tokenAccess);
-							req.onload = function (e) {
-								if (req.readyState == 4) {
-									log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " + req.status + " Response Text: " + req.responseText);
-								}			
-							};
-							req.onerror = function (error) {		
-								log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
-							};
-							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
-							req.send(null);
-						}
-						else
-							log("Synch.Update. Svr=1 TB=0. Removing from Feedly: " + feedId +
-									" Ctrl file may be corrupted 2");							
-					}
-					else
-						log("Synch.Update. Svr=1 TB=0. Removing from Feedly: " + feedId +
-								" Ctrl file may be corrupted 1");					
+				// Check whether this feed was locally deleted. If so, delete on server	        	
+			    let xpathExpression = "/feeds/feed[id='" + feedId + 
+			    	"' and status=" + FEED_LOCALSTATUS_DEL + "]";
+				let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+					null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+				let node = xpathResult.iterateNext();
+				if (node != null) {
+					let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
+					fullUrl = encodeURI(fullUrl);
+					req.open("DELETE", fullUrl, true);
+					req.setRequestHeader(getPref("tokenParam"), tokenAccess);
+					req.onload = function (e) {
+						if (req.readyState == 4) {
+							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " + req.status + " Response Text: " + req.responseText);
+							
+							// Remove from Ctrl file and DOM
+							node.parentNode.removeChild(node);						
+							let strDom = domFeedStatus;
+							let fileFeedStatus = FileUtils.getFile("ProfD",
+									["extensions", addonId, "data", "feeds.xml"], false);								
+							let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+							let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+							                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+							converter.charset = "UTF-8";
+							let inStream = converter.convertToInputStream(strDom);
+							NetUtil.asyncCopy(inStream, outStream);							
+						}			
+					};
+					req.onerror = function (error) {		
+						log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
+					};
+					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
+					req.send(null);
 				}
 				
 				// Feed not synchronized. Add to Thunderbird
@@ -533,14 +533,14 @@ var Synch = {
 						}					
 					}
 					if (fldCategory == null) {						
-						rootFolder.createSubFolder(categoryName, nMsgWindow);
+						rootFolder.createSubFolder(categoryName, msgWindow);
 						fldCategory = rootFolder.findSubFolder(categoryName);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 					}						
 					
 					// Create feed folder and subscribe
-					let feedName = feedlySubs[feedIdx].title;
-					fldCategory.createSubFolder(feedName, nMsgWindow);
+					let feedName = feed.title;
+					fldCategory.createSubFolder(feedName, msgWindow);
 					let fldFeed = fldCategory.findSubFolder(feedName);					
 					FeedSubscriptions.addFeed(feedId, fldFeed, true);
 					log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);				
