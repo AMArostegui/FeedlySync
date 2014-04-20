@@ -307,7 +307,20 @@ var Synch = {
 		domFeedStatus = null;
 		
 		let addonId = "FeedlySync@AMArostegui";
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);		
+		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);
+		if (!fileFeedStatus.exists()) {			
+			fileFeedStatus.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);			
+			let strDom = "<?xml version=\"1.0\"?>";
+			strDom += "<feeds>";		
+			strDom += "</feeds>";			
+			let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+			let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+			                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+			converter.charset = "UTF-8";
+			let inStream = converter.convertToInputStream(strDom);
+			NetUtil.asyncCopy(inStream, outStream);			
+		}			
+		
 		NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
 			if (!Components.isSuccessCode(status)) {
 				log("Synch.ReadStatusFile. Error reading file");
@@ -376,6 +389,8 @@ var Synch = {
 		for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 			for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
 				tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
+				if (tbSubs == null)
+					continue;
 
 				for (let i = 0; i < tbSubs.length; i++) {
 					// Why is the first element always empty?
@@ -418,18 +433,8 @@ var Synch = {
 							if (nodeStatus.nodeValue == FEED_LOCALSTATUS_SYNC) {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
-								// Remove node from Ctrl file and DOM
-								domFeedStatus.removeChild(nodeFeed);
-								let strDom = domFeedStatus;
-								let fileFeedStatus = FileUtils.getFile("ProfD",
-										["extensions", addonId, "data", "feeds.xml"], false);								
-								let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-								let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-								                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-								converter.charset = "UTF-8";
-								let inStream = converter.convertToInputStream(strDom);
-								NetUtil.asyncCopy(inStream, outStream);
-								
+								// Remove node from Ctrl file DOM
+								domFeedStatus.removeChild(nodeFeed);								
 								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
 							else
@@ -485,12 +490,12 @@ var Synch = {
 	        for (let categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
 	        	let categoryName = feed.categories[categoryIdx].label;
 	        	
-				// Check whether this feed was locally deleted. If so, delete on server	        	
+				// Check whether this feed was locally deleted. If so, delete on server
 			    let xpathExpression = "/feeds/feed[id='" + feedId + 
-			    	"' and status=" + FEED_LOCALSTATUS_DEL + "]";
-				let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-					null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-				let node = xpathResult.iterateNext();
+		    		"' and status=" + FEED_LOCALSTATUS_DEL + "]";
+			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+			    let node = xpathResult.iterateNext();	        	
 				if (node != null) {
 					let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
 					fullUrl = encodeURI(fullUrl);
@@ -533,19 +538,23 @@ var Synch = {
 						}					
 					}
 					if (fldCategory == null) {						
-						rootFolder.createSubFolder(categoryName, msgWindow);
+						rootFolder.createSubfolder(categoryName, msgWindow);
 						fldCategory = rootFolder.findSubFolder(categoryName);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 					}						
 					
 					// Create feed folder and subscribe
 					let feedName = feed.title;
-					fldCategory.createSubFolder(feedName, msgWindow);
+					fldCategory.createSubfolder(feedName, msgWindow);
 					let fldFeed = fldCategory.findSubFolder(feedName);					
-					FeedSubscriptions.addFeed(feedId, fldFeed, true);
-					log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);				
+					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
+						FeedUtils.addFeed(feedId, feedName, fldFeed);
+						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
+					}
+					else
+						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);								
 					
-					// Add to Ctrl file and DOM
+					// Add to Ctrl File DOM
 					let nodeFeed = domFeedStatus.createElement("feed");
 					let nodeStatus = nodeFeed.createElement("status");
 					nodeStatus.nodeValue = FEED_LOCALSTATUS_SYNC;
@@ -554,18 +563,19 @@ var Synch = {
 					nodeFeed.appendChild(nodeStatus);
 					nodeFeed.appendChild(nodeId);
 					domFeedStatus.appendChild(nodeFeed);
-
-					let strDom = domFeedStatus;
-					let fileFeedStatus = FileUtils.getFile("ProfD",
-							["extensions", addonId, "data", "feeds.xml"], false);								
-					let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-					let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-					                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-					converter.charset = "UTF-8";
-					let inStream = converter.convertToInputStream(strDom);
-					NetUtil.asyncCopy(inStream, outStream);
 				}        	
 	        }	        
-	    }		
+	    }
+	    
+	    // Save Ctrl File	    
+		let strDom = domFeedStatus;
+		let fileFeedStatus = FileUtils.getFile("ProfD",
+				["extensions", addonId, "data", "feeds.xml"], false);								
+		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+		converter.charset = "UTF-8";
+		let inStream = converter.convertToInputStream(strDom);
+		NetUtil.asyncCopy(inStream, outStream);
 	},
 };
