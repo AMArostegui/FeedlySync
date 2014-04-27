@@ -556,19 +556,25 @@ var Synch = {
 					
 					// Add to Ctrl File DOM
 					let nodeFeed = domFeedStatus.createElement("feed");
-					let nodeStatus = nodeFeed.createElement("status");
-					nodeStatus.nodeValue = FEED_LOCALSTATUS_SYNC;
-					let nodeId = nodeFeed.createElement("id");
-					nodeId.nodeValue = feedId;
+					let nodeStatus = domFeedStatus.createElement("status");
+					nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
+					let nodeId = domFeedStatus.createElement("id");
+					nodeId.textContent = feedId;
+					let nodeParent = domFeedStatus.getElementsByTagName("feeds")[0];
 					nodeFeed.appendChild(nodeStatus);
 					nodeFeed.appendChild(nodeId);
-					domFeedStatus.appendChild(nodeFeed);
-				}        	
-	        }	        
+					nodeParent.appendChild(nodeFeed);					
+				}
+				break;
+	        }
+	        break;
 	    }
 	    
 	    // Save Ctrl File	    
-		let strDom = domFeedStatus;
+	    let addonId = "FeedlySync@AMArostegui";
+	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
+        					.createInstance(Components.interfaces.nsIDOMSerializer);	    
+		let strDom = domSerializer.serializeToString(domFeedStatus);
 		let fileFeedStatus = FileUtils.getFile("ProfD",
 				["extensions", addonId, "data", "feeds.xml"], false);								
 		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
