@@ -553,7 +553,10 @@ var Synch = {
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
 					else
-						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);								
+					{
+						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
+						continue;						
+					}														
 					
 					// Add to Ctrl File DOM
 					let nodeFeed = domFeedStatus.createElement("feed");

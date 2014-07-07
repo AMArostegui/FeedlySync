@@ -1,11 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<feeds>
-	<feed>
-		<status>0</status>
-		<id>http://desdeulyanovsk.blogspot.com/feeds/posts/default</id>
-	</feed>
-	<feed>
-		<status>1</status>
-		<id>http://sports.yahoo.com/nfl/rss.xml</id>
-	</feed>
-<feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed><feed><status>1</status><id>http://sports.yahoo.com/nfl/rss.xml</id></feed></feeds>
+<?xml version="1.0"?><feeds></feeds>
