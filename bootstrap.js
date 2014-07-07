@@ -548,6 +548,7 @@ var Synch = {
 					fldCategory.createSubfolder(feedName, msgWindow);
 					let fldFeed = fldCategory.findSubFolder(feedName);					
 					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
+						FeedUtils.updateFolderFeedUrl(fldFeed, feedId, false);
 						FeedUtils.addFeed(feedId, feedName, fldFeed);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
@@ -565,9 +566,7 @@ var Synch = {
 					nodeFeed.appendChild(nodeId);
 					nodeParent.appendChild(nodeFeed);					
 				}
-				break;
 	        }
-	        break;
 	    }
 	    
 	    // Save Ctrl File	    
