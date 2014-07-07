@@ -19,7 +19,7 @@ pref("extensions.FeedlySync.resTypeVal", "code");
 pref("extensions.FeedlySync.cliIdPar", "client_id");
 pref("extensions.FeedlySync.cliIdVal", "sandbox");
 pref("extensions.FeedlySync.cliSecPar", "client_secret");
-pref("extensions.FeedlySync.cliSecVal", "V0H9C3O75ODIXFSSX9OH");
+pref("extensions.FeedlySync.cliSecVal", "ES3R6KCEG46BW9MYD332");
 pref("extensions.FeedlySync.redirPar", "redirect_uri");
 pref("extensions.FeedlySync.redirVal", "http://localhost:8080");
 pref("extensions.FeedlySync.scopePar", "scope");

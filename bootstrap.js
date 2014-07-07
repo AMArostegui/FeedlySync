@@ -43,7 +43,7 @@ const PREFS = {
 	cliIdPar : "client_id",
 	cliIdVal : "sandbox",
 	cliSecPar : "client_secret",
-	cliSecVal : "V0H9C3O75ODIXFSSX9OH",
+	cliSecVal : "ES3R6KCEG46BW9MYD332",
 	redirPar : "redirect_uri",
 	redirVal : "http://localhost:8080",
 	scopePar : "scope",
