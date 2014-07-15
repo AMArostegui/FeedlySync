@@ -527,8 +527,6 @@ var Synch = {
 				
 				// Feed not synchronized. Add to Thunderbird
 				else {					
-					// Seek category folder. According to nsIMsgFolder documentation, findSubFolder()
-					// may return an object even for an unexisting folder. I'd better use a loop
 					let fldCategory = null;
 					for each (let fldCurCat in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 						if (fldCurCat.prettiestName == categoryName) {							
@@ -537,16 +535,18 @@ var Synch = {
 							break;
 						}					
 					}
-					if (fldCategory == null) {						
-						rootFolder.createSubfolder(categoryName, msgWindow);
-						fldCategory = rootFolder.findSubFolder(categoryName);
+					if (fldCategory == null) {
+						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
+                        	createLocalSubfolder(categoryName);
+						fldCategory = rootFolder.getChildNamed(categoryName);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 					}						
 					
 					// Create feed folder and subscribe
 					let feedName = feed.title;
-					fldCategory.createSubfolder(feedName, msgWindow);
-					let fldFeed = fldCategory.findSubFolder(feedName);					
+					fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
+                		createLocalSubfolder(feedName);
+					let fldFeed = fldCategory.getChildNamed(feedName);					
 					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
 						FeedUtils.updateFolderFeedUrl(fldFeed, feedId, false);
 						FeedUtils.addFeed(feedId, feedName, fldFeed);
