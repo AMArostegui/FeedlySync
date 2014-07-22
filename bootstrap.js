@@ -207,10 +207,11 @@ var Auth = {
 		fullUrl = encodeURI(fullUrl)
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
-			if (req.readyState == 4) {
-				log("Auth.RedirUrlGetCode. Status: " + req.status + " Response Text: " + req.responseText);
-				if (req.status == 200) {					
-					let jsonResponse = JSON.parse(req.responseText);					
+			if (e.currentTarget.readyState == 4) {
+				log("Auth.RedirUrlGetCode. Status: " + e.currentTarget.status +
+						" Response Text: " + e.currentTarget.responseText);
+				if (e.currentTarget.status == 200) {					
+					let jsonResponse = JSON.parse(e.currentTarget.responseText);					
 					if (jsonResponse.error == "Success") {
 						this.retryCount = 0;
 						Auth.GetTokens(jsonResponse.code);
@@ -259,10 +260,11 @@ var Auth = {
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
-			if (req.readyState == 4) {
-				log("Auth.GetTokens.OnLoad. Status: " + req.status + " Response Text: " + req.responseText);
-				if (req.status == 200) {
-					let jsonResponse = JSON.parse(req.responseText);
+			if (e.currentTarget.readyState == 4) {
+				log("Auth.GetTokens.OnLoad. Status: " + e.currentTarget.status +
+						" Response Text: " + e.currentTarget.responseText);
+				if (e.currentTarget.status == 200) {
+					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					tokenAccess = jsonResponse.access_token;
 					tokenRefresh = jsonResponse.refresh_token;
 					userId = jsonResponse.id;
@@ -344,10 +346,11 @@ var Synch = {
 		req.open("GET", fullUrl, true);
 		req.setRequestHeader(getPref("tokenParam"), tokenAccess);
 		req.onload = function (e) {
-			if (req.readyState == 4) {
-				log("Synch.GetFeedlySubs. Status: " + req.status + " Response Text: " + req.responseText);
-				if (req.status == 200) {
-					let jsonResponse = JSON.parse(req.responseText);
+			if (e.currentTarget.readyState == 4) {
+				log("Synch.GetFeedlySubs. Status: " + e.currentTarget.status +
+						" Response Text: " + e.currentTarget.responseText);
+				if (e.currentTarget.status == 200) {
+					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Synch.Update(jsonResponse);
 				}
 				else
@@ -450,6 +453,8 @@ var Synch = {
 					else {								
 						let fullUrl = getPref("baseSslUrl") + getPref("subsOp");
 						fullUrl = encodeURI(fullUrl);
+						let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+									.createInstance(Components.interfaces.nsIXMLHttpRequest);
 						req.open("POST", fullUrl, true);
 						req.setRequestHeader(getPref("tokenParam"), tokenAccess);
 						req.setRequestHeader("Content-Type", "application/json");
@@ -465,8 +470,9 @@ var Synch = {
 						jsonSubscribe += "\t\"title\" : \"" + fldName.prettiestName + "\"\n";
 						jsonSubscribe += "}";						
 						req.onload = function (e) {
-							if (req.readyState == 4) {
-								log("Synch.Update. Svr=0 TB=1. Add to Feedly. Status: " + req.status + " Response Text: " + req.responseText);
+							if (e.currentTarget.readyState == 4) {
+								log("Synch.Update. Svr=0 TB=1. Add to Feedly. Status: " + e.currentTarget.status +
+										" Response Text: " + e.currentTarget.responseText);
 							}			
 						};
 						req.onerror = function (error) {		
@@ -499,11 +505,14 @@ var Synch = {
 				if (node != null) {
 					let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
 					fullUrl = encodeURI(fullUrl);
+					let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+								.createInstance(Components.interfaces.nsIXMLHttpRequest);					
 					req.open("DELETE", fullUrl, true);
 					req.setRequestHeader(getPref("tokenParam"), tokenAccess);
 					req.onload = function (e) {
-						if (req.readyState == 4) {
-							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " + req.status + " Response Text: " + req.responseText);
+						if (e.currentTarget.readyState == 4) {
+							log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Status: " +
+									e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
 							
 							// Remove from Ctrl file and DOM
 							node.parentNode.removeChild(node);						
@@ -519,9 +528,9 @@ var Synch = {
 						}			
 					};
 					req.onerror = function (error) {		
-						log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
+						log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Error: " + error);
 					};
-					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
+					log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Url: " + fullUrl);
 					req.send(null);
 				}
 				
@@ -531,7 +540,7 @@ var Synch = {
 					for each (let fldCurCat in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 						if (fldCurCat.prettiestName == categoryName) {							
 							fldCategory = fldCurCat;
-							log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
+							log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Category found: " + categoryName);
 							break;
 						}					
 					}
@@ -539,7 +548,7 @@ var Synch = {
 						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
                         	createLocalSubfolder(categoryName);
 						fldCategory = rootFolder.getChildNamed(categoryName);
-						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
+						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Creating category: " + categoryName);
 					}						
 					
 					// Create feed folder and subscribe
@@ -550,11 +559,11 @@ var Synch = {
 					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
 						FeedUtils.updateFolderFeedUrl(fldFeed, feedId, false);
 						FeedUtils.addFeed(feedId, feedName, fldFeed);
-						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
+						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
 					else
 					{
-						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
+						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 						continue;						
 					}														
 					
