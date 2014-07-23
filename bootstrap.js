@@ -385,7 +385,8 @@ var Synch = {
 			return;
 		
 		const FEED_LOCALSTATUS_SYNC = 1;
-		const FEED_LOCALSTATUS_DEL = 2;		
+		const FEED_LOCALSTATUS_DEL = 2;
+		let domChanged = false;
 		
 		// TODO: Hay que ver qué se hace con los uncategorized
 		// First pass: Thunderbird subscriptions
@@ -404,20 +405,28 @@ var Synch = {
 					let found = false;						
 				    for (var j = 0; j < feedlySubs.length; j++) {
 				        let feed = feedlySubs[j];
-				        let feedId = feed.id.substring(5, feed.id.length);					        					        
-				        if (feedId == tbSubs[i]) { // Keep in mind "feed/" prefix					        	
-					        for (var k = 0; k < feedlySubs.categories.length; k++) {
-					        	if (feedlySubs.categories[k].label == fldCategory.prettiestName) {
+				        
+				        // Keep in mind "feed/" prefix
+				        if (feed.id.substring(0, 5) != "feed/") {
+				        	log("Synch.Update. Missing \"feed/\" in feed identifier");
+				        	continue;
+				        }				        
+				        let feedId = feed.id.substring(5, feed.id.length); 					        					        
+				        if (feedId == tbSubs[i]) { 					        	
+					        for (var k = 0; k < feed.categories.length; k++) {
+					        	if (feed.categories[k].label == fldCategory.prettiestName) {
 					        		found = true;
 					        		break;
 					        	}					        	
 					        }					        	
 				        }
+				        if (found)
+				        	break;
 				    }
 				    
 				    // Feed-category found on both server and client. Won't be processed in second pass
 				    if (found) { 
-						feedlySubs[j].splice(k, 1);
+						feedlySubs[j].categories.splice(k, 1);
 						if (feedlySubs[j].categories.length == 0)
 							feedlySubs.splice(j, 1);
 				    	continue;				    	
@@ -437,6 +446,7 @@ var Synch = {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
 								// Remove node from Ctrl file DOM
+								domChanged = true;
 								domFeedStatus.removeChild(nodeFeed);								
 								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
@@ -515,6 +525,7 @@ var Synch = {
 									e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
 							
 							// Remove from Ctrl file and DOM
+							domChanged = true;
 							node.parentNode.removeChild(node);						
 							let strDom = domFeedStatus;
 							let fileFeedStatus = FileUtils.getFile("ProfD",
@@ -568,6 +579,7 @@ var Synch = {
 					}														
 					
 					// Add to Ctrl File DOM
+					domChanged = true;
 					let nodeFeed = domFeedStatus.createElement("feed");
 					let nodeStatus = domFeedStatus.createElement("status");
 					nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
@@ -581,18 +593,20 @@ var Synch = {
 	        }
 	    }
 	    
-	    // Save Ctrl File	    
-	    let addonId = "FeedlySync@AMArostegui";
-	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
-        					.createInstance(Components.interfaces.nsIDOMSerializer);	    
-		let strDom = domSerializer.serializeToString(domFeedStatus);
-		let fileFeedStatus = FileUtils.getFile("ProfD",
-				["extensions", addonId, "data", "feeds.xml"], false);								
-		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-		converter.charset = "UTF-8";
-		let inStream = converter.convertToInputStream(strDom);
-		NetUtil.asyncCopy(inStream, outStream);
+	    // Save Ctrl File
+	    if (domChanged) {
+		    let addonId = "FeedlySync@AMArostegui";
+		    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
+	        					.createInstance(Components.interfaces.nsIDOMSerializer);	    
+			let strDom = domSerializer.serializeToString(domFeedStatus);
+			let fileFeedStatus = FileUtils.getFile("ProfD",
+					["extensions", addonId, "data", "feeds.xml"], false);								
+			let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+			let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+			                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+			converter.charset = "UTF-8";
+			let inStream = converter.convertToInputStream(strDom);
+			NetUtil.asyncCopy(inStream, outStream);	    	
+	    }
 	},
 };
