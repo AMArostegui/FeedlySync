@@ -408,7 +408,7 @@ var Synch = {
 				        
 				        // Keep in mind "feed/" prefix
 				        if (feed.id.substring(0, 5) != "feed/") {
-				        	log("Synch.Update. Missing \"feed/\" in feed identifier");
+				        	log("Synch.Update. Missing 'feed/' in feed identifier");
 				        	continue;
 				        }				        
 				        let feedId = feed.id.substring(5, feed.id.length); 					        					        
@@ -433,21 +433,22 @@ var Synch = {
 				    }				    	
 				    
 				    // Subscribed in Thunderbird but not in Feedly
-				    let domFiltered = domFeedStatus;
-					domFiltered.evaluate("/feeds/feed[id=" + tbSubs[i] + "]", domFeedStatus);
-					let nodeFeed = domFiltered.getElementById("feed");
-					
-			    	// Check whether this feed was previously synchronized. If so, delete locally							
-					if (nodeFeed != null) {
-						let nodeStatus = nodeFeed.getElementsByTagName("status");
-						if (nodeStatus == null || nodeStatus.count != 1) {
+				    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "']";
+				    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+				    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+				    let node = xpathResult.iterateNext();
+				    
+			    	// Check whether this feed was previously synchronized. If so, delete locally				    
+					if (node != null) {
+						let nodeStatus = node.getElementsByTagName("status");
+						if (nodeStatus != null && nodeStatus.length == 1) {
 							nodeStatus = nodeStatus[0];							
-							if (nodeStatus.nodeValue == FEED_LOCALSTATUS_SYNC) {
+							if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
 								// Remove node from Ctrl file DOM
 								domChanged = true;
-								domFeedStatus.removeChild(nodeFeed);								
+								domFeedStatus.removeChild(node);								
 								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
 							else
@@ -456,8 +457,8 @@ var Synch = {
 						}
 						else
 							log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
-									" Ctrl file may be corrupted 1");					
-					}
+									" Ctrl file may be corrupted 1");						
+					}		
 					
 					// Not synchronized. Add to Feedly
 					else {								
@@ -521,7 +522,7 @@ var Synch = {
 					req.setRequestHeader(getPref("tokenParam"), tokenAccess);
 					req.onload = function (e) {
 						if (e.currentTarget.readyState == 4) {
-							log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Status: " +
+							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
 									e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
 							
 							// Remove from Ctrl file and DOM
@@ -539,9 +540,9 @@ var Synch = {
 						}			
 					};
 					req.onerror = function (error) {		
-						log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Error: " + error);
+						log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
 					};
-					log("Synch.Update. Svr=1 TB=0 Ctrl=2. Remove from Feedly. Url: " + fullUrl);
+					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
 					req.send(null);
 				}
 				
@@ -551,7 +552,7 @@ var Synch = {
 					for each (let fldCurCat in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 						if (fldCurCat.prettiestName == categoryName) {							
 							fldCategory = fldCurCat;
-							log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Category found: " + categoryName);
+							log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
 							break;
 						}					
 					}
@@ -559,7 +560,7 @@ var Synch = {
 						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
                         	createLocalSubfolder(categoryName);
 						fldCategory = rootFolder.getChildNamed(categoryName);
-						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Creating category: " + categoryName);
+						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 					}						
 					
 					// Create feed folder and subscribe
@@ -570,11 +571,11 @@ var Synch = {
 					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
 						FeedUtils.updateFolderFeedUrl(fldFeed, feedId, false);
 						FeedUtils.addFeed(feedId, feedName, fldFeed);
-						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Add to TB. Url: " + feedId + " Name: " + feedName);
+						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
 					else
 					{
-						log("Synch.Update. Svr=1 TB=0 Ctrl=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
+						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 						continue;						
 					}														
 					
