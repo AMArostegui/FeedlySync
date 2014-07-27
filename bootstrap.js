@@ -447,8 +447,8 @@ var Synch = {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
 								// Remove node from Ctrl file DOM
-								domChanged = true;
-								domFeedStatus.removeChild(node);								
+								domChanged = true;								
+								node.parentNode.removeChild(node);
 								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
 							else

@@ -20,10 +20,7 @@
 		<status>1</status>
 		<id>http://www.kirainet.com/feed/</id>
 	</feed>
-	<feed>
-		<status>1</status>
-		<id>http://www.eurowon.com/feeds/posts/default</id>
-	</feed>
+	
 	<feed>
 		<status>1</status>
 		<id>http://alt1040.com/feed/</id>
@@ -68,10 +65,7 @@
 		<status>1</status>
 		<id>http://feeds.feedburner.com/LasReglasEnLaEconomia</id>
 	</feed>
-	<feed>
-		<status>1</status>
-		<id>http://www.fedeablogs.net/economia/?feed=rss2</id>
-	</feed>
+	
 	<feed>
 		<status>1</status>
 		<id>http://blogs.ec.europa.eu/eu-careers.info/feed/</id>
