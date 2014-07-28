@@ -528,15 +528,6 @@ var Synch = {
 							// Remove from Ctrl file and DOM
 							domChanged = true;
 							node.parentNode.removeChild(node);						
-							let strDom = domFeedStatus;
-							let fileFeedStatus = FileUtils.getFile("ProfD",
-									["extensions", addonId, "data", "feeds.xml"], false);								
-							let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-							let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-							                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-							converter.charset = "UTF-8";
-							let inStream = converter.convertToInputStream(strDom);
-							NetUtil.asyncCopy(inStream, outStream);							
 						}			
 					};
 					req.onerror = function (error) {		
