@@ -472,12 +472,12 @@ var Synch = {
 						let jsonSubscribe = "{\n";
 						jsonSubscribe += "\t\"categories\" : [\n";
 						jsonSubscribe += "\t\t{\n";
-						jsonSubscribe += "\t\t\t\"id\" : \"user/" + getPref("userId") + 
-										"/category/" + fldCategory.prettiestName + "\"\n";
-						jsonSubscribe += "\t\t\t\"label\" : " + fldCategory.prettiestName + "/category/" + + "\n";
-						jsonSubscribe += "\t\t},\n";
+						jsonSubscribe += "\t\t\t\"id\" : \"user/" + userId + 
+										"/category/" + fldCategory.prettiestName + "\",\n";
+						jsonSubscribe += "\t\t\t\"label\" : \"" + fldCategory.prettiestName + "\"\n";
+						jsonSubscribe += "\t\t}\n";
 						jsonSubscribe += "\t],\n";
-						jsonSubscribe += "\t\"id\" : \"feed/" + tbSubs[i] + "\"\n";
+						jsonSubscribe += "\t\"id\" : \"feed/" + tbSubs[i] + "\",\n";
 						jsonSubscribe += "\t\"title\" : \"" + fldName.prettiestName + "\"\n";
 						jsonSubscribe += "}";						
 						req.onload = function (e) {
