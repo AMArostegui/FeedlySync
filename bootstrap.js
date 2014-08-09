@@ -337,6 +337,22 @@ var Synch = {
 		});		
 	},
 	
+	WriteStatusFile : function() {		
+	    let addonId = "FeedlySync@AMArostegui";
+	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
+        					.createInstance(Components.interfaces.nsIDOMSerializer);	    
+		let strDom = domSerializer.serializeToString(domFeedStatus);
+		log("Synch.WriteStatusFile. Status XML = " + strDom);
+		let fileFeedStatus = FileUtils.getFile("ProfD",
+				["extensions", addonId, "data", "feeds.xml"], false);								
+		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
+		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+		converter.charset = "UTF-8";
+		let inStream = converter.convertToInputStream(strDom);
+		NetUtil.asyncCopy(inStream, outStream);		
+	},
+	
 	GetFeedlySubs : function() {
 		log("Synch.GetFeedlySubs");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
@@ -386,7 +402,7 @@ var Synch = {
 		
 		const FEED_LOCALSTATUS_SYNC = 1;
 		const FEED_LOCALSTATUS_DEL = 2;
-		let domChanged = false;
+		let writeDom = false;
 		
 		// TODO: Hay que ver qué se hace con los uncategorized
 		// First pass: Thunderbird subscriptions
@@ -447,7 +463,7 @@ var Synch = {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
 								// Remove node from Ctrl file DOM
-								domChanged = true;								
+								writeDom = true;								
 								node.parentNode.removeChild(node);
 								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
@@ -501,6 +517,7 @@ var Synch = {
 		
 		// Second pass: Feedly subscriptions.
 		// After first pass, remaining categories are guaranteed not to be present on Thunderbird
+		let unsuscribe = [];
 	    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 	        let feed = feedlySubs[subIdx];
 	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix	        	        
@@ -516,25 +533,9 @@ var Synch = {
 				if (node != null) {					
 					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("subsOp") + "/") +
 						encodeURIComponent(feed.id);
-					let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-								.createInstance(Components.interfaces.nsIXMLHttpRequest);					
-					req.open("DELETE", fullUrl, true);
-					req.setRequestHeader(getPref("tokenParam"), tokenAccess);
-					req.onload = function (e) {
-						if (e.currentTarget.readyState == 4) {
-							log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
-									e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
-							
-							// Remove from Ctrl file and DOM
-							domChanged = true;
-							node.parentNode.removeChild(node);						
-						}			
-					};
-					req.onerror = function (error) {		
-						log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);
-					};
-					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + fullUrl);
-					req.send(null);
+					
+					// Just save the Id of the feed I want to unsuscribe. Will be processed later
+					unsuscribe.push( { feedId : fullUrl, domNode : node } );					
 				}
 				
 				// Feed not synchronized. Add to Thunderbird
@@ -571,7 +572,7 @@ var Synch = {
 					}														
 					
 					// Add to Ctrl File DOM
-					domChanged = true;
+					writeDom = true;
 					let nodeFeed = domFeedStatus.createElement("feed");
 					let nodeStatus = domFeedStatus.createElement("status");
 					nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
@@ -585,20 +586,37 @@ var Synch = {
 	        }
 	    }
 	    
-	    // Save Ctrl File
-	    if (domChanged) {
-		    let addonId = "FeedlySync@AMArostegui";
-		    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
-	        					.createInstance(Components.interfaces.nsIDOMSerializer);	    
-			let strDom = domSerializer.serializeToString(domFeedStatus);
-			let fileFeedStatus = FileUtils.getFile("ProfD",
-					["extensions", addonId, "data", "feeds.xml"], false);								
-			let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-			let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-			                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-			converter.charset = "UTF-8";
-			let inStream = converter.convertToInputStream(strDom);
-			NetUtil.asyncCopy(inStream, outStream);	    	
-	    }
+	    // Save Ctrl File for synchronous operations
+	    if (writeDom && unsuscribe.length <= 0)	    	
+	    	Synch.WriteStatusFile();	    
+	    
+	    // Now that we know how many feeds we want to remove, we can update the status file after the last one	    
+	    let processed = 0;
+	    for (let i = 0; i < unsuscribe.length; i++) {
+			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+			.createInstance(Components.interfaces.nsIXMLHttpRequest);					
+			req.open("DELETE", unsuscribe[i].feedId, true);
+			req.setRequestHeader(getPref("tokenParam"), tokenAccess);
+			req.onload = function (e) {
+				if (e.currentTarget.readyState == 4) {
+					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
+							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
+					
+					let node = unsuscribe[processed].domNode; 
+					node.parentNode.removeChild(node);					
+					if (processed == unsuscribe.length - 1)
+						Synch.WriteStatusFile();
+					processed++;
+				}			
+			};
+			req.onerror = function (error) {		
+				log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);				
+				if (processed == unsuscribe.length - 1)
+					Synch.WriteStatusFile();
+				processed++;
+			};
+			log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + unsuscribe[i].feedId);
+			req.send(null);	    	
+	    }	    
 	},
 };
