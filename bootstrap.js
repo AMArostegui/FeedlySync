@@ -43,7 +43,7 @@ const PREFS = {
 	cliIdPar : "client_id",
 	cliIdVal : "sandbox",
 	cliSecPar : "client_secret",
-	cliSecVal : "ES3R6KCEG46BW9MYD332",
+	cliSecVal : "YDRYI5E8OP2JKXYSDW79",
 	redirPar : "redirect_uri",
 	redirVal : "http://localhost:8080",
 	scopePar : "scope",
@@ -513,9 +513,9 @@ var Synch = {
 			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
 			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
 			    let node = xpathResult.iterateNext();	        	
-				if (node != null) {
-					let fullUrl = getPref("baseSslUrl") + getPref("subsOp") + "/:" + feedId;
-					fullUrl = encodeURI(fullUrl);
+				if (node != null) {					
+					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("subsOp") + "/") +
+						encodeURIComponent(feed.id);
 					let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 								.createInstance(Components.interfaces.nsIXMLHttpRequest);					
 					req.open("DELETE", fullUrl, true);
