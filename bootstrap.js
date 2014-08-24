@@ -16,11 +16,65 @@
  *
  */
 
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const fileMenuitemID = "menu_SyncItem";
+
+const PREF_BRANCH = "extensions.FeedlySync.";
+const PREFS = {
+	// Global preferences
+	log : false,
+	locale : Cc["@mozilla.org/chrome/chrome-registry;1"].getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global"),	
+	baseUrl : "http://sandbox.feedly.com",
+	baseSslUrl : "https://sandbox.feedly.com",
+	
+	//Authentication preferences
+	"Auth.getCodeOp" : "/v3/auth/auth",
+	"Auth.getTokenOp" : "/v3/auth/token",
+	"Auth.redirSetCode" : "",				 // "/feedlySetCode"
+	"Auth.redirSetToken" : "", 			 // "/feedlySetToken"
+	"Auth.redirGetCode" : "/addOnGetCode",
+	"Auth.redirGetToken" : "/addOnGetToken",
+
+	"Auth.resTypePar" : "response_type",
+	"Auth.resTypeVal" : "code",
+	"Auth.cliIdPar" : "client_id",
+	"Auth.cliIdVal" : "sandbox",
+	"Auth.cliSecPar" : "client_secret",
+	"Auth.cliSecVal" : "YDRYI5E8OP2JKXYSDW79",
+	"Auth.redirPar" : "redirect_uri",
+	"Auth.redirVal" : "http://localhost:8080",
+	"Auth.scopePar" : "scope",
+	"Auth.scopeVal" : "https://cloud.feedly.com/subscriptions",
+	"Auth.statePar" : "state",
+	"Auth.codePar" : "code",
+	"Auth.grantTypePar" : "grant_type",
+	"Auth.grantTypeVal" : "authorization_code",
+
+	"Auth.domainGoogle" : "accounts.google.com",
+	"Auth.domainTwitter" : "twitterState",
+	"Auth.domainLive" : "login.live.com",
+	"Auth.domainFacebook" : "www.facebook.com",
+	"Auth.domainRedir" : "localhost",
+
+	"Auth.retryMax" : 20,
+	"Auth.delayFirst" : 3000,
+	"Auth.delayRetry1" : 3000,
+	"Auth.delayRetry2" : 6000,
+	
+	"Auth.tokenAccess" : "",
+	"Auth.tokenRefresh" : "",
+	"Auth.userId" : "",
+	"Auth.expiresIn" : 0,	
+	
+	// Synchronizing preferences	
+	"Synch.tokenParam" : "Authorization",
+	"Synch.subsOp" : "/v3/subscriptions",
+	"Synch.accountKey" : "server3",
+	"Synch.downloadOnly" : false,
+};
 
 // BEGIN: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
@@ -66,11 +120,10 @@ var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 var app = Cc["@mozilla.org/steel/application;1"].
 	getService(Components.interfaces.steelIApplication);
 var win = null;
-var locale = Cc["@mozilla.org/chrome/chrome-registry;1"].
-	getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global");
 
 include("includes/l10n.js");
 include("includes/prefs.js");
+include("includes/prefs2.js");
 
 function install(data) {
 }
@@ -80,7 +133,8 @@ function uninstall() {
 
 function startup(data, reason) {
 	l10n(addon, "FeedlySync.properties");
-	unload(l10n.unload);	
+	unload(l10n.unload);
+	setDefaultPrefs();
 	watchWindows(main, "mail:3pane");
 }
 
@@ -104,7 +158,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef) {
 
 	let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");	
 	menuItemSync.setAttribute("id", fileMenuitemID);
-	menuItemSync.setAttribute("label", _("synchronize", locale));
+	menuItemSync.setAttribute("label", _("synchronize", getPref("locale")));
 	menuItemSync.addEventListener("command", synchronize, true);
 	
 	let menuItemRef = doc.getElementById(strMenuItemRef);
@@ -120,4 +174,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef) {
 }
 
 function syncTBFeedly() {
+	app.console.log(getPref("Auth.getCodeOp"));
+	app.console.log(getPref("locale"));
+	setPref("culo", "mierda");
 }
