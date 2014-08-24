@@ -39,45 +39,39 @@
  */
 
 function getPref(key, aDefault) {
-	// Cache the prefbranch after first use
-	if (getPref.branch == null)
-		getPref.branch = Services.prefs.getBranch(PREF_BRANCH);
+  // Cache the prefbranch after first use
+  if (getPref.branch == null)
+    getPref.branch = Services.prefs.getBranch(PREF_BRANCH);
 
-	var prefType = getPref.branch.getPrefType(key);
+  var prefType = getPref.branch.getPrefType(key);
 
-	// underlying preferences object throws an exception if pref doesn't exist
-	if (prefType == getPref.branch.PREF_INVALID)
-		return aDefault;
+  // underlying preferences object throws an exception if pref doesn't exist
+  if (prefType == getPref.branch.PREF_INVALID)
+    return aDefault;
 
-	// Figure out what type of pref to fetch
-	switch (typeof PREFS[key]) {
-	case "boolean":
-		return getPref.branch.getBoolPref(key);
-	case "number":
-		return getPref.branch.getIntPref(key);
-	case "string":
-		return getPref.branch.getCharPref(key);
-	}
-	return null;
+  // Figure out what type of pref to fetch
+  switch (typeof PREFS[key]) {
+    case "boolean":
+      return getPref.branch.getBoolPref(key);
+    case "string":
+      return getPref.branch.getCharPref(key);
+  }
+  return null;
 }
 
 /**
  * Initialize default preferences specified in PREFS
  */
 function setDefaultPrefs() {
-	let branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
-	branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
-	for (let[key, val] in Iterator(PREFS)) {
-		switch (typeof val) {
-		case "boolean":
-			branch.setBoolPref(key, val);
-			break;
-		case "number":
-			branch.setIntPref(key, val);
-			break;
-		case "string":
-			branch.setCharPref(key, val);
-			break;
-		}
-	}
+  let branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
+  for (let [key, val] in Iterator(PREFS)) {
+    switch (typeof val) {
+      case "boolean":
+        branch.setBoolPref(key, val);
+        break;
+      case "string":
+        branch.setCharPref(key, val);
+        break;
+    }
+  }
 }
