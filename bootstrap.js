@@ -121,9 +121,15 @@ var app = Cc["@mozilla.org/steel/application;1"].
 	getService(Components.interfaces.steelIApplication);
 var win = null;
 
+function log(str) {
+	if (getPref("log"))
+		app.console.log(str);
+}
+
 include("includes/l10n.js");
 include("includes/prefs.js");
-include("includes/prefs2.js");
+include("src/auth.js");
+include("src/synch.js");
 
 function install(data) {
 }
@@ -174,7 +180,5 @@ function addMenuItem(strMenuPopup, strMenuItemRef) {
 }
 
 function syncTBFeedly() {
-	app.console.log(getPref("Auth.getCodeOp"));
-	app.console.log(getPref("locale"));
-	setPref("culo", "mierda");
+	Auth.Init();
 }

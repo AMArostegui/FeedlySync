@@ -53,6 +53,8 @@ function getPref(key, aDefault) {
   switch (typeof PREFS[key]) {
     case "boolean":
       return getPref.branch.getBoolPref(key);
+    case "number":
+    	return getPref.branch.getIntPref(key);      
     case "string":
       return getPref.branch.getCharPref(key);
   }
@@ -69,9 +71,25 @@ function setDefaultPrefs() {
       case "boolean":
         branch.setBoolPref(key, val);
         break;
+      case "number":
+    	branch.setIntPref(key, val);
+    	break;        
       case "string":
         branch.setCharPref(key, val);
         break;
     }
+  }
+}
+
+//Function taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
+function setPref(aKey, aVal) {
+  switch (typeof(aVal)) {
+    case "string":
+      var ss = Cc["@mozilla.org/supports-string;1"]
+          .createInstance(Ci.nsISupportsString);
+      ss.data = aVal;
+      Services.prefs.getBranch(PREF_BRANCH)
+          .setComplexValue(aKey, Ci.nsISupportsString, ss);
+      break;
   }
 }
