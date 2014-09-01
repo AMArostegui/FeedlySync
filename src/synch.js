@@ -1,6 +1,8 @@
+Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/mailServices.js");
+Cu.import("resource:///modules/FeedUtils.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 
@@ -247,30 +249,44 @@ var Synch = {
 				}
 				
 				// Feed not synchronized. Add to Thunderbird
-				else {					
-					let fldCategory = null;
-					for each (let fldCurCat in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
-						if (fldCurCat.prettiestName == categoryName) {							
-							fldCategory = fldCurCat;
-							log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
-							break;
-						}					
-					}
+				else {
+					// Create category if neccesary
+					let fldCategory;
+					try {
+						fldCategory = rootFolder.getChildNamed(categoryName);
+					} catch (ex) {
+						fldCategory = null;
+					}					
 					if (fldCategory == null) {
 						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
                         	createLocalSubfolder(categoryName);
 						fldCategory = rootFolder.getChildNamed(categoryName);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
-					}						
+					}
+					else
+						log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
 					
-					// Create feed folder and subscribe
-					let feedName = feed.title;
-					fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
-                		createLocalSubfolder(feedName);
-					let fldFeed = fldCategory.getChildNamed(feedName);					
+					// Create feed folder
+					let feedName = feed.title;					
+					let fldFeed;
+					try {
+						fldFeed = fldCategory.getChildNamed(feedName);						
+					} catch (ex) {
+						fldFeed = null;
+					}
+					if (fldFeed == null) {
+						fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
+                			createLocalSubfolder(feedName);
+						fldFeed = fldCategory.getChildNamed(feedName);						
+					}
+					
+					// Subscribe					
 					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
-						FeedUtils.updateFolderFeedUrl(fldFeed, feedId, false);
-						FeedUtils.addFeed(feedId, feedName, fldFeed);
+						let id = FeedUtils.rdf.GetResource(feedId);
+						let feedAux = new Feed(id, fldFeed.server);
+						feedAux.folder = fldFeed;
+						feedAux.title = feedName;
+						FeedUtils.addFeed(feedAux);
 						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
 					else

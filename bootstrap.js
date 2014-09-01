@@ -129,7 +129,6 @@ function log(str) {
 include("includes/l10n.js");
 include("includes/prefs.js");
 include("src/auth.js");
-include("src/synch.js");
 
 function install(data) {
 }
