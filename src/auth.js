@@ -47,7 +47,7 @@ var Auth = {
 					tokenAccess = jsonResponse.access_token;
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
-					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin"));
+					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
 					
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
@@ -172,7 +172,7 @@ var Auth = {
 					setPref("Auth.tokenRefresh", tokenRefresh);
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
-					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin"));
+					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
 					
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
