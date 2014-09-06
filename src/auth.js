@@ -13,24 +13,65 @@ function sessionId() {
 
 var Auth = {		
 	Init : function () {
-		if (!this.FromDisk()) {			
-			var userGuid = sessionId();
-			this.stateVal = encodeURI(userGuid);
+		if (!this.Resume(true)) {			
 			this.GetCode();			
 		}
-		else
-			Synch.Init();
-	},	
+	},
+	
+	tokenAccess : "",
+	tokenRefresh : "",
+	userId : "",
+	expiresIn : 0,	
 		
 	// Step 1: Try to load authentication information locally
-	FromDisk : function () {
-		tokenAccess = "";
-		tokenRefresh = "";
-		userId = "";
-		expiresIn = 0;
+	Resume : function (synch) {
+		tokenRefresh = getPref("Auth.tokenRefresh");
+		if (tokenRefresh == "")
+			return false;
 		
-		// TODO: Load from disk...
-		return false;
+		log("Auth.Resume");		
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+        		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let fullUrl = getPref("baseSslUrl") + getPref("Auth.getTokenOp") + "?" +
+		getPref("Auth.refreshTokenPar") + "=" + tokenRefresh + "&" +
+		getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
+		getPref("Auth.cliSecPar") + "=" + getPref("Auth.cliSecVal") + "&" +
+		getPref("Auth.grantTypePar") + "=" + getPref("Auth.refreshTokenPar");
+		fullUrl = encodeURI(fullUrl);
+		req.open("POST", fullUrl, true);
+		req.onload = function (e) {
+			if (e.currentTarget.readyState == 4) {
+				log("Auth.Resume.OnLoad. Status: " + e.currentTarget.status +
+						" Response Text: " + e.currentTarget.responseText);
+				if (e.currentTarget.status == 200) {
+					let jsonResponse = JSON.parse(e.currentTarget.responseText);
+					tokenAccess = jsonResponse.access_token;
+					userId = jsonResponse.id;
+					expiresIn = jsonResponse.expires_in * 1000;
+					expiresIn = Math.round(expiresIn * 0.80);
+					
+					// Set timer to renew access token before expiration
+					let renewInterval = win.setInterval(function() {
+						win.clearInterval(renewInterval);
+						log("Auth.Resume. Renew access token");
+						Auth.Resume(false);			
+					}, expiresIn);					
+					
+					log("Auth.Resume: Got access token");
+					if (synch)
+						Synch.Init();
+				}
+				else {
+					this.GetCode();
+				}					
+			}
+		};
+		req.onerror = function(error) {		
+			log("Auth.Resume. Error: " + error);
+		};
+		log("Auth.Resume. Url: " + fullUrl);
+		req.send(null);		
+		return true;
 	},
 	
 	stateVal : "",
@@ -39,6 +80,9 @@ var Auth = {
 	// Step 2: Get authentication code
 	// 2-a: Feedly Request
 	GetCode : function () {
+		let userGuid = sessionId();
+		this.stateVal = encodeURI(userGuid);
+		
 		let fullUrl = getPref("baseUrl") + getPref("Auth.getCodeOp") + "?" +					
 						getPref("Auth.resTypePar") + "=" + getPref("Auth.resTypeVal") + "&" +						 
 						getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
@@ -126,8 +170,18 @@ var Auth = {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					tokenAccess = jsonResponse.access_token;
 					tokenRefresh = jsonResponse.refresh_token;
+					setPref("Auth.tokenRefresh", tokenRefresh);
 					userId = jsonResponse.id;
-					expiresIn = jsonResponse.expires_in;
+					expiresIn = jsonResponse.expires_in * 1000;
+					expiresIn = Math.round(expiresIn * 0.80);
+					
+					// Set timer to renew access token before expiration
+					let renewInterval = win.setInterval(function() {
+						win.clearInterval(renewInterval);
+						log("Auth.GetTokens. Renew access token");
+						Auth.Resume(false);			
+					}, expiresIn);					
+					
 					log("Auth.GetTokens: Sucessfully authenticated");
 					Synch.Init();
 				}

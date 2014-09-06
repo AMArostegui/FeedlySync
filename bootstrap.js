@@ -52,6 +52,7 @@ const PREFS = {
 	"Auth.codePar" : "code",
 	"Auth.grantTypePar" : "grant_type",
 	"Auth.grantTypeVal" : "authorization_code",
+	"Auth.refreshTokenPar" : "refresh_token",	
 
 	"Auth.domainGoogle" : "accounts.google.com",
 	"Auth.domainTwitter" : "twitterState",
@@ -64,7 +65,6 @@ const PREFS = {
 	"Auth.delayRetry1" : 3000,
 	"Auth.delayRetry2" : 6000,
 	
-	"Auth.tokenAccess" : "",
 	"Auth.tokenRefresh" : "",
 	"Auth.userId" : "",
 	"Auth.expiresIn" : 0,	
@@ -179,5 +179,8 @@ function addMenuItem(strMenuPopup, strMenuItemRef) {
 }
 
 function syncTBFeedly() {
-	Auth.Init();
+	if (Auth.tokenAccess == "")
+		Auth.Init();
+	else
+		Synch.Init();
 }
