@@ -24,15 +24,15 @@ var Auth = {
 		
 	// Step 1: Try to load authentication information locally
 	Resume : function (synch) {
-		tokenRefresh = getPref("Auth.tokenRefresh");
-		if (tokenRefresh == "")
+		this.tokenRefresh = getPref("Auth.tokenRefresh");
+		if (this.tokenRefresh == "")
 			return false;
 		
 		log("Auth.Resume");		
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = getPref("baseSslUrl") + getPref("Auth.getTokenOp") + "?" +
-		getPref("Auth.refreshTokenPar") + "=" + tokenRefresh + "&" +
+		getPref("Auth.refreshTokenPar") + "=" + this.tokenRefresh + "&" +
 		getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
 		getPref("Auth.cliSecPar") + "=" + getPref("Auth.cliSecVal") + "&" +
 		getPref("Auth.grantTypePar") + "=" + getPref("Auth.refreshTokenPar");
@@ -44,7 +44,7 @@ var Auth = {
 						" Response Text: " + e.currentTarget.responseText);
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
-					tokenAccess = jsonResponse.access_token;
+					this.tokenAccess = jsonResponse.access_token;
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
@@ -167,9 +167,9 @@ var Auth = {
 						" Response Text: " + e.currentTarget.responseText);
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
-					tokenAccess = jsonResponse.access_token;
-					tokenRefresh = jsonResponse.refresh_token;
-					setPref("Auth.tokenRefresh", tokenRefresh);
+					this.tokenAccess = jsonResponse.access_token;
+					this.tokenRefresh = jsonResponse.refresh_token;
+					setPref("Auth.tokenRefresh", this.tokenRefresh);
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
