@@ -67,7 +67,7 @@ const PREFS = {
 	
 	"Auth.tokenRefresh" : "",
 	"Auth.userId" : "",
-	"Auth.expiresIn" : 0,	
+	"Auth.expiringMargin" : 0.90,	
 	
 	// Synchronizing preferences	
 	"Synch.tokenParam" : "Authorization",

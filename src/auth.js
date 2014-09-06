@@ -21,7 +21,6 @@ var Auth = {
 	tokenAccess : "",
 	tokenRefresh : "",
 	userId : "",
-	expiresIn : 0,	
 		
 	// Step 1: Try to load authentication information locally
 	Resume : function (synch) {
@@ -47,8 +46,8 @@ var Auth = {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					tokenAccess = jsonResponse.access_token;
 					userId = jsonResponse.id;
-					expiresIn = jsonResponse.expires_in * 1000;
-					expiresIn = Math.round(expiresIn * 0.80);
+					let expiresIn = jsonResponse.expires_in * 1000;
+					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin"));
 					
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
@@ -172,8 +171,8 @@ var Auth = {
 					tokenRefresh = jsonResponse.refresh_token;
 					setPref("Auth.tokenRefresh", tokenRefresh);
 					userId = jsonResponse.id;
-					expiresIn = jsonResponse.expires_in * 1000;
-					expiresIn = Math.round(expiresIn * 0.80);
+					let expiresIn = jsonResponse.expires_in * 1000;
+					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin"));
 					
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
