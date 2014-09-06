@@ -70,7 +70,7 @@ var Synch = {
 		let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
 		fullUrl = encodeURI(fullUrl);
 		req.open("GET", fullUrl, true);
-		req.setRequestHeader(getPref("Synch.tokenParam"), tokenAccess);
+		req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
 				log("Synch.GetFeedlySubs. Status: " + e.currentTarget.status +
@@ -193,7 +193,7 @@ var Synch = {
 						let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 									.createInstance(Components.interfaces.nsIXMLHttpRequest);
 						req.open("POST", fullUrl, true);
-						req.setRequestHeader(getPref("Synch.tokenParam"), tokenAccess);
+						req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 						req.setRequestHeader("Content-Type", "application/json");
 						let jsonSubscribe = "{\n";
 						jsonSubscribe += "\t\"categories\" : [\n";
@@ -320,7 +320,7 @@ var Synch = {
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);					
 			req.open("DELETE", unsuscribe[i].feedId, true);
-			req.setRequestHeader(getPref("Synch.tokenParam"), tokenAccess);
+			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
 					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
