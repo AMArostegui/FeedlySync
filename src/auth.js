@@ -44,7 +44,7 @@ var Auth = {
 						" Response Text: " + e.currentTarget.responseText);
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
-					this.tokenAccess = jsonResponse.access_token;
+					Auth.tokenAccess = jsonResponse.access_token;
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
@@ -167,9 +167,9 @@ var Auth = {
 						" Response Text: " + e.currentTarget.responseText);
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
-					this.tokenAccess = jsonResponse.access_token;
-					this.tokenRefresh = jsonResponse.refresh_token;
-					setPref("Auth.tokenRefresh", this.tokenRefresh);
+					Auth.tokenAccess = jsonResponse.access_token;
+					Auth.tokenRefresh = jsonResponse.refresh_token;
+					setPref("Auth.tokenRefresh", Auth.tokenRefresh);
 					userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
