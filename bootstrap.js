@@ -20,7 +20,6 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
-const fileMenuitemID = "menu_SyncItem";
 
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {

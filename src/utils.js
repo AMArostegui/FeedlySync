@@ -49,6 +49,8 @@ var Log = {
 	}
 }
 
+const fileMenuitemID = "menu_SyncItem";
+
 function addMenuItem(strMenuPopup, strMenuItemRef, callback) {	
 	var doc = win.document;
 
