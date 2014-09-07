@@ -20,18 +20,28 @@ var Log = {
 					
 					let addonId = "FeedlySync@AMArostegui";
 					this.File =
-						FileUtils.getFile("ProfD", ["extensions", addonId, "data", logFile], false);
+						FileUtils.getFile("ProfD", ["extensions", addonId, "data", "logs", logFile], false);
 					if (!this.File.exists())
 						this.File.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 				}
 				
+				let now = new Date();
+				let hh = now.getHours();
+				if (hh < 10)
+					hh = "0" + hh;
+				let mm = now.getMinutes();
+				if (mm < 10)
+					mm = "0" + mm;
+				let ss = now.getSeconds();
+				if (ss < 10)
+					ss = "0" + ss;				
+				
 				let outStream = FileUtils.openFileOutputStream(this.File, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
 				let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
 				                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-				converter.charset = "UTF-8";
-				let now = new Date();
+				converter.charset = "UTF-8";				
 				let inStream = converter.convertToInputStream(
-						now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + " " + str + "\r\n");
+						hh + ":" + mm + ":" + ss + " " + str + "\r\n");
 				NetUtil.asyncCopy(inStream, outStream);				
 				break;
 			}		
