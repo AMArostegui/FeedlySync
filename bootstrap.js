@@ -21,63 +21,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-const PREF_BRANCH = "extensions.FeedlySync.";
-const PREFS = {
-	// Global preferences	
-	locale : Cc["@mozilla.org/chrome/chrome-registry;1"].getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global"),	
-	baseUrl : "http://sandbox.feedly.com",
-	baseSslUrl : "https://sandbox.feedly.com",
-	
-	// Log preferences	
-	"Log.Active" : false,
-	"Log.Output" : 0,	
-	
-	//Authentication preferences
-	"Auth.getCodeOp" : "/v3/auth/auth",
-	"Auth.getTokenOp" : "/v3/auth/token",
-	"Auth.redirSetCode" : "",				 // "/feedlySetCode"
-	"Auth.redirSetToken" : "", 			 // "/feedlySetToken"
-	"Auth.redirGetCode" : "/addOnGetCode",
-	"Auth.redirGetToken" : "/addOnGetToken",
-
-	"Auth.resTypePar" : "response_type",
-	"Auth.resTypeVal" : "code",
-	"Auth.cliIdPar" : "client_id",
-	"Auth.cliIdVal" : "sandbox",
-	"Auth.cliSecPar" : "client_secret",
-	"Auth.cliSecVal" : "YDRYI5E8OP2JKXYSDW79",
-	"Auth.redirPar" : "redirect_uri",
-	"Auth.redirVal" : "http://localhost:8080",
-	"Auth.scopePar" : "scope",
-	"Auth.scopeVal" : "https://cloud.feedly.com/subscriptions",
-	"Auth.statePar" : "state",
-	"Auth.codePar" : "code",
-	"Auth.grantTypePar" : "grant_type",
-	"Auth.grantTypeVal" : "authorization_code",
-	"Auth.refreshTokenPar" : "refresh_token",	
-
-	"Auth.domainGoogle" : "accounts.google.com",
-	"Auth.domainTwitter" : "twitterState",
-	"Auth.domainLive" : "login.live.com",
-	"Auth.domainFacebook" : "www.facebook.com",
-	"Auth.domainRedir" : "localhost",
-
-	"Auth.retryMax" : 20,
-	"Auth.delayFirst" : 3000,
-	"Auth.delayRetry1" : 3000,
-	"Auth.delayRetry2" : 6000,
-	
-	"Auth.tokenRefresh" : "",
-	"Auth.userId" : "",
-	"Auth.expiringMargin" : 90,	
-	
-	// Synchronizing preferences	
-	"Synch.tokenParam" : "Authorization",
-	"Synch.subsOp" : "/v3/subscriptions",
-	"Synch.account" : "",
-	"Synch.downloadOnly" : false,
-};
-
 // BEGIN: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
 (function(global) {
@@ -125,6 +68,7 @@ var win = null;
 
 include("src/utils.js");
 include("includes/l10n.js");
+include("src/fsprefs.js");
 include("includes/prefs.js");
 include("src/auth.js");
 
