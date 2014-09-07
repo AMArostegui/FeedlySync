@@ -15,12 +15,13 @@ var Synch = {
 	domFeedStatus : null,
 	
 	ReadStatusFile : function() {
-		Log.WriteLn("Synch.ReadStatusFile");
 		domFeedStatus = null;
-		
+		let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+			.createInstance(Components.interfaces.nsIDOMParser);
 		let addonId = "FeedlySync@AMArostegui";
 		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);
-		if (!fileFeedStatus.exists()) {			
+		if (!fileFeedStatus.exists()) {
+			Log.WriteLn("Synch.ReadStatusFile. File not found. Creating");
 			fileFeedStatus.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);			
 			let strDom = "<?xml version=\"1.0\"?>";
 			strDom += "<feeds>";		
@@ -30,21 +31,22 @@ var Synch = {
 			                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
 			converter.charset = "UTF-8";
 			let inStream = converter.convertToInputStream(strDom);
-			NetUtil.asyncCopy(inStream, outStream);			
-		}			
-		
-		NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
-			if (!Components.isSuccessCode(status)) {
-				Log.WriteLn("Synch.ReadStatusFile. Error reading file");
-				return;
-			}
-			let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-			Log.WriteLn("Synch.ReadStatusFile. Status XML = " + xmlFeedStatus);
-			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-            			 .createInstance(Components.interfaces.nsIDOMParser);
-			domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
-			Synch.GetFeedlySubs();
-		});		
+			NetUtil.asyncCopy(inStream, outStream);
+			domFeedStatus = parser.parseFromString(strDom, "text/xml");
+			Synch.GetFeedlySubs();			
+		}
+		else {
+			NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
+				if (!Components.isSuccessCode(status)) {
+					Log.WriteLn("Synch.ReadStatusFile. Error reading file");
+					return;
+				}
+				let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+				Log.WriteLn("Synch.ReadStatusFile. Readed XML = " + xmlFeedStatus);
+				domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
+				Synch.GetFeedlySubs();
+			});			
+		}		
 	},
 	
 	WriteStatusFile : function() {		
