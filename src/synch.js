@@ -92,23 +92,36 @@ var Synch = {
 		req.send(null);		
 	},
 	
-	// Synchronize Thunderbird and Feedly	
-	Update : function (feedlySubs) {		
-		// Get the folder's server we're synchronizing
+	GetRootFolder : function() {
 		let selServer = null;
+		let accountName = getPref("Synch.account");
 		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
 			let server = account.incomingServer;
 			if (server) {
 				if ("rss" == server.type &&
-					server.key == getPref("Synch.accountKey")) {
+					server.prettyName == accountName) {
 					selServer = server;
 					break;
 				}
 			}
 		}		
-		if (selServer == null)
-			return;				
+		if (selServer == null) {
+			Log.WriteLn("Synch.GetRootFolder. No server found. Account = " + accountName);
+			return null;			
+		}							
 		let rootFolder = selServer.rootFolder;
+		if (rootFolder == null) {
+			Log.WriteLn("Synch.GetRootFolder. No root folder. Account = " + accountName);
+			return null;			
+		}		
+		Log.WriteLn("Synch.GetRootFolder. Retrived root folder. Account = " + accountName);			
+		return rootFolder;
+	},
+	
+	// Synchronize Thunderbird and Feedly	
+	Update : function (feedlySubs) {		
+		// Get the folder's server we're synchronizing
+		let rootFolder = this.GetRootFolder();
 		if (rootFolder == null)
 			return;
 		

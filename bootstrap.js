@@ -75,7 +75,7 @@ const PREFS = {
 	// Synchronizing preferences	
 	"Synch.tokenParam" : "Authorization",
 	"Synch.subsOp" : "/v3/subscriptions",
-	"Synch.accountKey" : "server3",
+	"Synch.account" : "",
 	"Synch.downloadOnly" : false,
 };
 
