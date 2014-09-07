@@ -48,3 +48,36 @@ var Log = {
 		}
 	}
 }
+
+function addMenuItem(strMenuPopup, strMenuItemRef, callback) {	
+	var doc = win.document;
+
+	function removeMenuItem() {
+		var menuitem = doc.getElementById(fileMenuitemID);
+		menuitem && menuitem.parentNode.removeChild(menuitem);
+	}
+	removeMenuItem();
+
+	let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");	
+	menuItemSync.setAttribute("id", fileMenuitemID);
+	menuItemSync.setAttribute("label", _("synchronize", getPref("locale")));
+	menuItemSync.addEventListener("command", synchronize, true);
+	
+	let menuItemRef = doc.getElementById(strMenuItemRef);
+	if (menuItemRef == null) {
+		Log.WriteLn("addMenuItem. Could not find menu item: " + strMenuItemRef);
+		return;		
+	}
+	let menuPopup = doc.getElementById(strMenuPopup)
+	if (menuPopup == null) {
+		Log.WriteLn("addMenuItem. Could not find menu popup: " + strMenuPopup);
+		return;		
+	}		
+	menuPopup.insertBefore(menuItemSync, menuItemRef);	
+	
+	function synchronize() {
+		callback();		
+	}
+
+	unload(removeMenuItem, win);
+}

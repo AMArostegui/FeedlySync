@@ -148,33 +148,7 @@ function shutdown(data, reason) {
 
 function main(window) {
 	win = window;
-	addMenuItem("taskPopup", "sanitizeHistory");
-}
-
-function addMenuItem(strMenuPopup, strMenuItemRef) {	
-	var doc = win.document;
-
-	function removeMenuItem() {
-		var menuitem = doc.getElementById(fileMenuitemID);
-		menuitem && menuitem.parentNode.removeChild(menuitem);
-	}
-	removeMenuItem();
-
-	let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");	
-	menuItemSync.setAttribute("id", fileMenuitemID);
-	menuItemSync.setAttribute("label", _("synchronize", getPref("locale")));
-	menuItemSync.addEventListener("command", synchronize, true);
-	
-	let menuItemRef = doc.getElementById(strMenuItemRef);
-	let menuPopup = doc.getElementById(strMenuPopup);
-	let menuItemInserted = menuPopup.insertBefore(menuItemSync, menuItemRef);	
-	
-	function synchronize() {
-		// include(theAddOn, "src/synchronize.js");
-		syncTBFeedly();		
-	}
-
-	unload(removeMenuItem, win);
+	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
 }
 
 function syncTBFeedly() {
