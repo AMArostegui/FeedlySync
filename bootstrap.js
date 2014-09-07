@@ -24,11 +24,14 @@ const fileMenuitemID = "menu_SyncItem";
 
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
-	// Global preferences
-	log : false,
+	// Global preferences	
 	locale : Cc["@mozilla.org/chrome/chrome-registry;1"].getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global"),	
 	baseUrl : "http://sandbox.feedly.com",
 	baseSslUrl : "https://sandbox.feedly.com",
+	
+	// Log preferences	
+	"Log.Active" : false,
+	"Log.Output" : 0,	
 	
 	//Authentication preferences
 	"Auth.getCodeOp" : "/v3/auth/auth",
@@ -121,11 +124,7 @@ var app = Cc["@mozilla.org/steel/application;1"].
 	getService(Components.interfaces.steelIApplication);
 var win = null;
 
-function log(str) {
-	if (getPref("log"))
-		app.console.log(str);
-}
-
+include("src/utils.js");
 include("includes/l10n.js");
 include("includes/prefs.js");
 include("src/auth.js");

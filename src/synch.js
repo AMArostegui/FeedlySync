@@ -15,7 +15,7 @@ var Synch = {
 	domFeedStatus : null,
 	
 	ReadStatusFile : function() {
-		log("Synch.ReadStatusFile");
+		Log.WriteLn("Synch.ReadStatusFile");
 		domFeedStatus = null;
 		
 		let addonId = "FeedlySync@AMArostegui";
@@ -35,11 +35,11 @@ var Synch = {
 		
 		NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
 			if (!Components.isSuccessCode(status)) {
-				log("Synch.ReadStatusFile. Error reading file");
+				Log.WriteLn("Synch.ReadStatusFile. Error reading file");
 				return;
 			}
 			let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-			log("Synch.ReadStatusFile. Status XML = " + xmlFeedStatus);
+			Log.WriteLn("Synch.ReadStatusFile. Status XML = " + xmlFeedStatus);
 			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
             			 .createInstance(Components.interfaces.nsIDOMParser);
 			domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
@@ -52,7 +52,7 @@ var Synch = {
 	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
         					.createInstance(Components.interfaces.nsIDOMSerializer);	    
 		let strDom = domSerializer.serializeToString(domFeedStatus);
-		log("Synch.WriteStatusFile. Status XML = " + strDom);
+		Log.WriteLn("Synch.WriteStatusFile. Status XML = " + strDom);
 		let fileFeedStatus = FileUtils.getFile("ProfD",
 				["extensions", addonId, "data", "feeds.xml"], false);								
 		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
@@ -64,7 +64,7 @@ var Synch = {
 	},
 	
 	GetFeedlySubs : function() {
-		log("Synch.GetFeedlySubs");
+		Log.WriteLn("Synch.GetFeedlySubs");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		.createInstance(Components.interfaces.nsIXMLHttpRequest);		
 		let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
@@ -73,7 +73,7 @@ var Synch = {
 		req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				log("Synch.GetFeedlySubs. Status: " + e.currentTarget.status +
+				Log.WriteLn("Synch.GetFeedlySubs. Status: " + e.currentTarget.status +
 						" Response Text: " + e.currentTarget.responseText);
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
@@ -84,9 +84,9 @@ var Synch = {
 			}			
 		};
 		req.onerror = function (error) {		
-			log("Synch.GetFeedlySubs. Error: " + error);
+			Log.WriteLn("Synch.GetFeedlySubs. Error: " + error);
 		};
-		log("Synch.GetFeedlySubs. Url: " + fullUrl);
+		Log.WriteLn("Synch.GetFeedlySubs. Url: " + fullUrl);
 		req.send(null);		
 	},
 	
@@ -134,7 +134,7 @@ var Synch = {
 				        
 				        // Keep in mind "feed/" prefix
 				        if (feed.id.substring(0, 5) != "feed/") {
-				        	log("Synch.Update. Missing 'feed/' in feed identifier");
+				        	Log.WriteLn("Synch.Update. Missing 'feed/' in feed identifier");
 				        	continue;
 				        }				        
 				        let feedId = feed.id.substring(5, feed.id.length); 					        					        
@@ -175,14 +175,14 @@ var Synch = {
 								// Remove node from Ctrl file DOM
 								writeDom = true;								
 								node.parentNode.removeChild(node);
-								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
+								Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
 							else
-								log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
+								Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
 										" Ctrl file may be corrupted 2");							
 						}
 						else
-							log("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
+							Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
 									" Ctrl file may be corrupted 1");						
 					}		
 					
@@ -208,14 +208,14 @@ var Synch = {
 						jsonSubscribe += "}";						
 						req.onload = function (e) {
 							if (e.currentTarget.readyState == 4) {
-								log("Synch.Update. Svr=0 TB=1. Add to Feedly. Status: " + e.currentTarget.status +
+								Log.WriteLn("Synch.Update. Svr=0 TB=1. Add to Feedly. Status: " + e.currentTarget.status +
 										" Response Text: " + e.currentTarget.responseText);
 							}			
 						};
 						req.onerror = function (error) {		
-							log("Synch.Update. Svr=0 TB=1. Add to Feedly. Error: " + error);
+							Log.WriteLn("Synch.Update. Svr=0 TB=1. Add to Feedly. Error: " + error);
 						};
-						log("Synch.Update. Svr=0 TB=1. Add to Feedly. Url: " + fullUrl);
+						Log.WriteLn("Synch.Update. Svr=0 TB=1. Add to Feedly. Url: " + fullUrl);
 						req.send(jsonSubscribe);
 					}				
 					
@@ -261,10 +261,10 @@ var Synch = {
 						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
                         	createLocalSubfolder(categoryName);
 						fldCategory = rootFolder.getChildNamed(categoryName);
-						log("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
+						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 					}
 					else
-						log("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
+						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
 					
 					// Create feed folder
 					let feedName = feed.title;					
@@ -287,11 +287,11 @@ var Synch = {
 						feedAux.folder = fldFeed;
 						feedAux.title = feedName;
 						FeedUtils.addFeed(feedAux);
-						log("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
+						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 					}
 					else
 					{
-						log("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
+						Log.WriteLn("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 						continue;						
 					}														
 					
@@ -323,7 +323,7 @@ var Synch = {
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
-					log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
+					Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
 							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
 					
 					let node = unsuscribe[processed].domNode; 
@@ -334,12 +334,12 @@ var Synch = {
 				}			
 			};
 			req.onerror = function (error) {		
-				log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);				
+				Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);				
 				if (processed == unsuscribe.length - 1)
 					Synch.WriteStatusFile();
 				processed++;
 			};
-			log("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + unsuscribe[i].feedId);
+			Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + unsuscribe[i].feedId);
 			req.send(null);	    	
 	    }	    
 	},
