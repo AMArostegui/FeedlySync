@@ -18,8 +18,8 @@ var Synch = {
 		domFeedStatus = null;
 		let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
 			.createInstance(Components.interfaces.nsIDOMParser);
-		let addonId = "FeedlySync@AMArostegui";
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", addonId, "data", "feeds.xml"], false);
+		let id = addonId;
+		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
 		if (!fileFeedStatus.exists()) {
 			Log.WriteLn("Synch.ReadStatusFile. File not found. Creating");
 			fileFeedStatus.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);			
@@ -50,13 +50,13 @@ var Synch = {
 	},
 	
 	WriteStatusFile : function() {		
-	    let addonId = "FeedlySync@AMArostegui";
+	    let id = addonId;
 	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
         					.createInstance(Components.interfaces.nsIDOMSerializer);	    
 		let strDom = domSerializer.serializeToString(domFeedStatus);
 		Log.WriteLn("Synch.WriteStatusFile. Status XML = " + strDom);
 		let fileFeedStatus = FileUtils.getFile("ProfD",
-				["extensions", addonId, "data", "feeds.xml"], false);								
+				["extensions", id, "data", "feeds.xml"], false);								
 		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
 		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
 		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);

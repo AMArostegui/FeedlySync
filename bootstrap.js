@@ -65,6 +65,7 @@ var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 var app = Cc["@mozilla.org/steel/application;1"].
 	getService(Components.interfaces.steelIApplication);
 var win = null;
+var addonId = "FeedlySync@AMArostegui";
 
 include("src/utils.js");
 include("includes/l10n.js");

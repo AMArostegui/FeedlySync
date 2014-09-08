@@ -18,9 +18,9 @@ var Log = {
 					    mm = "0" + mm;					
 					let logFile = today.getFullYear() + mm + dd + ".log";
 					
-					let addonId = "FeedlySync@AMArostegui";
+					let id = addonId;
 					this.File =
-						FileUtils.getFile("ProfD", ["extensions", addonId, "data", "logs", logFile], false);
+						FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
 					if (!this.File.exists())
 						this.File.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 				}
