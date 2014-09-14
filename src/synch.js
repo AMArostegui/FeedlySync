@@ -118,6 +118,99 @@ var Synch = {
 		return rootFolder;
 	},
 	
+	UnsuscribeFeedly : function(unsuscribe, message) {
+	    // Update the status file after the last one
+	    let processed = 0;
+	    for (let i = 0; i < unsuscribe.length; i++) {
+			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+				.createInstance(Components.interfaces.nsIXMLHttpRequest);					
+			req.open("DELETE", unsuscribe[i].feedId, true);
+			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
+			req.onload = function (e) {
+				if (e.currentTarget.readyState == 4) {
+					Log.WriteLn(message + " Remove from Feedly. Status: " +
+							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
+					
+					let node = unsuscribe[processed].domNode; 
+					node.parentNode.removeChild(node);					
+					if (processed == unsuscribe.length - 1)
+						Synch.WriteStatusFile();
+					processed++;
+				}			
+			};
+			req.onerror = function (error) {		
+				Log.WriteLn(message + " Remove from Feedly. Error: " + error);
+				
+				// Unable to unsuscribe. Mark feed as deleted and it will be removed in the future.
+				let node = unsuscribe[processed].domNode; 
+				let statusNode = node.getElementById("status");
+				statusNode.nodeValue = FEED_LOCALSTATUS_DEL;				
+				if (processed == unsuscribe.length - 1)
+					Synch.WriteStatusFile();
+				processed++;
+			};
+			Log.WriteLn(message + " Remove from Feedly. Url: " + unsuscribe[i].feedId);
+			req.send(null);	    	
+	    }		
+	},
+	
+	OnItemRemoved : function(parentItem, item) {
+		Log.WriteLn("Synch.OnItemRemoved");
+		let deletedFeedFldrs = [];				
+		let isFeedFolder = !item instanceof Ci.nsIMsgFolder;
+		if (isFeedFolder) {
+			let folders = gFolderTreeView.getSelectedFolders();
+			deletedFeedFldrs.push(folders[0]);			
+		}			
+		else {
+			for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
+				deletedFeedFldrs.push(folder);				
+			}			
+		}
+		
+		
+		for (let j = 0; j < deletedFeedFldrs.length; j++) {
+			let deletedFolder = deletedFeedFldrs[j];
+			let unsuscribe = [];
+			
+			let tbSubs = FeedUtils.getFeedUrlsInFolder(deletedFolder.name);
+			if (tbSubs == null) {
+				Log.WriteLn("Synch.OnItemRemoved. No Feeds on Feed Folder?")
+				return;				
+			}			
+						
+			for (let i = 0; i < tbSubs.length; i++) {
+				if (tbSubs[i] == "")
+					continue;				
+				
+			    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "]";
+			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+			    let node = xpathResult.iterateNext();	        	
+				if (node != null) {					
+					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
+						encodeURIComponent("feed/" + tbSubs[i]);					
+					unsuscribe.push( { feedId : fullUrl, domNode : node } );					
+				}
+				else
+					Log.WriteLn("Synch.OnItemRemoved. Deleted feed not in status file.");			
+			}				
+		}
+		
+		this.UnsuscribeFeedly(unsuscribe, "Synch.OnItemRemoved. ")
+	},
+	
+	AddFolderListener : function() {
+		Log.WriteLn("Synch.AddFolderListener");
+		let notifyFlags = Ci.nsIFolderListener.removed;
+		MailServices.mailSession.AddFolderListener(this, notifyFlags);				
+	},
+	
+	RemoveFolderListener : function() {
+		Log.WriteLn("Synch.RemoveFolderListener");		
+		MailServices.mailSession.RemoveFolderListener(this);
+	},
+	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
 		// Get the folder's server we're synchronizing
@@ -133,7 +226,7 @@ var Synch = {
 		// First pass: Thunderbird subscriptions
 		for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 			for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
-				tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
+				let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
 				if (tbSubs == null)
 					continue;
 
@@ -328,34 +421,7 @@ var Synch = {
 	    // Save Ctrl File for synchronous operations
 	    if (writeDom && unsuscribe.length <= 0)	    	
 	    	Synch.WriteStatusFile();	    
-	    
-	    // Now that we know how many feeds we want to remove, we can update the status file after the last one	    
-	    let processed = 0;
-	    for (let i = 0; i < unsuscribe.length; i++) {
-			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-			.createInstance(Components.interfaces.nsIXMLHttpRequest);					
-			req.open("DELETE", unsuscribe[i].feedId, true);
-			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
-			req.onload = function (e) {
-				if (e.currentTarget.readyState == 4) {
-					Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Status: " +
-							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
-					
-					let node = unsuscribe[processed].domNode; 
-					node.parentNode.removeChild(node);					
-					if (processed == unsuscribe.length - 1)
-						Synch.WriteStatusFile();
-					processed++;
-				}			
-			};
-			req.onerror = function (error) {		
-				Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Error: " + error);				
-				if (processed == unsuscribe.length - 1)
-					Synch.WriteStatusFile();
-				processed++;
-			};
-			Log.WriteLn("Synch.Update. Svr=1 TB=0. Remove from Feedly. Url: " + unsuscribe[i].feedId);
-			req.send(null);	    	
-	    }	    
+
+	    this.UnsuscribeFeedly(unsuscribe, "Synch.Update. Svr=1 TB=0.");	    
 	},
 };

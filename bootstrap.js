@@ -83,10 +83,12 @@ function startup(data, reason) {
 	l10n(addon, "FeedlySync.properties");
 	unload(l10n.unload);
 	setDefaultPrefs();
+	Synch.AddFolderListener();
 	watchWindows(main, "mail:3pane");
 }
 
 function shutdown(data, reason) {
+	Synch.RemoveFolderListener();
 	unload();
 }
 
@@ -96,6 +98,7 @@ function main(window) {
 }
 
 function syncTBFeedly() {
+	
 	if (Auth.tokenAccess == "")
 		Auth.Init();
 	else
