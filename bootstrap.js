@@ -97,8 +97,7 @@ function main(window) {
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
 }
 
-function syncTBFeedly() {
-	
+function syncTBFeedly() {	
 	if (Auth.tokenAccess == "")
 		Auth.Init();
 	else

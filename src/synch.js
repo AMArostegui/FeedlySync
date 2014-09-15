@@ -155,41 +155,43 @@ var Synch = {
 	},
 	
 	OnItemRemoved : function(parentItem, item) {
-		Log.WriteLn("Synch.OnItemRemoved");
-		let deletedFeedFldrs = [];				
-		let isFeedFolder = !item instanceof Ci.nsIMsgFolder;
-		if (isFeedFolder) {
-			let folders = gFolderTreeView.getSelectedFolders();
-			deletedFeedFldrs.push(folders[0]);			
-		}			
-		else {
-			for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
-				deletedFeedFldrs.push(folder);				
-			}			
+		if (!(item instanceof Ci.nsIMsgFolder))
+			return;
+		if (parentItem == null) {
+			Log.WriteLn("Synch.OnItemRemoved. Parent is null. ???");
+			return;			
 		}
+		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, false))
+			return;			
 		
-		
-		for (let j = 0; j < deletedFeedFldrs.length; j++) {
-			let deletedFolder = deletedFeedFldrs[j];
-			let unsuscribe = [];
-			
-			let tbSubs = FeedUtils.getFeedUrlsInFolder(deletedFolder.name);
-			if (tbSubs == null) {
-				Log.WriteLn("Synch.OnItemRemoved. No Feeds on Feed Folder?")
-				return;				
-			}			
+		Log.WriteLn("Synch.OnItemRemoved");
+		let deletedFolders = [];
+		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Server, false)) {
+			Log.WriteLn("Synch.OnItemRemoved. Category folder removed: " + item.prettyName);
+			for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
+				deletedFolders.push(folder);			
+			}	
+		}
+		else {
+			Log.WriteLn("Synch.OnItemRemoved. Feed removed: " + item.prettyName);
+			deletedFolders.push(item);			
+		}
+	
+		let unsuscribe = [];	
+		for (let j = 0; j < deletedFolderss.length; j++) {
+			let deletedFolder = deletedFolders[j];
 						
-			for (let i = 0; i < tbSubs.length; i++) {
-				if (tbSubs[i] == "")
+			for (let i = 0; i < feeds.length; i++) {
+				if (feeds[i] == "")
 					continue;				
 				
-			    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "]";
+			    let xpathExpression = "/feeds/feed[id='" + feeds[i] + "]";
 			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
 			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
 			    let node = xpathResult.iterateNext();	        	
 				if (node != null) {					
 					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
-						encodeURIComponent("feed/" + tbSubs[i]);					
+						encodeURIComponent("feed/" + feeds[i]);					
 					unsuscribe.push( { feedId : fullUrl, domNode : node } );					
 				}
 				else
