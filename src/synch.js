@@ -158,15 +158,28 @@ var Synch = {
 		if (!(item instanceof Ci.nsIMsgFolder))
 			return;
 		if (parentItem == null) {
-			Log.WriteLn("Synch.OnItemRemoved. Parent is null. ???");
+			Log.WriteLn("Synch.OnItemRemoved. parentItem is null");
 			return;			
 		}
-		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, false))
-			return;			
+		
+		// Check whether this event happened in our target server		
+		let rootFolder = this.GetRootFolder();
+		if (rootFolder == null) {
+			Log.WriteLn("Synch.OnItemRemoved. rootFolder is null");
+			return;
+		}
+		if (parentItem.rootFolder != rootFolder)
+			return;		
+		
+		// Recycle bin: Removing item or emptying
+		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, true))
+			return;
+		if (item.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, false))
+			return;
 		
 		Log.WriteLn("Synch.OnItemRemoved");
 		let deletedFolders = [];
-		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Server, false)) {
+		if (parentItem.rootFolder == parentItem) {
 			Log.WriteLn("Synch.OnItemRemoved. Category folder removed: " + item.prettyName);
 			for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
 				deletedFolders.push(folder);			
@@ -178,8 +191,12 @@ var Synch = {
 		}
 	
 		let unsuscribe = [];	
-		for (let j = 0; j < deletedFolderss.length; j++) {
+		for (let j = 0; j < deletedFolders.length; j++) {
 			let deletedFolder = deletedFolders[j];
+			
+			let feeds = FeedUtils.getFeedUrlsInFolder(deletedFolder);
+			if (feeds == null)
+				continue;
 						
 			for (let i = 0; i < feeds.length; i++) {
 				if (feeds[i] == "")
