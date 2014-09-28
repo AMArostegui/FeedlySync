@@ -1,7 +1,6 @@
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
-Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/FeedUtils.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
@@ -90,33 +89,7 @@ var Synch = {
 		};
 		Log.WriteLn("Synch.GetFeedlySubs. Url: " + fullUrl);
 		req.send(null);		
-	},
-	
-	GetRootFolder : function() {
-		let selServer = null;
-		let accountName = getPref("Synch.account");
-		for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
-			let server = account.incomingServer;
-			if (server) {
-				if ("rss" == server.type &&
-					server.prettyName == accountName) {
-					selServer = server;
-					break;
-				}
-			}
-		}		
-		if (selServer == null) {
-			Log.WriteLn("Synch.GetRootFolder. No server found. Account = " + accountName);
-			return null;			
-		}							
-		let rootFolder = selServer.rootFolder;
-		if (rootFolder == null) {
-			Log.WriteLn("Synch.GetRootFolder. No root folder. Account = " + accountName);
-			return null;			
-		}		
-		Log.WriteLn("Synch.GetRootFolder. Retrived root folder. Account = " + accountName);			
-		return rootFolder;
-	},
+	},	
 	
 	UnsuscribeFeedly : function(unsuscribe, message) {
 	    // Update the status file after the last one
@@ -154,45 +127,20 @@ var Synch = {
 	    }		
 	},
 	
-	OnItemRemoved : function(parentItem, item) {
-		if (!(item instanceof Ci.nsIMsgFolder))
-			return;
-		if (parentItem == null) {
-			Log.WriteLn("Synch.OnItemRemoved. parentItem is null");
-			return;			
-		}
+	OnLocalSubscribe : function(subscribed) {
+		Log.WriteLn("Synch.OnLocalSubscribe: " + subscribed);
+	},	
 		
-		// Check whether this event happened in our target server		
-		let rootFolder = this.GetRootFolder();
-		if (rootFolder == null) {
-			Log.WriteLn("Synch.OnItemRemoved. rootFolder is null");
-			return;
-		}
-		if (parentItem.rootFolder != rootFolder)
-			return;		
-		
-		// Recycle bin: Removing item or emptying
-		if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, true))
-			return;
-		if (item.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, false))
-			return;
-		
-		Log.WriteLn("Synch.OnItemRemoved");
-		let deletedFolders = [];
-		if (parentItem.rootFolder == parentItem) {
-			Log.WriteLn("Synch.OnItemRemoved. Category folder removed: " + item.prettyName);
-			for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
-				deletedFolders.push(folder);			
-			}	
-		}
-		else {
-			Log.WriteLn("Synch.OnItemRemoved. Feed removed: " + item.prettyName);
-			deletedFolders.push(item);			
-		}
+	OnLocalUnsubscribe : function(unsubscribed) {
+		Log.WriteLn("Synch.OnLocalUnsubscribe: " + unsubscribed);
+	},
 	
+	OnLocalDeletedFlds : function(deleted) {
+		Log.WriteLn("Synch.OnLocalDeletedFlds");
+		
 		let unsuscribe = [];	
-		for (let j = 0; j < deletedFolders.length; j++) {
-			let deletedFolder = deletedFolders[j];
+		for (let j = 0; j < deleted.length; j++) {
+			let deletedFolder = deleted[j];
 			
 			let feeds = FeedUtils.getFeedUrlsInFolder(deletedFolder);
 			if (feeds == null)
@@ -216,24 +164,13 @@ var Synch = {
 			}				
 		}
 		
-		this.UnsuscribeFeedly(unsuscribe, "Synch.OnItemRemoved. ")
-	},
-	
-	AddFolderListener : function() {
-		Log.WriteLn("Synch.AddFolderListener");
-		let notifyFlags = Ci.nsIFolderListener.removed;
-		MailServices.mailSession.AddFolderListener(this, notifyFlags);				
-	},
-	
-	RemoveFolderListener : function() {
-		Log.WriteLn("Synch.RemoveFolderListener");		
-		MailServices.mailSession.RemoveFolderListener(this);
+		this.UnsuscribeFeedly(unsuscribe, "Synch.OnItemRemoved. ");
 	},
 	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
 		// Get the folder's server we're synchronizing
-		let rootFolder = this.GetRootFolder();
+		let rootFolder = GetRootFolder();
 		if (rootFolder == null)
 			return;
 		

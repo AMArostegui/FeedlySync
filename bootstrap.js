@@ -68,6 +68,7 @@ var win = null;
 var addonId = "FeedlySync@AMArostegui";
 
 include("src/utils.js");
+include("src/feedevents.js");
 include("includes/l10n.js");
 include("src/fsprefs.js");
 include("includes/prefs.js");
@@ -83,18 +84,18 @@ function startup(data, reason) {
 	l10n(addon, "FeedlySync.properties");
 	unload(l10n.unload);
 	setDefaultPrefs();
-	Synch.AddFolderListener();
 	watchWindows(main, "mail:3pane");
 }
 
 function shutdown(data, reason) {
-	Synch.RemoveFolderListener();
+	FeedEvents.RemoveListener();
 	unload();
 }
 
 function main(window) {
 	win = window;
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
+	FeedEvents.AddListener();
 }
 
 function syncTBFeedly() {	

@@ -1,3 +1,5 @@
+Cu.import("resource:///modules/mailServices.js");
+
 var Log = {
 	File : null,
 	
@@ -47,7 +49,7 @@ var Log = {
 			}		
 		}
 	}
-}
+};
 
 const fileMenuitemID = "menu_SyncItem";
 
@@ -83,3 +85,30 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 
 	unload(removeMenuItem, win);
 }
+
+function GetRootFolder() {
+	let selServer = null;
+	let accountName = getPref("Synch.account");
+	for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
+		let server = account.incomingServer;
+		if (server) {
+			if ("rss" == server.type &&
+				server.prettyName == accountName) {
+				selServer = server;
+				break;
+			}
+		}
+	}		
+	if (selServer == null) {
+		Log.WriteLn("GetRootFolder. No server found. Account = " + accountName);
+		return null;			
+	}							
+	let rootFolder = selServer.rootFolder;
+	if (rootFolder == null) {
+		Log.WriteLn("GetRootFolder. No root folder. Account = " + accountName);
+		return null;			
+	}		
+	Log.WriteLn("GetRootFolder. Retrieved root folder. Account = " + accountName);			
+	return rootFolder;
+}
+
