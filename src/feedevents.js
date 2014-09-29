@@ -1,19 +1,34 @@
+Cu.import("resource:///modules/FeedUtils.jsm");
 include("src/synch.js");
 
-var FeedEvents = {		
+var FeedEvents = {
+		subscriptionsWindow : null,		
+		category : "",
+		
 		SubsWndCmdListener : function(event) {
 			if (event == null || event.target == null)
-				return;
+				return;			
 			
-			feedId = "";			
+			this.category = "";
+		    let sel = this.subscriptionsWindow.mView.selection;
+		    if (sel.count != 1)
+		      return;
+		    let item = this.subscriptionsWindow.mView.getItemAtIndex(sel.currentIndex);
+		    if (!item || item.container)
+		      return;
+		    let feedId = item.url;			
+			
 			switch (event.target.id) {
-				case "addFeed":					
-					Synch.OnLocalSubscribe(feedId);									
-					break;
 				case "removeFeed":
 					Synch.OnLocalUnsubscribe(feedId);
 					break;
 			}		
+		},		
+		
+		FeedDownloadedFnc : function(feed, aErrorCode) {
+			if (aErrorCode == FeedUtils.kNewsBlogSuccess)
+				Synch.OnLocalSubscribe(feed.url, feed.name, this.category);			
+			this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloadedPrimary(feed, aErrorCode);			
 		},
 		
 		retryCount : 0,
@@ -26,14 +41,24 @@ var FeedEvents = {
 			
 			// Wait until subscriptions window is ready to trap its commands
 			this.retryCount = 0;
+			this.subscriptionsWindow = null;
 			let interval = win.setInterval(function() {		
-				let subscriptionsWindow =
+				this.subscriptionsWindow =
 				    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");		
-				if (subscriptionsWindow != null) {
+				if (this.subscriptionsWindow != null) {
 					win.clearInterval(interval);
-					subscriptionsWindow.addEventListener(
-							"command", FeedEvents.SubsWndCmdListener, false);
 					Log.WriteLn("FeedEvents.MainWndCmdListener");
+					
+					// 1) Listener for feed handling commands					
+					this.subscriptionsWindow.addEventListener(
+							"command", FeedEvents.SubsWndCmdListener, false);
+					
+					// 2) To properly respond to addFeed command we need to wait for
+					// download results. Override parent function to achieve this
+					this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloadedPrimary = 
+						this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloaded;
+					this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloaded = 
+						this.FeedDownloadedFnc;										
 				}
 				else if (this.retryCount < 20)
 					this.retryCount++;
