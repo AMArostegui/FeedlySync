@@ -25,12 +25,6 @@ var FeedEvents = {
 			}		
 		},		
 		
-		FeedDownloadedFnc : function(feed, aErrorCode) {
-			if (aErrorCode == FeedUtils.kNewsBlogSuccess)
-				Synch.OnLocalSubscribe(feed.url, feed.name, this.category);			
-			this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloadedPrimary(feed, aErrorCode);			
-		},
-		
 		retryCount : 0,
 		
 		MainWndCmdListener : function(event) {
@@ -55,10 +49,13 @@ var FeedEvents = {
 					
 					// 2) To properly respond to addFeed command we need to wait for
 					// download results. Override parent function to achieve this
-					this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloadedPrimary = 
-						this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloaded;
-					this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback.downloaded = 
-						this.FeedDownloadedFnc;										
+					let feedDownloadCallback = this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback; 
+					feedDownloadCallback.downloadedPrimary = feedDownloadCallback.downloaded;
+					feedDownloadCallback.downloaded = function (feed, aErrorCode) {
+						if (aErrorCode == FeedUtils.kNewsBlogSuccess)
+							Synch.OnLocalSubscribe(feed.url, feed.name, this.category);			
+						feedDownloadCallback.downloadedPrimary(feed, aErrorCode);
+					};										
 				}
 				else if (this.retryCount < 20)
 					this.retryCount++;
