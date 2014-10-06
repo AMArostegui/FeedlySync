@@ -3,28 +3,6 @@ include("src/synch.js");
 
 var FeedEvents = {
 		subscriptionsWindow : null,		
-		category : "",
-		
-		SubsWndCmdListener : function(event) {
-			if (event == null || event.target == null)
-				return;			
-			
-			this.category = "";
-		    let sel = this.subscriptionsWindow.mView.selection;
-		    if (sel.count != 1)
-		      return;
-		    let item = this.subscriptionsWindow.mView.getItemAtIndex(sel.currentIndex);
-		    if (!item || item.container)
-		      return;
-		    let feedId = item.url;			
-			
-			switch (event.target.id) {
-				case "removeFeed":
-					Synch.OnLocalUnsubscribe(feedId);
-					break;
-			}		
-		},		
-		
 		retryCount : 0,
 		
 		MainWndCmdListener : function(event) {
@@ -34,85 +12,85 @@ var FeedEvents = {
 				return;
 			
 			// Wait until subscriptions window is ready to trap its commands
-			this.retryCount = 0;
-			this.subscriptionsWindow = null;
+			FeedEvents.retryCount = 0;
+			FeedEvents.subscriptionsWindow = null;
 			let interval = win.setInterval(function() {		
-				this.subscriptionsWindow =
+				FeedEvents.subscriptionsWindow =
 				    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");		
-				if (this.subscriptionsWindow != null) {
+				if (FeedEvents.subscriptionsWindow != null) {
 					win.clearInterval(interval);
-					Log.WriteLn("FeedEvents.MainWndCmdListener");
+					Log.WriteLn("FeedEvents.MainWndCmdListener");					
 					
-					// 1) Listener for feed handling commands					
-					this.subscriptionsWindow.addEventListener(
-							"command", FeedEvents.SubsWndCmdListener, false);
-					
-					// 2) To properly respond to addFeed command we need to wait for
-					// download results. Override parent function to achieve this
-					let feedDownloadCallback = this.subscriptionsWindow.FeedSubscriptions.mFeedDownloadCallback; 
-					feedDownloadCallback.downloadedPrimary = feedDownloadCallback.downloaded;
-					feedDownloadCallback.downloaded = function (feed, aErrorCode) {
-						if (aErrorCode == FeedUtils.kNewsBlogSuccess)
-							Synch.OnLocalSubscribe(feed.url, feed.name, this.category);			
-						feedDownloadCallback.downloadedPrimary(feed, aErrorCode);
-					};										
+					// Trap OPML import ending
+					let feedSubscriptions = FeedEvents.subscriptionsWindow.FeedSubscriptions; 
+					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinishedPrimary;
+					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
+						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
+						
+						Synch.SrvSubscribe(FeedEvents.subscribed);
+						FeedEvents.subscribed = [];						
+					};
 				}
-				else if (this.retryCount < 20)
-					this.retryCount++;
+				else if (FeedEvents.retryCount < 20)
+					FeedEvents.retryCount++;
 				else
 					win.clearInterval(interval);
 			}, 300);		
 		},
 		
 		OnItemRemoved : function(parentItem, item) {
-			if (!(item instanceof Ci.nsIMsgFolder))
-				return;
-			if (parentItem == null) {
-				Log.WriteLn("FeedEvents.OnItemRemoved. parentItem is null");
-				return;			
-			}
-			
-			// Check whether this event happened in our target server		
-			let rootFolder = GetRootFolder();
-			if (rootFolder == null) {
-				Log.WriteLn("FeedEvents.OnItemRemoved. rootFolder is null");
-				return;
-			}
-			if (parentItem.rootFolder != rootFolder)
-				return;		
-			
-			// Recycle bin: Removing item or emptying
-			if (parentItem.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, true))
-				return;
-			if (item.isSpecialFolder(Ci.nsMsgFolderFlags.Trash, false))
-				return;
-			
-			Log.WriteLn("FeedEvents.OnItemRemoved");
-			let deletedFolders = [];
-			if (parentItem.rootFolder == parentItem) {
-				Log.WriteLn("FeedEvents.OnItemRemoved. Category folder removed: " + item.prettyName);
-				for each (let folder in fixIterator(parentItem.subFolders, Ci.nsIMsgFolder)) {
-					deletedFolders.push(folder);			
-				}	
-			}
-			else {
-				Log.WriteLn("FeedEvents.OnItemRemoved. Feed removed: " + item.prettyName);
-				deletedFolders.push(item);			
-			}
-			
-			Synch.OnLocalDeletedFlds(deletedFolders)
-		},		
+			Log.WriteLn("Synch.OnLocalDeletedFlds");			
+			Synch.SrvUnsubscribe(FeedEvents.unsubscribed);
+			FeedEvents.unsubscribed = [];
+		},
+		
+		subscribed : [],		
+		OnAddFeed : function(aFeed) {
+			if (FeedEvents.subscriptionWindow != null) {
+				let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
+				if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
+					Synch.SrvSubscribe();						
+				else
+					subscribed.push( { feedId : "" , feedName : "", feedCategory : "", domNode : null } );
+			}			
+		},
+		
+		unsubscribed : [],		
+		OnDeleteFeed : function(aId, aServer, aParentFolder) {
+			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
+			if (subsWnd != null)
+				Synch.SrvUnsubscribe();
+			else
+				unsubscribed.push( { feedId : "", domNode : null } );			
+		},
 			
 		AddListener : function() {
-			Log.WriteLn("FeedEvents.AddListener");
-			win.addEventListener("command", this.MainWndCmdListener, false);
+			Log.WriteLn("FeedEvents.AddListener");			
+			
+			// Listen to folder events
 			let notifyFlags = Ci.nsIFolderListener.removed;
-			MailServices.mailSession.AddFolderListener(this, notifyFlags);			
+			MailServices.mailSession.AddFolderListener(this, notifyFlags);
+			
+			// We need to know when user's subscribed/unsuscbrided to a Feed
+			FeedUtils.addFeedPrimary = FeedUtils.addFeed;
+			FeedUtils.addFeed = function(aFeed) {
+				FeedUtils.addFeedPrimary(aFeed);
+				FeedEvents.OnAddFeed(aFeed);				
+			};			
+			FeedUtils.deleteFeedPrimary = FeedUtils.deleteFeed;
+			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {
+				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
+				FeedEvents.OnDeleteFeed(aId, aServer, aParentFolder);				
+			};			
 		},
 
 		RemoveListener : function() {
 			Log.WriteLn("FeedEvents.RemoveListener");
-			win.removeEventListener("command", this.MainWndCmdListener);
 			MailServices.mailSession.RemoveFolderListener(this);
+			
+			FeedUtils.addFeed = FeedUtils.addFeedPrimary;
+			FeedUtils.addFeedPrimary = null;
+			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
+			FeedUtils.deleteFeedPrimary = null;			
 		}	
 	};

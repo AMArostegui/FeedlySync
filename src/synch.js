@@ -146,7 +146,7 @@ var Synch = {
 			req.onerror = function (error) {		
 				Log.WriteLn(message + " Remove from Feedly. Error: " + error);
 				
-				// Unable to unsubscribe. Mark feed as deleted and it will be removed in the future.
+				// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
 				let node = unsuscribe[processed].domNode; 
 				let statusNode = node.getElementById("status");
 				statusNode.nodeValue = FEED_LOCALSTATUS_DEL;				
@@ -157,50 +157,7 @@ var Synch = {
 			Log.WriteLn(message + " Remove from Feedly. Url: " + unsuscribe[i].feedId);
 			req.send(null);	    	
 	    }		
-	},
-	
-	OnLocalSubscribe : function(id, name, category) {
-		Log.WriteLn("Synch.OnLocalSubscribe");
-		//this.SrvSubscribe(id, name, category, "Synch.OnLocalSubscribe. ");
 	},	
-		
-	OnLocalUnsubscribe : function(id) {
-		Log.WriteLn("Synch.OnLocalUnsubscribe");
-		let unsubscribed = [id];		
-		this.SrvUnsubscribe(unsubscribed, "Synch.OnLocalUnsubscribe. ");		
-	},
-	
-	OnLocalDeletedFlds : function(deleted) {
-		Log.WriteLn("Synch.OnLocalDeletedFlds");
-		
-		let unsuscribe = [];	
-		for (let j = 0; j < deleted.length; j++) {
-			let deletedFolder = deleted[j];
-			
-			let feeds = FeedUtils.getFeedUrlsInFolder(deletedFolder);
-			if (feeds == null)
-				continue;
-						
-			for (let i = 0; i < feeds.length; i++) {
-				if (feeds[i] == "")
-					continue;				
-				
-			    let xpathExpression = "/feeds/feed[id='" + feeds[i] + "]";
-			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-			    let node = xpathResult.iterateNext();	        	
-				if (node != null) {					
-					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
-						encodeURIComponent("feed/" + feeds[i]);					
-					unsuscribe.push( { feedId : fullUrl, domNode : node } );					
-				}
-				else
-					Log.WriteLn("Synch.OnItemRemoved. Deleted feed not in status file.");			
-			}				
-		}
-		
-		this.SrvUnsubscribe(unsuscribe, "Synch.OnItemRemoved. ");
-	},
 	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
