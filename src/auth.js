@@ -11,8 +11,8 @@ function sessionId() {
 
 var Auth = {		
 	Init : function () {
-		if (!this.Resume(true)) {			
-			this.GetCode();			
+		if (!Auth.Resume(true)) {			
+			Auth.GetCode();			
 		}
 	},
 	
@@ -22,15 +22,15 @@ var Auth = {
 		
 	// Step 1: Try to load authentication information locally
 	Resume : function (synch) {
-		this.tokenRefresh = getPref("Auth.tokenRefresh");
-		if (this.tokenRefresh == "")
+		Auth.tokenRefresh = getPref("Auth.tokenRefresh");
+		if (Auth.tokenRefresh == "")
 			return false;
 		
 		Log.WriteLn("Auth.Resume");		
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = getPref("baseSslUrl") + getPref("Auth.getTokenOp") + "?" +
-		getPref("Auth.refreshTokenPar") + "=" + this.tokenRefresh + "&" +
+		getPref("Auth.refreshTokenPar") + "=" + Auth.tokenRefresh + "&" +
 		getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
 		getPref("Auth.cliSecPar") + "=" + getPref("Auth.cliSecVal") + "&" +
 		getPref("Auth.grantTypePar") + "=" + getPref("Auth.refreshTokenPar");
@@ -59,7 +59,7 @@ var Auth = {
 						Synch.Init();
 				}
 				else {
-					this.GetCode();
+					Auth.GetCode();
 				}					
 			}
 		};
@@ -78,20 +78,20 @@ var Auth = {
 	// 2-a: Feedly Request
 	GetCode : function () {
 		let userGuid = sessionId();
-		this.stateVal = encodeURI(userGuid);
+		Auth.stateVal = encodeURI(userGuid);
 		
 		let fullUrl = getPref("baseUrl") + getPref("Auth.getCodeOp") + "?" +					
 						getPref("Auth.resTypePar") + "=" + getPref("Auth.resTypeVal") + "&" +						 
 						getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
 						getPref("Auth.redirPar") + "=" + getPref("Auth.redirVal") + getPref("Auth.redirSetCode") + "&" +
 						getPref("Auth.scopePar") + "=" + getPref("Auth.scopeVal") + "&" +
-						getPref("Auth.statePar") + "=" + this.stateVal;
+						getPref("Auth.statePar") + "=" + Auth.stateVal;
 		fullUrl = encodeURI(fullUrl);
 		Log.WriteLn("Auth.GetCode. Url: " +  fullUrl);
-		this.openURLInTab(fullUrl);
+		Auth.openURLInTab(fullUrl);
 		
 		// Wait a few seconds before trying to get results
-		this.retryCount = 0;
+		Auth.retryCount = 0;
 		let startingInterval = win.setInterval(function() {
 			win.clearInterval(startingInterval);
 			Log.WriteLn("Auth.GetCode. Access Redir Server");
@@ -103,7 +103,7 @@ var Auth = {
 	RedirUrlGetCode : function() {		
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		  					.createInstance(Components.interfaces.nsIXMLHttpRequest);		
-		let fullUrl = getPref("Auth.redirVal") + getPref("Auth.redirGetCode") + "?" + getPref("Auth.statePar") + "=" + this.stateVal;
+		let fullUrl = getPref("Auth.redirVal") + getPref("Auth.redirGetCode") + "?" + getPref("Auth.statePar") + "=" + Auth.stateVal;
 		fullUrl = encodeURI(fullUrl)
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
@@ -113,7 +113,7 @@ var Auth = {
 				if (e.currentTarget.status == 200) {					
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);					
 					if (jsonResponse.error == "Success") {
-						this.retryCount = 0;
+						Auth.retryCount = 0;
 						Auth.GetTokens(jsonResponse.code);
 					}
 					else
@@ -126,17 +126,17 @@ var Auth = {
 		req.onerror = function (error) {		
 			Log.WriteLn("Auth.RedirUrlGetCode. Error: " + error);
 		};		
-		Log.WriteLn("Auth.RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + this.retryCount);
-		this.retryCount++;
+		Log.WriteLn("Auth.RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + Auth.retryCount);
+		Auth.retryCount++;
 		req.send(null);	
 	},
 	
 	RetryRedirUrl : function(error) {		
-		if (this.retryCount < getPref("Auth.retryMax")) {
-			let retryDelay = this.retryCount < getPref("Auth.retryMax") / 2 ? getPref("Auth.delayRetry1") : getPref("Auth.delayRetry2");
+		if (Auth.retryCount < getPref("Auth.retryMax")) {
+			let retryDelay = Auth.retryCount < getPref("Auth.retryMax") / 2 ? getPref("Auth.delayRetry1") : getPref("Auth.delayRetry2");
 			let retryInterval = win.setInterval(function() {				
 				win.clearInterval(retryInterval);
-				Log.WriteLn("Auth.RetryRedirUrl. Error: " + error + " Attempt: " + this.retryCount);
+				Log.WriteLn("Auth.RetryRedirUrl. Error: " + error + " Attempt: " + Auth.retryCount);
 				Auth.RedirUrlGetCode();
 			}, retryDelay);
 		}
@@ -155,7 +155,7 @@ var Auth = {
 		getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
 		getPref("Auth.cliSecPar") + "=" + getPref("Auth.cliSecVal") + "&" +
 		getPref("Auth.redirPar") + "=" + getPref("Auth.redirVal") + getPref("Auth.redirSetToken") + "&" +
-		getPref("Auth.statePar") + "=" + this.stateVal + "&" +
+		getPref("Auth.statePar") + "=" + Auth.stateVal + "&" +
 		getPref("Auth.grantTypePar") + "=" + getPref("Auth.grantTypeVal");
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
@@ -193,7 +193,7 @@ var Auth = {
 	
 	// Keep browsing within Thunderbird's tab
 	get _thunderbirdRegExp() {
-			return this._thunderbirdRegExp = new RegExp(getPref("Auth.domainGoogle") +
+			return Auth._thunderbirdRegExp = new RegExp(getPref("Auth.domainGoogle") +
 						"|" + getPref("Auth.domainTwitter") + "|" + getPref("Auth.domainLive") +
 						"|" + getPref("Auth.domainFacebook") + "|" + getPref("Auth.domainRedir"));
 	},
