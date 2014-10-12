@@ -200,7 +200,7 @@ var Synch = {
 		if (rootFolder == null)
 			return;
 		
-		updateOp = true;
+		Synch.updateOp = true;
 		
 		try {
 			// TODO: Hay que ver que se hace con los uncategorized
@@ -370,7 +370,7 @@ var Synch = {
 		    this.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");			
 		}
 		finally {
-			updateOp = false;
+			Synch.updateOp = false;
 		}
 	},
 };
