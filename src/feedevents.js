@@ -34,7 +34,28 @@ var FeedEvents = {
 				else
 					win.clearInterval(interval);
 			}, 300);		
-		},		
+		},
+		
+		// Thunderbird Server, Feed and Folder hierarchy:
+		// Only the first feed of feedname-level folders will be synchronized
+		//		Server1 => Local (Not marked as synchronizable in TB Settings)
+		//		Server2 => Syncronized (Marked)
+		//			Folder2-1, ..., Folder2-N: Category n name => Synchronized
+		//				Feed2-n-1, ..., Feed2-n-K  => Local
+		//				Folder2-n-1, ..., Folder2-n-L: Feed l name => Synchronized
+		//					Feed2-n-l-1 => Synchronized
+		//					Feed2-n-l-2, ..., Feed2-n-l-M => Local
+		//					Folder(...) : All folder in lower levels are local		
+		CheckFolderLevel : function(aParentFolder) {
+			if (aParentFolder == null)
+				return false;
+			let rootFolder = Synch.GetRootFolder();
+			if (rootFolder == null)
+				return false;
+			if (parentItem.rootFolder != rootFolder)
+				return false;
+			return true;			
+		},
 		
 		subscribed : [],	
 		
@@ -45,14 +66,19 @@ var FeedEvents = {
 		},
 		
 		OnAddFeed : function(aFeed) {
-			if (FeedEvents.subscriptionWindow != null) {
-				let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
-				if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
-					Synch.SrvSubscribe( { feedId : "", feedName : "", feedCategory : "" },
-							"FeedEvents.OnAddFeed", true);						
-				else
-					subscribed.push( { feedId : "", feedName : "", feedCategory : "" } );
-			}			
+			if (FeedEvents.subscriptionWindow == null) {
+				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
+				return;				
+			}
+			if (!CheckFolderLevel(aFeed.folder.parent))
+				return;
+				
+			let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
+			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
+				Synch.SrvSubscribe( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" },
+						"FeedEvents.OnAddFeed", true);						
+			else
+				subscribed.push( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" } );			
 		},
 		
 		unsubscribed : [],
@@ -64,11 +90,15 @@ var FeedEvents = {
 		},
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
+			if (!CheckFolderLevel(aParentFolder))
+				return;
+			
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd != null)
-				Synch.SrvUnsubscribe( { feedId : "", domNode : null }, "FeedEvents.OnDeleteFeed" );
+				Synch.SrvUnsubscribe( { feedId : aId, domNode : null },
+						"FeedEvents.OnDeleteFeed" );
 			else
-				unsubscribed.push( { feedId : "", domNode : null } );			
+				unsubscribed.push( { feedId : aId, domNode : null } );			
 		},
 			
 		AddListener : function() {
