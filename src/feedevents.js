@@ -70,7 +70,7 @@ var FeedEvents = {
 				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
 				return;				
 			}
-			if (!CheckFolderLevel(aFeed.folder.parent))
+			if (!FeedEvents.CheckFolderLevel(aFeed.folder.parent))
 				return;
 				
 			let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
@@ -90,7 +90,7 @@ var FeedEvents = {
 		},
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
-			if (!CheckFolderLevel(aParentFolder))
+			if (!FeedEvents.CheckFolderLevel(aParentFolder))
 				return;
 			
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");

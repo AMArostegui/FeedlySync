@@ -4,6 +4,9 @@ Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 
+const FEED_LOCALSTATUS_SYNC = 1;
+const FEED_LOCALSTATUS_DEL = 2;
+
 var Synch = {
 	// Get the user's subscriptions from Feedly
 	Init : function () {
@@ -193,10 +196,7 @@ var Synch = {
 	Update : function (feedlySubs) {		
 		let rootFolder = GetRootFolder();
 		if (rootFolder == null)
-			return;
-		
-		const FEED_LOCALSTATUS_SYNC = 1;
-		const FEED_LOCALSTATUS_DEL = 2;
+			return;		
 		
 		// TODO: Hay que ver que se hace con los uncategorized
 		// First pass: Thunderbird subscriptions
