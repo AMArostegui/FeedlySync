@@ -66,6 +66,8 @@ var FeedEvents = {
 		},
 		
 		OnAddFeed : function(aFeed) {
+			if (Synch.updateOp)
+				return;			
 			if (FeedEvents.subscriptionWindow == null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
 				return;				
@@ -84,12 +86,17 @@ var FeedEvents = {
 		unsubscribed : [],
 		
 		OnItemRemoved : function(parentItem, item) {
+			if (Synch.updateOp)
+				return;
+			
 			Log.WriteLn("Synch.OnItemRemoved");
 			Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
 			FeedEvents.unsubscribed = [];
 		},
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
+			if (Synch.updateOp)
+				return;			
 			if (!FeedEvents.CheckFolderLevel(aParentFolder))
 				return;
 			

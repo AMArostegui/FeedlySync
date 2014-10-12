@@ -132,7 +132,7 @@ var Synch = {
 			jsonSubscribe += "}";						
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
-					Log.WriteLn(message + "Add to Feedly. Status: " + e.currentTarget.status +
+					Log.WriteLn(message + " Add to Feedly. Status: " + e.currentTarget.status +
 							" Response Text: " + e.currentTarget.responseText);
 					Synch.AddFeed2Dom(subscribe[processed].id);
 					if (writeStatusFile && processed == subscribe.length - 1)
@@ -141,12 +141,12 @@ var Synch = {
 				}			
 			};
 			req.onerror = function (error) {		
-				Log.WriteLn(message + "Add to Feedly. Error: " + error);
+				Log.WriteLn(message + " Add to Feedly. Error: " + error);
 				if (writeStatusFile && processed == subscribe.length - 1)
 					Synch.WriteStatusFile();
 				processed++;				
 			};
-			Log.WriteLn(message + "Add to Feedly. Url: " + fullUrl);
+			Log.WriteLn(message + " Add to Feedly. Url: " + fullUrl);
 			req.send(jsonSubscribe);	    
 	    }		
 	},
@@ -190,178 +190,187 @@ var Synch = {
 			Log.WriteLn(message + " Remove from Feedly. Url: " + unsubscribe[i].feedId);
 			req.send(null);	    	
 	    }		
-	},	
+	},
+	
+	updateOp : false,
 	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
 		let rootFolder = GetRootFolder();
 		if (rootFolder == null)
-			return;		
+			return;
 		
-		// TODO: Hay que ver que se hace con los uncategorized
-		// First pass: Thunderbird subscriptions
-		let subscribe = [];
-		for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
-			for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
-				let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
-				if (tbSubs == null)
-					continue;
-
-				for (let i = 0; i < tbSubs.length; i++) {
-					// Why is the first element always empty?
-					if (tbSubs[i] == "")
+		updateOp = true;
+		
+		try {
+			// TODO: Hay que ver que se hace con los uncategorized
+			// First pass: Thunderbird subscriptions
+			let subscribe = [];
+			for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
+				for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
+					let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
+					if (tbSubs == null)
 						continue;
-					
-					// Seek pair feed-category in Feedly					
-					let found = false;						
-				    for (var j = 0; j < feedlySubs.length; j++) {
-				        let feed = feedlySubs[j];
-				        
-				        // Keep in mind "feed/" prefix
-				        if (feed.id.substring(0, 5) != "feed/") {
-				        	Log.WriteLn("Synch.Update. Missing 'feed/' in feed identifier");
-				        	continue;
-				        }				        
-				        let feedId = feed.id.substring(5, feed.id.length); 					        					        
-				        if (feedId == tbSubs[i]) { 					        	
-					        for (var k = 0; k < feed.categories.length; k++) {
-					        	if (feed.categories[k].label == fldCategory.prettiestName) {
-					        		found = true;
-					        		break;
-					        	}					        	
-					        }					        	
-				        }
-				        if (found)
-				        	break;
-				    }
-				    
-				    // Feed-category found on both server and client. Won't be processed in second pass
-				    if (found) { 
-						feedlySubs[j].categories.splice(k, 1);
-						if (feedlySubs[j].categories.length == 0)
-							feedlySubs.splice(j, 1);
-				    	continue;				    	
-				    }				    	
-				    
-				    // Subscribed in Thunderbird but not in Feedly
-				    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "']";
-				    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-				    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-				    let node = xpathResult.iterateNext();
-				    
-			    	// Check whether this feed was previously synchronized. If so, delete locally				    
-					if (node != null) {
-						let nodeStatus = node.getElementsByTagName("status");
-						if (nodeStatus != null && nodeStatus.length == 1) {
-							nodeStatus = nodeStatus[0];							
-							if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-								fldName.parent.propagateDelete(fldName, true, msgWindow);
-								
-								// Remove node from Ctrl file DOM
-								node.parentNode.removeChild(node);
-								Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
+
+					for (let i = 0; i < tbSubs.length; i++) {
+						// Why is the first element always empty?
+						if (tbSubs[i] == "")
+							continue;
+						
+						// Seek pair feed-category in Feedly					
+						let found = false;						
+					    for (var j = 0; j < feedlySubs.length; j++) {
+					        let feed = feedlySubs[j];
+					        
+					        // Keep in mind "feed/" prefix
+					        if (feed.id.substring(0, 5) != "feed/") {
+					        	Log.WriteLn("Synch.Update. Missing 'feed/' in feed identifier");
+					        	continue;
+					        }				        
+					        let feedId = feed.id.substring(5, feed.id.length); 					        					        
+					        if (feedId == tbSubs[i]) { 					        	
+						        for (var k = 0; k < feed.categories.length; k++) {
+						        	if (feed.categories[k].label == fldCategory.prettiestName) {
+						        		found = true;
+						        		break;
+						        	}					        	
+						        }					        	
+					        }
+					        if (found)
+					        	break;
+					    }
+					    
+					    // Feed-category found on both server and client. Won't be processed in second pass
+					    if (found) { 
+							feedlySubs[j].categories.splice(k, 1);
+							if (feedlySubs[j].categories.length == 0)
+								feedlySubs.splice(j, 1);
+					    	continue;				    	
+					    }				    	
+					    
+					    // Subscribed in Thunderbird but not in Feedly
+					    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "']";
+					    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+					    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+					    let node = xpathResult.iterateNext();
+					    
+				    	// Check whether this feed was previously synchronized. If so, delete locally				    
+						if (node != null) {
+							let nodeStatus = node.getElementsByTagName("status");
+							if (nodeStatus != null && nodeStatus.length == 1) {
+								nodeStatus = nodeStatus[0];							
+								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
+									fldName.parent.propagateDelete(fldName, true, msgWindow);
+									
+									// Remove node from Ctrl file DOM
+									node.parentNode.removeChild(node);
+									Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
+								}
+								else
+									Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
+											" Ctrl file may be corrupted 2");							
 							}
 							else
 								Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
-										" Ctrl file may be corrupted 2");							
+										" Ctrl file may be corrupted 1");						
+						}		
+						
+						// Not synchronized. Add to Feedly
+						else {
+							subscribe.push( { feedId : tbSubs[i] , feedName : fldName.prettiestName,
+								feedCategory : fldCategory.prettiestName } );
+						}				
+						
+						// Several feeds for category, just one feed by folder					
+						break;
+					}
+				}				
+			}
+			
+			// Second pass: Feedly subscriptions.
+			// After first pass, remaining categories are guaranteed not to be present on Thunderbird
+			let unsubscribe = [];
+		    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
+		        let feed = feedlySubs[subIdx];
+		        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix	        	        
+		        for (let categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
+		        	let categoryName = feed.categories[categoryIdx].label;
+		        	
+					// Check whether this feed was locally deleted. If so, delete on server
+				    let xpathExpression = "/feeds/feed[id='" + feedId + 
+			    		"' and status=" + FEED_LOCALSTATUS_DEL + "]";
+				    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+				    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+				    let node = xpathResult.iterateNext();	        	
+					if (node != null) {					
+						let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
+							encodeURIComponent(feed.id);
+						
+						// Just save the Id of the feed I want to unsubscribe. Will be processed later
+						unsubscribe.push( { feedId : fullUrl, domNode : node } );					
+					}
+					
+					// Feed not synchronized. Add to Thunderbird
+					else {
+						// Create category if neccesary
+						let fldCategory;
+						try {
+							fldCategory = rootFolder.getChildNamed(categoryName);
+						} catch (ex) {
+							fldCategory = null;
+						}					
+						if (fldCategory == null) {
+							rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
+	                        	createLocalSubfolder(categoryName);
+							fldCategory = rootFolder.getChildNamed(categoryName);
+							Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 						}
 						else
-							Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
-									" Ctrl file may be corrupted 1");						
-					}		
-					
-					// Not synchronized. Add to Feedly
-					else {
-						subscribe.push( { feedId : tbSubs[i] , feedName : fldName.prettiestName,
-							feedCategory : fldCategory.prettiestName } );
-					}				
-					
-					// Several feeds for category, just one feed by folder					
-					break;
-				}
-			}				
+							Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
+						
+						// Create feed folder
+						let feedName = feed.title;					
+						let fldFeed;
+						try {
+							fldFeed = fldCategory.getChildNamed(feedName);						
+						} catch (ex) {
+							fldFeed = null;
+						}
+						if (fldFeed == null) {
+							fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
+	                			createLocalSubfolder(feedName);
+							fldFeed = fldCategory.getChildNamed(feedName);						
+						}
+						
+						// Subscribe					
+						if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
+							let id = FeedUtils.rdf.GetResource(feedId);
+							let feedAux = new Feed(id, fldFeed.server);
+							feedAux.folder = fldFeed;
+							feedAux.title = feedName;
+							FeedUtils.addFeed(feedAux);
+							Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
+						}
+						else
+						{
+							Log.WriteLn("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
+							continue;						
+						}
+						
+						this.AddFeed2Dom(feedId);					
+					}
+		        }
+		    }
+		    
+		    // Save Ctrl File for synchronous operations
+		    if (subscribe.length <= 0 && unsubscribe.length <= 0)
+		    	Synch.WriteStatusFile();
+		    
+		    this.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
+		    this.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");			
 		}
-		
-		// Second pass: Feedly subscriptions.
-		// After first pass, remaining categories are guaranteed not to be present on Thunderbird
-		let unsubscribe = [];
-	    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
-	        let feed = feedlySubs[subIdx];
-	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix	        	        
-	        for (let categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
-	        	let categoryName = feed.categories[categoryIdx].label;
-	        	
-				// Check whether this feed was locally deleted. If so, delete on server
-			    let xpathExpression = "/feeds/feed[id='" + feedId + 
-		    		"' and status=" + FEED_LOCALSTATUS_DEL + "]";
-			    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-			    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-			    let node = xpathResult.iterateNext();	        	
-				if (node != null) {					
-					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
-						encodeURIComponent(feed.id);
-					
-					// Just save the Id of the feed I want to unsubscribe. Will be processed later
-					unsubscribe.push( { feedId : fullUrl, domNode : node } );					
-				}
-				
-				// Feed not synchronized. Add to Thunderbird
-				else {
-					// Create category if neccesary
-					let fldCategory;
-					try {
-						fldCategory = rootFolder.getChildNamed(categoryName);
-					} catch (ex) {
-						fldCategory = null;
-					}					
-					if (fldCategory == null) {
-						rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
-                        	createLocalSubfolder(categoryName);
-						fldCategory = rootFolder.getChildNamed(categoryName);
-						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
-					}
-					else
-						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Category found: " + categoryName);
-					
-					// Create feed folder
-					let feedName = feed.title;					
-					let fldFeed;
-					try {
-						fldFeed = fldCategory.getChildNamed(feedName);						
-					} catch (ex) {
-						fldFeed = null;
-					}
-					if (fldFeed == null) {
-						fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
-                			createLocalSubfolder(feedName);
-						fldFeed = fldCategory.getChildNamed(feedName);						
-					}
-					
-					// Subscribe					
-					if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
-						let id = FeedUtils.rdf.GetResource(feedId);
-						let feedAux = new Feed(id, fldFeed.server);
-						feedAux.folder = fldFeed;
-						feedAux.title = feedName;
-						FeedUtils.addFeed(feedAux);
-						Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
-					}
-					else
-					{
-						Log.WriteLn("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
-						continue;						
-					}
-					
-					this.AddFeed2Dom(feedId);					
-				}
-	        }
-	    }
-	    
-	    // Save Ctrl File for synchronous operations
-	    if (subscribe.length <= 0 && unsubscribe.length <= 0)
-	    	Synch.WriteStatusFile();
-	    
-	    this.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
-	    this.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");
+		finally {
+			updateOp = false;
+		}
 	},
 };
