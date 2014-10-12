@@ -260,7 +260,7 @@ var Synch = {
 							if (nodeStatus != null && nodeStatus.length == 1) {
 								nodeStatus = nodeStatus[0];							
 								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-									fldName.parent.propagateDelete(fldName, true, msgWindow);
+									fldName.parent.propagateDelete(fldName, true, win.msgWindow);
 									
 									// Remove node from Ctrl file DOM
 									node.parentNode.removeChild(node);
