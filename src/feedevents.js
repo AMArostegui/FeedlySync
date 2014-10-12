@@ -26,9 +26,7 @@ var FeedEvents = {
 					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinishedPrimary;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
 						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
-						
-						Synch.SrvSubscribe(FeedEvents.subscribed);
-						FeedEvents.subscribed = [];						
+						FeedEvents.OnImportOPMLFinished();
 					};
 				}
 				else if (FeedEvents.retryCount < 20)
@@ -36,30 +34,39 @@ var FeedEvents = {
 				else
 					win.clearInterval(interval);
 			}, 300);		
+		},		
+		
+		subscribed : [],	
+		
+		OnImportOPMLFinished : function() {
+			Log.WriteLn("FeedEvents.OnImportOPMLFinished");
+			Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
+			FeedEvents.subscribed = [];			
 		},
 		
-		OnItemRemoved : function(parentItem, item) {
-			Log.WriteLn("Synch.OnLocalDeletedFlds");			
-			Synch.SrvUnsubscribe(FeedEvents.unsubscribed);
-			FeedEvents.unsubscribed = [];
-		},
-		
-		subscribed : [],		
 		OnAddFeed : function(aFeed) {
 			if (FeedEvents.subscriptionWindow != null) {
 				let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
 				if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
-					Synch.SrvSubscribe();						
+					Synch.SrvSubscribe( { feedId : "", feedName : "", feedCategory : "" },
+							"FeedEvents.OnAddFeed", true);						
 				else
-					subscribed.push( { feedId : "" , feedName : "", feedCategory : "", domNode : null } );
+					subscribed.push( { feedId : "", feedName : "", feedCategory : "" } );
 			}			
 		},
 		
-		unsubscribed : [],		
+		unsubscribed : [],
+		
+		OnItemRemoved : function(parentItem, item) {
+			Log.WriteLn("Synch.OnItemRemoved");
+			Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
+			FeedEvents.unsubscribed = [];
+		},
+		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd != null)
-				Synch.SrvUnsubscribe();
+				Synch.SrvUnsubscribe( { feedId : "", domNode : null }, "FeedEvents.OnDeleteFeed" );
 			else
 				unsubscribed.push( { feedId : "", domNode : null } );			
 		},

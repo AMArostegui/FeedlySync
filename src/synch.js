@@ -90,55 +90,85 @@ var Synch = {
 		req.send(null);		
 	},
 	
-	SrvSubscribe : function(id, name, category, message) {
-		let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
-		fullUrl = encodeURI(fullUrl);
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-					.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		req.open("POST", fullUrl, true);
-		req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
-		req.setRequestHeader("Content-Type", "application/json");
-		let jsonSubscribe = "{\n";
-		jsonSubscribe += "\t\"categories\" : [\n";
-		jsonSubscribe += "\t\t{\n";
-		jsonSubscribe += "\t\t\t\"id\" : \"user/" + userId + 
-						"/category/" + category + "\",\n";
-		jsonSubscribe += "\t\t\t\"label\" : \"" + category + "\"\n";
-		jsonSubscribe += "\t\t}\n";
-		jsonSubscribe += "\t],\n";
-		jsonSubscribe += "\t\"id\" : \"feed/" + id + "\",\n";
-		jsonSubscribe += "\t\"title\" : \"" + name + "\"\n";
-		jsonSubscribe += "}";						
-		req.onload = function (e) {
-			if (e.currentTarget.readyState == 4) {
-				Log.WriteLn(message + "Add to Feedly. Status: " + e.currentTarget.status +
-						" Response Text: " + e.currentTarget.responseText);
-			}			
-		};
-		req.onerror = function (error) {		
-			Log.WriteLn(message + "Add to Feedly. Error: " + error);
-		};
-		Log.WriteLn(message + "Add to Feedly. Url: " + fullUrl);
-		req.send(jsonSubscribe);		
+	AddFeed2Dom : function(id) {
+		let nodeFeed = domFeedStatus.createElement("feed");
+		let nodeStatus = domFeedStatus.createElement("status");
+		nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
+		let nodeId = domFeedStatus.createElement("id");
+		nodeId.textContent = id;
+		let nodeParent = domFeedStatus.getElementsByTagName("feeds")[0];
+		nodeFeed.appendChild(nodeStatus);
+		nodeFeed.appendChild(nodeId);
+		nodeParent.appendChild(nodeFeed);		
 	},
 	
-	SrvUnsubscribe : function(unsuscribe, message) {
-	    // Update the status file after the last one
+	SrvSubscribe : function(subscribe, message, writeStatusFile) {
+		if (!(Object.prototype.toString.call(subscribe) === "[object Array]")) {
+			subscribe = [].concat(subscribe);
+		}
+
+		let processed = 0;
+		let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
+		fullUrl = encodeURI(fullUrl);		
+	    for (let i = 0; i < subscribe.length; i++) {
+			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+						.createInstance(Components.interfaces.nsIXMLHttpRequest);
+			req.open("POST", fullUrl, true);
+			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
+			req.setRequestHeader("Content-Type", "application/json");
+			let jsonSubscribe = "{\n";
+			jsonSubscribe += "\t\"categories\" : [\n";
+			jsonSubscribe += "\t\t{\n";
+			jsonSubscribe += "\t\t\t\"id\" : \"user/" + subscribe[i].userId + 
+							"/category/" + subscribe[i].category + "\",\n";
+			jsonSubscribe += "\t\t\t\"label\" : \"" + subscribe[i].category + "\"\n";
+			jsonSubscribe += "\t\t}\n";
+			jsonSubscribe += "\t],\n";
+			jsonSubscribe += "\t\"id\" : \"feed/" + subscribe[i].id + "\",\n";
+			jsonSubscribe += "\t\"title\" : \"" + subscribe[i].name + "\"\n";
+			jsonSubscribe += "}";						
+			req.onload = function (e) {
+				if (e.currentTarget.readyState == 4) {
+					Log.WriteLn(message + "Add to Feedly. Status: " + e.currentTarget.status +
+							" Response Text: " + e.currentTarget.responseText);
+					Synch.AddFeed2Dom(subscribe[processed].id);
+					if (writeStatusFile && processed == subscribe.length - 1)
+						Synch.WriteStatusFile();
+					processed++;
+				}			
+			};
+			req.onerror = function (error) {		
+				Log.WriteLn(message + "Add to Feedly. Error: " + error);
+				if (writeStatusFile && processed == subscribe.length - 1)
+					Synch.WriteStatusFile();
+				processed++;				
+			};
+			Log.WriteLn(message + "Add to Feedly. Url: " + fullUrl);
+			req.send(jsonSubscribe);	    
+	    }		
+	},
+	
+	SrvUnsubscribe : function(unsubscribe, message) {
+		if (!(Object.prototype.toString.call(unsubscribe) === "[object Array]")) {
+			unsubscribe = [].concat(unsubscribe);
+		}		
+		
+		// Update the status file when we're done
 	    let processed = 0;
-	    for (let i = 0; i < unsuscribe.length; i++) {
+	    for (let i = 0; i < unsubscribe.length; i++) {
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 				.createInstance(Components.interfaces.nsIXMLHttpRequest);					
-			req.open("DELETE", unsuscribe[i].feedId, true);
+			req.open("DELETE", unsubscribe[i].feedId, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
 					Log.WriteLn(message + " Remove from Feedly (" +
-							(processed + 1) + "/" + unsuscribe.length + "). Status: " +
+							(processed + 1) + "/" + unsubscribe.length + "). Status: " +
 							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
 					
-					let node = unsuscribe[processed].domNode; 
+					let node = unsubscribe[processed].domNode; 
 					node.parentNode.removeChild(node);					
-					if (processed == unsuscribe.length - 1)
+					if (processed == unsubscribe.length - 1)
 						Synch.WriteStatusFile();
 					processed++;
 				}			
@@ -147,31 +177,30 @@ var Synch = {
 				Log.WriteLn(message + " Remove from Feedly. Error: " + error);
 				
 				// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
-				let node = unsuscribe[processed].domNode; 
+				let node = unsubscribe[processed].domNode; 
 				let statusNode = node.getElementById("status");
 				statusNode.nodeValue = FEED_LOCALSTATUS_DEL;				
-				if (processed == unsuscribe.length - 1)
+				if (processed == unsubscribe.length - 1)
 					Synch.WriteStatusFile();
 				processed++;
 			};
-			Log.WriteLn(message + " Remove from Feedly. Url: " + unsuscribe[i].feedId);
+			Log.WriteLn(message + " Remove from Feedly. Url: " + unsubscribe[i].feedId);
 			req.send(null);	    	
 	    }		
 	},	
 	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
-		// Get the folder's server we're synchronizing
 		let rootFolder = GetRootFolder();
 		if (rootFolder == null)
 			return;
 		
 		const FEED_LOCALSTATUS_SYNC = 1;
 		const FEED_LOCALSTATUS_DEL = 2;
-		let writeDom = false;
 		
 		// TODO: Hay que ver que se hace con los uncategorized
 		// First pass: Thunderbird subscriptions
+		let subscribe = [];
 		for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
 			for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
 				let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
@@ -229,7 +258,6 @@ var Synch = {
 								fldName.parent.propagateDelete(fldName, true, msgWindow);
 								
 								// Remove node from Ctrl file DOM
-								writeDom = true;								
 								node.parentNode.removeChild(node);
 								Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 							}
@@ -244,8 +272,8 @@ var Synch = {
 					
 					// Not synchronized. Add to Feedly
 					else {
-						this.SrvSubscribe(tbSubs[i], fldName.prettiestName, fldCategory.prettiestName,
-								"Synch.Update. Svr=0 TB=1. ");						
+						subscribe.push( { feedId : tbSubs[i] , feedName : fldName.prettiestName,
+							feedCategory : fldCategory.prettiestName } );
 					}				
 					
 					// Several feeds for category, just one feed by folder					
@@ -256,7 +284,7 @@ var Synch = {
 		
 		// Second pass: Feedly subscriptions.
 		// After first pass, remaining categories are guaranteed not to be present on Thunderbird
-		let unsuscribe = [];
+		let unsubscribe = [];
 	    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 	        let feed = feedlySubs[subIdx];
 	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix	        	        
@@ -273,8 +301,8 @@ var Synch = {
 					let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
 						encodeURIComponent(feed.id);
 					
-					// Just save the Id of the feed I want to unsuscribe. Will be processed later
-					unsuscribe.push( { feedId : fullUrl, domNode : node } );					
+					// Just save the Id of the feed I want to unsubscribe. Will be processed later
+					unsubscribe.push( { feedId : fullUrl, domNode : node } );					
 				}
 				
 				// Feed not synchronized. Add to Thunderbird
@@ -322,27 +350,18 @@ var Synch = {
 					{
 						Log.WriteLn("Synch.Update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 						continue;						
-					}														
+					}
 					
-					// Add to Ctrl File DOM
-					writeDom = true;
-					let nodeFeed = domFeedStatus.createElement("feed");
-					let nodeStatus = domFeedStatus.createElement("status");
-					nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
-					let nodeId = domFeedStatus.createElement("id");
-					nodeId.textContent = feedId;
-					let nodeParent = domFeedStatus.getElementsByTagName("feeds")[0];
-					nodeFeed.appendChild(nodeStatus);
-					nodeFeed.appendChild(nodeId);
-					nodeParent.appendChild(nodeFeed);					
+					this.AddFeed2Dom(feedId);					
 				}
 	        }
 	    }
 	    
 	    // Save Ctrl File for synchronous operations
-	    if (writeDom && unsuscribe.length <= 0)	    	
-	    	Synch.WriteStatusFile();	    
-
-	    this.SrvUnsubscribe(unsuscribe, "Synch.Update. Svr=1 TB=0.");	    
+	    if (subscribe.length <= 0 && unsubscribe.length <= 0)
+	    	Synch.WriteStatusFile();
+	    
+	    this.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
+	    this.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");
 	},
 };
