@@ -60,7 +60,7 @@ var FeedEvents = {
 		subscribed : [],	
 		
 		OnImportOPMLFinished : function() {
-			Log.WriteLn("FeedEvents.OnImportOPMLFinished");
+			Log.WriteLn("FeedEvents.OnImportOPMLFinished. Count=" + FeedEvents.subscribed.length);
 			Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
 			FeedEvents.subscribed = [];			
 		},
@@ -68,14 +68,14 @@ var FeedEvents = {
 		OnAddFeed : function(aFeed) {
 			if (Synch.updateOp)
 				return;			
-			if (FeedEvents.subscriptionWindow == null) {
+			if (FeedEvents.subscriptionsWindow == null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
 				return;				
 			}
 			if (!FeedEvents.CheckFolderLevel(aFeed.folder.parent))
 				return;
 				
-			let feedSubscriptions = FeedEvents.subscriptionWindow.FeedSubscriptions;
+			let feedSubscriptions = FeedEvents.subscriptionsWindow.FeedSubscriptions;
 			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
 				Synch.SrvSubscribe( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" },
 						"FeedEvents.OnAddFeed", true);						
@@ -89,7 +89,7 @@ var FeedEvents = {
 			if (Synch.updateOp)
 				return;
 			
-			Log.WriteLn("Synch.OnItemRemoved");
+			Log.WriteLn("Synch.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
 			Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
 			FeedEvents.unsubscribed = [];
 		},
