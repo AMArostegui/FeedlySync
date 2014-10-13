@@ -2,7 +2,6 @@ Cu.import("resource:///modules/FeedUtils.jsm");
 include("src/synch.js");
 
 var FeedEvents = {
-		subscriptionsWindow : null,		
 		retryCount : 0,
 		
 		MainWndCmdListener : function(event) {
@@ -13,16 +12,16 @@ var FeedEvents = {
 			
 			// Wait until subscriptions window is ready to trap its commands
 			FeedEvents.retryCount = 0;
-			FeedEvents.subscriptionsWindow = null;
+			let subscriptionsWindow = null;
 			let interval = win.setInterval(function() {		
-				FeedEvents.subscriptionsWindow =
+				subscriptionsWindow =
 				    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");		
-				if (FeedEvents.subscriptionsWindow != null) {
+				if (subscriptionsWindow != null) {
 					win.clearInterval(interval);
-					Log.WriteLn("FeedEvents.MainWndCmdListener");					
-					
+					Log.WriteLn("FeedEvents.MainWndCmdListener");
+				
 					// Trap OPML import ending
-					let feedSubscriptions = FeedEvents.subscriptionsWindow.FeedSubscriptions; 
+					let feedSubscriptions = subscriptionsWindow.FeedSubscriptions; 
 					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinishedPrimary;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
 						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
@@ -67,15 +66,17 @@ var FeedEvents = {
 		
 		OnAddFeed : function(aFeed) {
 			if (Synch.updateOp)
-				return;			
-			if (FeedEvents.subscriptionsWindow == null) {
+				return;
+			let subscriptionsWindow =
+			    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
+			if (subscriptionsWindow == null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
 				return;				
 			}
 			if (!FeedEvents.CheckFolderLevel(aFeed.folder.parent))
 				return;
 				
-			let feedSubscriptions = FeedEvents.subscriptionsWindow.FeedSubscriptions;
+			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
 			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
 				Synch.SrvSubscribe( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" },
 						"FeedEvents.OnAddFeed", true);						
@@ -111,9 +112,12 @@ var FeedEvents = {
 		AddListener : function() {
 			Log.WriteLn("FeedEvents.AddListener");			
 			
-			// Listen to folder events
+			// Folder events listener
 			let notifyFlags = Ci.nsIFolderListener.removed;
 			MailServices.mailSession.AddFolderListener(this, notifyFlags);
+			
+			// Main window command listener
+			win.addEventListener("command", FeedEvents.MainWndCmdListener, false);
 			
 			// We need to know when user's subscribed/unsuscbrided to a Feed
 			FeedUtils.addFeedPrimary = FeedUtils.addFeed;
@@ -131,6 +135,8 @@ var FeedEvents = {
 		RemoveListener : function() {
 			Log.WriteLn("FeedEvents.RemoveListener");
 			MailServices.mailSession.RemoveFolderListener(this);
+			
+			win.removeEventListener("command", FeedEvents.MainWndCmdListener);
 			
 			FeedUtils.addFeed = FeedUtils.addFeedPrimary;
 			FeedUtils.addFeedPrimary = null;
