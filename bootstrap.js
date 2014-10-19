@@ -103,5 +103,5 @@ function syncTBFeedly() {
 	let action = function() {
 		Synch.Init();
 	};
-	Sync.AuthAndRun(action);
+	Synch.AuthAndRun(action);
 }
