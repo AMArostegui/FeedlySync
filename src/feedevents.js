@@ -78,10 +78,10 @@ var FeedEvents = {
 				
 			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
 			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
-				Synch.SrvSubscribe( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" },
+				Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : "" },
 						"FeedEvents.OnAddFeed", true);						
 			else
-				subscribed.push( { feedId : aFeed.url, feedName : aFeed.title, feedCategory : "" } );			
+				subscribed.push( { id : aFeed.url, name : aFeed.title, category : "" } );
 		},
 		
 		unsubscribed : [],
@@ -103,10 +103,10 @@ var FeedEvents = {
 			
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd != null)
-				Synch.SrvUnsubscribe( { feedId : aId, domNode : null },
+				Synch.SrvUnsubscribe( { id : aId, domNode : null },
 						"FeedEvents.OnDeleteFeed" );
 			else
-				unsubscribed.push( { feedId : aId, domNode : null } );			
+				unsubscribed.push( { id : aId, domNode : null } );
 		},
 			
 		AddListener : function() {

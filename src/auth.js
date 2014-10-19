@@ -43,7 +43,7 @@ var Auth = {
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Auth.tokenAccess = jsonResponse.access_token;
-					userId = jsonResponse.id;
+					Auth.userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
 					
@@ -168,7 +168,7 @@ var Auth = {
 					Auth.tokenAccess = jsonResponse.access_token;
 					Auth.tokenRefresh = jsonResponse.refresh_token;
 					setPref("Auth.tokenRefresh", Auth.tokenRefresh);
-					userId = jsonResponse.id;
+					Auth.userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("Auth.expiringMargin") / 100);
 					

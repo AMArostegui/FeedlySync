@@ -120,7 +120,7 @@ var Synch = {
 			let jsonSubscribe = "{\n";
 			jsonSubscribe += "\t\"categories\" : [\n";
 			jsonSubscribe += "\t\t{\n";
-			jsonSubscribe += "\t\t\t\"id\" : \"user/" + subscribe[i].userId + 
+			jsonSubscribe += "\t\t\t\"id\" : \"user/" + Auth.userId + 
 							"/category/" + subscribe[i].category + "\",\n";
 			jsonSubscribe += "\t\t\t\"label\" : \"" + subscribe[i].category + "\"\n";
 			jsonSubscribe += "\t\t}\n";
@@ -144,7 +144,7 @@ var Synch = {
 					Synch.WriteStatusFile();
 				processed++;				
 			};
-			Log.WriteLn(message + " Add to Feedly. Url: " + fullUrl);
+			Log.WriteLn(message + " Add to Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
 			req.send(jsonSubscribe);	    
 	    }		
 	},
@@ -159,7 +159,7 @@ var Synch = {
 	    for (let i = 0; i < unsubscribe.length; i++) {
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 				.createInstance(Components.interfaces.nsIXMLHttpRequest);					
-			req.open("DELETE", unsubscribe[i].feedId, true);
+			req.open("DELETE", unsubscribe[i].id, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
@@ -185,7 +185,7 @@ var Synch = {
 					Synch.WriteStatusFile();
 				processed++;
 			};
-			Log.WriteLn(message + " Remove from Feedly. Url: " + unsubscribe[i].feedId);
+			Log.WriteLn(message + " Remove from Feedly. Url: " + unsubscribe[i].id);
 			req.send(null);	    	
 	    }		
 	},
@@ -277,8 +277,8 @@ var Synch = {
 						
 						// Not synchronized. Add to Feedly
 						else {
-							subscribe.push( { feedId : tbSubs[i] , feedName : fldName.prettiestName,
-								feedCategory : fldCategory.prettiestName } );
+							subscribe.push( { id : tbSubs[i] , name : fldName.prettiestName,
+								category : fldCategory.prettiestName } );
 						}				
 						
 						// Several feeds for category, just one feed by folder					
@@ -307,7 +307,7 @@ var Synch = {
 							encodeURIComponent(feed.id);
 						
 						// Just save the Id of the feed I want to unsubscribe. Will be processed later
-						unsubscribe.push( { feedId : fullUrl, domNode : node } );					
+						unsubscribe.push( { id : fullUrl, domNode : node } );					
 					}
 					
 					// Feed not synchronized. Add to Thunderbird
@@ -369,8 +369,8 @@ var Synch = {
 		    		Synch.WriteStatusFile();
 		    }		    	
 		    
-		    Synch.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
-		    Synch.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");
+		    Synch.SrvSubscribe(subscribe, "Synch.Update. Svr=0 TB=1", unsubscribe.length <= 0);
+		    Synch.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=0 TB=1");
 		}
 		finally {
 			Synch.updateOp = false;
