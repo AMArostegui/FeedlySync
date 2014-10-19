@@ -103,6 +103,21 @@ var Synch = {
 		nodeParent.appendChild(nodeFeed);		
 	},
 	
+	FindDomNode : function(id, status) {
+		let xpathExpression;
+		if (status == undefined || status == null)
+			xpathExpression = "/feeds/feed[id='" + id + "']";
+		else
+		    xpathExpression = "/feeds/feed[id='" + id + 
+    			"' and status=" + FEED_LOCALSTATUS_DEL + "]";
+
+	    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
+	    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+	    if (xpathResult == null)
+	    	return null;
+	    return xpathResult.iterateNext();		
+	},
+	
 	SrvSubscribe : function(subscribe, message, writeStatusFile) {
 		if (!(Object.prototype.toString.call(subscribe) === "[object Array]")) {
 			subscribe = [].concat(subscribe);
@@ -248,10 +263,7 @@ var Synch = {
 					    }				    	
 					    
 					    // Subscribed in Thunderbird but not in Feedly
-					    let xpathExpression = "/feeds/feed[id='" + tbSubs[i] + "']";
-					    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-					    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-					    let node = xpathResult.iterateNext();
+					    let node = Synch.FindDomNode(tbSubs[i]);
 					    
 				    	// Check whether this feed was previously synchronized. If so, delete locally				    
 						if (node != null) {
@@ -297,11 +309,7 @@ var Synch = {
 		        	let categoryName = feed.categories[categoryIdx].label;
 		        	
 					// Check whether this feed was locally deleted. If so, delete on server
-				    let xpathExpression = "/feeds/feed[id='" + feedId + 
-			    		"' and status=" + FEED_LOCALSTATUS_DEL + "]";
-				    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-				    	null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-				    let node = xpathResult.iterateNext();	        	
+				    let node = Synch.FindDomNode(feedId, FEED_LOCALSTATUS_DEL);
 					if (node != null) {					
 						let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
 							encodeURIComponent(feed.id);

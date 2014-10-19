@@ -48,10 +48,10 @@ var FeedEvents = {
 		CheckFolderLevel : function(aParentFolder) {
 			if (aParentFolder == null)
 				return false;
-			let rootFolder = Synch.GetRootFolder();
+			let rootFolder = GetRootFolder();
 			if (rootFolder == null)
 				return false;
-			if (parentItem.rootFolder != rootFolder)
+			if (aParentFolder.rootFolder != rootFolder)
 				return false;
 			return true;			
 		},
@@ -81,7 +81,7 @@ var FeedEvents = {
 				Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : "" },
 						"FeedEvents.OnAddFeed", true);						
 			else
-				subscribed.push( { id : aFeed.url, name : aFeed.title, category : "" } );
+				FeedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : "" } );
 		},
 		
 		unsubscribed : [],
@@ -100,13 +100,16 @@ var FeedEvents = {
 				return;			
 			if (!FeedEvents.CheckFolderLevel(aParentFolder))
 				return;
+			let node = Synch.FindDomNode(aId.Value);
+			if (node == null)
+				return;
 			
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd != null)
-				Synch.SrvUnsubscribe( { id : aId, domNode : null },
-						"FeedEvents.OnDeleteFeed" );
+				Synch.SrvUnsubscribe( { id : aId.Value, domNode : node },
+						"FeedEvents.OnDeleteFeed");
 			else
-				unsubscribed.push( { id : aId, domNode : null } );
+				FeedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
 		},
 			
 		AddListener : function() {
