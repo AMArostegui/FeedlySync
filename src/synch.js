@@ -10,7 +10,7 @@ const FEED_LOCALSTATUS_DEL = 2;
 var Synch = {
 	// Get the user's subscriptions from Feedly
 	Init : function () {
-		this.ReadStatusFile();
+		Synch.GetFeedlySubs();
 	},
 	
 	domFeedStatus : null,
@@ -34,7 +34,6 @@ var Synch = {
 			let inStream = converter.convertToInputStream(strDom);
 			NetUtil.asyncCopy(inStream, outStream);
 			domFeedStatus = parser.parseFromString(strDom, "text/xml");
-			Synch.GetFeedlySubs();			
 		}
 		else {
 			NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
@@ -45,7 +44,6 @@ var Synch = {
 				let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
 				Log.WriteLn("Synch.ReadStatusFile. Readed XML = " + xmlFeedStatus);
 				domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
-				Synch.GetFeedlySubs();
 			});			
 		}		
 	},
@@ -200,6 +198,7 @@ var Synch = {
 		if (rootFolder == null)
 			return;
 		
+		let writeDOM = false;
 		Synch.updateOp = true;
 		
 		try {
@@ -263,6 +262,7 @@ var Synch = {
 									fldName.parent.propagateDelete(fldName, true, win.msgWindow);
 									
 									// Remove node from Ctrl file DOM
+									writeDOM = true;
 									node.parentNode.removeChild(node);
 									Log.WriteLn("Synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
 								}
@@ -357,17 +357,20 @@ var Synch = {
 							continue;						
 						}
 						
-						this.AddFeed2Dom(feedId);					
+						writeDOM = true;
+						Synch.AddFeed2Dom(feedId);
 					}
 		        }
 		    }
 		    
 		    // Save Ctrl File for synchronous operations
-		    if (subscribe.length <= 0 && unsubscribe.length <= 0)
-		    	Synch.WriteStatusFile();
+		    if (subscribe.length <= 0 && unsubscribe.length <= 0) {
+		    	if (writeDOM)
+		    		Synch.WriteStatusFile();
+		    }		    	
 		    
-		    this.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
-		    this.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");			
+		    Synch.SrvSubscribe(subscribe, "Synch.Update. Svr=1 TB=0.", unsubscribe.length <= 0);
+		    Synch.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=1 TB=0.");
 		}
 		finally {
 			Synch.updateOp = false;

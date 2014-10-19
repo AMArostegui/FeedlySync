@@ -95,6 +95,7 @@ function shutdown(data, reason) {
 function main(window) {
 	win = window;
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
+	Synch.ReadStatusFile();
 	FeedEvents.AddListener();
 }
 
