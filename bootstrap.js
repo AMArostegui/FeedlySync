@@ -99,9 +99,9 @@ function main(window) {
 	FeedEvents.AddListener();
 }
 
-function syncTBFeedly() {	
-	if (Auth.tokenAccess == "")
-		Auth.Init();
-	else
+function syncTBFeedly() {
+	let action = function() {
 		Synch.Init();
+	};
+	Sync.AuthAndRun(action);
 }

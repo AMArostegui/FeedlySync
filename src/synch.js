@@ -13,6 +13,18 @@ var Synch = {
 		Synch.GetFeedlySubs();
 	},
 	
+	// Ensure authentication before running action
+	AuthAndRun : function(action) {
+		if (!Auth.Ready()) {
+			Auth.OnFinished = function() {
+				action();
+			};
+			Auth.Init();
+		}
+		else
+			action();
+	},
+
 	domFeedStatus : null,
 	
 	ReadStatusFile : function() {

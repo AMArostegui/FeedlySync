@@ -10,8 +10,8 @@ function sessionId() {
 }
 
 var Auth = {		
-	Init : function () {
-		if (!Auth.Resume(true)) {			
+	Init : function() {
+		if (!Auth.Resume()) {
 			Auth.GetCode();			
 		}
 	},
@@ -19,9 +19,17 @@ var Auth = {
 	tokenAccess : "",
 	tokenRefresh : "",
 	userId : "",
+
+	Ready : function() {
+		return Auth.tokenAccess != "";
+	},
+
+	// Notify authentication process is over
+	OnFinished : function() {
+	},
 		
 	// Step 1: Try to load authentication information locally
-	Resume : function (synch) {
+	Resume : function() {
 		Auth.tokenRefresh = getPref("Auth.tokenRefresh");
 		if (Auth.tokenRefresh == "")
 			return false;
@@ -51,12 +59,11 @@ var Auth = {
 					let renewInterval = win.setInterval(function() {
 						win.clearInterval(renewInterval);
 						Log.WriteLn("Auth.Resume. Renew access token");
-						Auth.Resume(false);			
+						Auth.Resume();
 					}, expiresIn);					
 					
 					Log.WriteLn("Auth.Resume: Got access token");
-					if (synch)
-						Synch.Init();
+					Auth.OnFinished();
 				}
 				else {
 					Auth.GetCode();
@@ -176,11 +183,11 @@ var Auth = {
 					let renewInterval = win.setInterval(function() {
 						win.clearInterval(renewInterval);
 						Log.WriteLn("Auth.GetTokens. Renew access token");
-						Auth.Resume(false);			
+						Auth.Resume();
 					}, expiresIn);					
 					
 					Log.WriteLn("Auth.GetTokens: Sucessfully authenticated");
-					Synch.Init();
+					Auth.OnFinished();
 				}
 			}
 		};

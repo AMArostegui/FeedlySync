@@ -60,8 +60,11 @@ var FeedEvents = {
 		
 		OnImportOPMLFinished : function() {
 			Log.WriteLn("FeedEvents.OnImportOPMLFinished. Count=" + FeedEvents.subscribed.length);
-			Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
-			FeedEvents.subscribed = [];			
+			let action = function() {
+				Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
+				FeedEvents.subscribed = [];
+			};
+			Synch.AuthAndRun(action);
 		},
 		
 		OnAddFeed : function(aFeed) {
@@ -77,9 +80,13 @@ var FeedEvents = {
 				return;
 				
 			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML)
-				Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : "" },
-						"FeedEvents.OnAddFeed", true);						
+			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML) {
+				let action = function() {
+					Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : "" },
+						"FeedEvents.OnAddFeed", true);
+				};
+				Synch.AuthAndRun(action);
+			}
 			else
 				FeedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : "" } );
 		},
@@ -91,8 +98,11 @@ var FeedEvents = {
 				return;
 			
 			Log.WriteLn("Synch.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
-			Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
-			FeedEvents.unsubscribed = [];
+			let action = function () {
+				Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
+				FeedEvents.unsubscribed = [];
+			};
+			Synch.AuthAndRun(action);
 		},
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
@@ -105,9 +115,13 @@ var FeedEvents = {
 				return;
 			
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
-			if (subsWnd != null)
-				Synch.SrvUnsubscribe( { id : aId.Value, domNode : node },
+			if (subsWnd != null) {
+				let action = function() {
+					Synch.SrvUnsubscribe( { id : aId.Value, domNode : node },
 						"FeedEvents.OnDeleteFeed");
+				};
+				Synch.AuthAndRun(action);
+			}
 			else
 				FeedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
 		},
