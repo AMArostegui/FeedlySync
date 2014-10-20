@@ -187,7 +187,7 @@ var Synch = {
 	    for (let i = 0; i < unsubscribe.length; i++) {
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 				.createInstance(Components.interfaces.nsIXMLHttpRequest);
-			let fullUrl = url + encodeURIComponent(unsubscribe[i].id);
+			let fullUrl = url + encodeURIComponent("feed/" + unsubscribe[i].id);
 			req.open("DELETE", fullUrl, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
