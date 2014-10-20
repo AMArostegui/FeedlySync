@@ -183,10 +183,12 @@ var Synch = {
 		
 		// Update the status file when we're done
 	    let processed = 0;
+	    let url = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/");
 	    for (let i = 0; i < unsubscribe.length; i++) {
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-				.createInstance(Components.interfaces.nsIXMLHttpRequest);					
-			req.open("DELETE", unsubscribe[i].id, true);
+				.createInstance(Components.interfaces.nsIXMLHttpRequest);
+			let fullUrl = url + encodeURIComponent(unsubscribe[i].id);
+			req.open("DELETE", fullUrl, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
@@ -212,7 +214,7 @@ var Synch = {
 					Synch.WriteStatusFile();
 				processed++;
 			};
-			Log.WriteLn(message + " Remove from Feedly. Url: " + unsubscribe[i].id);
+			Log.WriteLn(message + " Remove from Feedly. Url: " + fullUrl);
 			req.send(null);	    	
 	    }		
 	},
