@@ -97,7 +97,7 @@ var FeedEvents = {
 			if (Synch.updateOp)
 				return;
 			
-			Log.WriteLn("Synch.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
+			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
 			let action = function () {
 				Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
 				FeedEvents.unsubscribed = [];
