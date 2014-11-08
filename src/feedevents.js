@@ -51,7 +51,7 @@ var FeedEvents = {
 			let rootFolder = GetRootFolder();
 			if (rootFolder == null)
 				return false;
-			if (aParentFolder.rootFolder != rootFolder)
+			if (aParentFolder.parent != rootFolder)
 				return false;
 			return true;			
 		},
@@ -89,9 +89,9 @@ var FeedEvents = {
 			}			
 				
 			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML) {
+			if (feedSubscriptions.mActionMode != feedSubscriptions.kImportingOPML) {
 				let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
-				if (feedUrlArray != null && feedUrlArray.length > 0) {
+				if (feedUrlArray != null && feedUrlArray.length > 1) {
 					Log.WriteLn("FeedEvents.OnAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);
 					return;
 				}				
@@ -105,18 +105,10 @@ var FeedEvents = {
 				switch (FeedEvents.feedFolders[aFeed.mFolder.URI]) {		
 				// Mark as processed to avoid subsequent calling
 				case undefined:
+					FeedEvents.feedFolders[aFeed.mFolder.URI] = true;
 					let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);					
-					if (feedUrlArray != null && feedUrlArray.length > 0) {
-						FeedEvents.feedFolders[aFeed.mFolder.URI] = true;
+					if (feedUrlArray != null && feedUrlArray.length > 1)						
 						return;
-					}						
-					else
-						FeedEvents.feedFolders[aFeed.mFolder.URI] = false;
-					break;
-					
-				// Already evaluated and no feed subscribed.
-				case false:
-					FeedEvents.feedFolders[aFeed.mFolder.URI] = true;					
 					break;
 					
 				// The folder has subscribed a feed
