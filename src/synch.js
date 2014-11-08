@@ -219,7 +219,8 @@ var Synch = {
 	    }		
 	},
 	
-	updateOp : false,
+	// Flag to indicate whether Synch.Update method is running
+	updateRunning : false,
 	
 	// Synchronize Thunderbird and Feedly	
 	Update : function (feedlySubs) {		
@@ -228,7 +229,7 @@ var Synch = {
 			return;
 		
 		let writeDOM = false;
-		Synch.updateOp = true;
+		Synch.updateRunning = true;
 		
 		try {
 			// TODO: Hay que ver que se hace con los uncategorized
@@ -395,7 +396,7 @@ var Synch = {
 		    Synch.SrvUnsubscribe(unsubscribe, "Synch.Update. Svr=0 TB=1");
 		}
 		finally {
-			Synch.updateOp = false;
+			Synch.updateRunning = false;
 		}
 	},
 };

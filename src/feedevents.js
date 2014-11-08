@@ -60,6 +60,7 @@ var FeedEvents = {
 		
 		OnImportOPMLFinished : function() {
 			Log.WriteLn("FeedEvents.OnImportOPMLFinished. Count=" + FeedEvents.subscribed.length);
+			FeedEvents.feedFolders = {};
 			let action = function() {
 				Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
 				FeedEvents.subscribed = [];
@@ -67,34 +68,69 @@ var FeedEvents = {
 			Synch.AuthAndRun(action);
 		},
 		
+		// Helper dictionary. Stores whether a folder contains feeds
+		// Intended to avoid calling repeatedly FeedUtils.getFeedUrlsInFolder which seems inefficient		
+		feedFolders : {},
+		
 		OnAddFeed : function(aFeed) {
-			if (Synch.updateOp)
+			if (Synch.updateRunning)
 				return;
 			let subscriptionsWindow =
 			    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subscriptionsWindow == null) {
-				Log.WriteLn("FeedEvents.OnAddFeed. Not using dialog to subscribe. Unexpected situation")
+				Log.WriteLn("FeedEvents.OnAddFeed. Subscribing not using dialog. Unexpected situation");
 				return;				
 			}
 			if (!FeedEvents.CheckFolderLevel(aFeed.folder.parent))
+				return;			
+			if (aFeed.mFolder == null || aFeed.mFolder.parent == null) {
+				Log.WriteLn("FeedEvents.OnAddFeed. No parent folder. Cannot retrieve category");
 				return;
+			}			
 				
 			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
 			if (feedSubscriptions.mActionMode != FeedUtils.kImportingOPML) {
+				let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
+				if (feedUrlArray != null && feedUrlArray.length > 0) {
+					Log.WriteLn("FeedEvents.OnAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);
+					return;
+				}				
 				let action = function() {
-					Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : "" },
+					Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
 						"FeedEvents.OnAddFeed", true);
 				};
 				Synch.AuthAndRun(action);
 			}
-			else
-				FeedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : "" } );
+			else {
+				switch (FeedEvents.feedFolders[aFeed.mFolder.URI]) {		
+				// Mark as processed to avoid subsequent calling
+				case undefined:
+					let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);					
+					if (feedUrlArray != null && feedUrlArray.length > 0) {
+						FeedEvents.feedFolders[aFeed.mFolder.URI] = true;
+						return;
+					}						
+					else
+						FeedEvents.feedFolders[aFeed.mFolder.URI] = false;
+					break;
+					
+				// Already evaluated and no feed subscribed.
+				case false:
+					FeedEvents.feedFolders[aFeed.mFolder.URI] = true;					
+					break;
+					
+				// The folder has subscribed a feed
+				case true:
+					return;				
+				}
+				FeedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name } );
+			}				
 		},
 		
 		unsubscribed : [],
 		
 		OnItemRemoved : function(parentItem, item) {
-			if (Synch.updateOp)
+			if (Synch.updateRunning)
 				return;
 			
 			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
@@ -106,7 +142,7 @@ var FeedEvents = {
 		},
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
-			if (Synch.updateOp)
+			if (Synch.updateRunning)
 				return;			
 			if (!FeedEvents.CheckFolderLevel(aParentFolder))
 				return;
