@@ -196,10 +196,11 @@ var Synch = {
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
-					Log.WriteLn(message + " Remove from Feedly (" +
-							(processed + 1) + "/" + unsubscribe.length + "). Status: " +
-							e.currentTarget.status + " Response Text: " + e.currentTarget.responseText);
-					
+					Log.WriteLn(message + " Remove from Feedly" + 
+							" (" + (processed + 1) + "/" + unsubscribe.length + ")" +
+							" Url: " + e.currentTarget.channel.URI.spec +
+							" Status: " + e.currentTarget.status + " Status Text: " + e.currentTarget.statusText + 
+							" Response text: " + e.currentTarget.responseText);					
 					let node = unsubscribe[processed].domNode; 
 					node.parentNode.removeChild(node);					
 					if (processed == unsubscribe.length - 1)
