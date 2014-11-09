@@ -111,3 +111,10 @@ function GetRootFolder() {
 	return rootFolder;
 }
 
+function FormatEventMsg(message, evnt, i, j) {
+	return message +
+			(i != undefined && j != undefined ? " (" + (i + 1) + "/" + j + ")" : "") +
+			" Url: " + evnt.currentTarget.channel.URI.spec +
+			" Status: " + evnt.currentTarget.status + " Status Text: " + evnt.currentTarget.statusText + 
+			" Response text: " + evnt.currentTarget.responseText;		
+}

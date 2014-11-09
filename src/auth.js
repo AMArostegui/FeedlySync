@@ -46,8 +46,7 @@ var Auth = {
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				Log.WriteLn("Auth.Resume.OnLoad. Status: " + e.currentTarget.status +
-						" Response Text: " + e.currentTarget.responseText);
+				Log.WriteLn(FormatEventMsg("Auth.Resume", e));
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Auth.tokenAccess = jsonResponse.access_token;
@@ -71,7 +70,7 @@ var Auth = {
 			}
 		};
 		req.onerror = function(error) {		
-			Log.WriteLn("Auth.Resume. Error: " + error);
+			Log.WriteLn(FormatEventMsg("Auth.Resume. Error", error));
 		};
 		Log.WriteLn("Auth.Resume. Url: " + fullUrl);
 		req.send(null);		
@@ -115,8 +114,7 @@ var Auth = {
 		req.open("GET", fullUrl, true);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				Log.WriteLn("Auth.RedirUrlGetCode. Status: " + e.currentTarget.status +
-						" Response Text: " + e.currentTarget.responseText);
+				Log.WriteLn(FormatEventMsg("Auth.RedirUrlGetCode", e));
 				if (e.currentTarget.status == 200) {					
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);					
 					if (jsonResponse.error == "Success") {
@@ -131,7 +129,7 @@ var Auth = {
 			}			
 		};
 		req.onerror = function (error) {		
-			Log.WriteLn("Auth.RedirUrlGetCode. Error: " + error);
+			Log.WriteLn(FormatEventMsg("Auth.RedirUrlGetCode. Error", error));
 		};		
 		Log.WriteLn("Auth.RedirUrlGetCode. Url: " + fullUrl + " Attempt: " + Auth.retryCount);
 		Auth.retryCount++;
@@ -168,8 +166,7 @@ var Auth = {
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				Log.WriteLn("Auth.GetTokens.OnLoad. Status: " + e.currentTarget.status +
-						" Response Text: " + e.currentTarget.responseText);
+				Log.WriteLn(FormatEventMsg("Auth.GetTokens", e));
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Auth.tokenAccess = jsonResponse.access_token;
@@ -192,7 +189,7 @@ var Auth = {
 			}
 		};
 		req.onerror = function(error) {		
-			Log.WriteLn("Auth.GetTokens. Error: " + error);
+			Log.WriteLn(FormatEventMsg("Auth.GetTokens. Error", error));
 		};
 		Log.WriteLn("Auth.GetTokens. Url: " + fullUrl);
 		req.send(null);		

@@ -86,8 +86,7 @@ var Synch = {
 		req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				Log.WriteLn("Synch.GetFeedlySubs. Status: " + e.currentTarget.status +
-						" Response Text: " + e.currentTarget.responseText);
+				Log.WriteLn(FormatEventMsg("Synch.GetFeedlySubs", e));
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Synch.Update(jsonResponse);
@@ -97,7 +96,7 @@ var Synch = {
 			}			
 		};
 		req.onerror = function (error) {		
-			Log.WriteLn("Synch.GetFeedlySubs. Error: " + error);
+			Log.WriteLn(FormatEventMsg("Synch.GetFeedlySubs. Error", error));
 		};
 		Log.WriteLn("Synch.GetFeedlySubs. Url: " + fullUrl);
 		req.send(null);		
@@ -128,7 +127,7 @@ var Synch = {
 	    if (xpathResult == null)
 	    	return null;
 	    return xpathResult.iterateNext();		
-	},
+	},	
 	
 	SrvSubscribe : function(subscribe, message, writeStatusFile) {
 		if (!(Object.prototype.toString.call(subscribe) === "[object Array]")) {
@@ -156,9 +155,9 @@ var Synch = {
 			jsonSubscribe += "\t\"title\" : \"" + subscribe[i].name + "\"\n";
 			jsonSubscribe += "}";						
 			req.onload = function (e) {
-				if (e.currentTarget.readyState == 4) {
-					Log.WriteLn(message + " Add to Feedly. Status: " + e.currentTarget.status +
-							" Response Text: " + e.currentTarget.responseText);					
+				if (e.currentTarget.readyState == 4) {					
+					Log.WriteLn(FormatEventMsg(message + " Add to Feedly",
+							e, processed, subscribe.length));					
 					let domNode = Synch.FindDomNode(subscribe[processed].id);
 					if (domNode == null)					
 						Synch.AddFeed2Dom(subscribe[processed].id);
@@ -170,7 +169,8 @@ var Synch = {
 				}			
 			};
 			req.onerror = function (error) {		
-				Log.WriteLn(message + " Add to Feedly. Error: " + error);
+				Log.WriteLn(FormatEventMsg(message + " Add to Feedly. Error",
+						error, processed, subscribe.length));
 				if (writeStatusFile && processed == subscribe.length - 1)
 					Synch.WriteStatusFile();
 				processed++;				
@@ -196,11 +196,8 @@ var Synch = {
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
-					Log.WriteLn(message + " Remove from Feedly" + 
-							" (" + (processed + 1) + "/" + unsubscribe.length + ")" +
-							" Url: " + e.currentTarget.channel.URI.spec +
-							" Status: " + e.currentTarget.status + " Status Text: " + e.currentTarget.statusText + 
-							" Response text: " + e.currentTarget.responseText);					
+					Log.WriteLn(FormatEventMsg(message + " Remove from Feedly",
+							e, processed, unsubscribe.length));				
 					let node = unsubscribe[processed].domNode; 
 					node.parentNode.removeChild(node);					
 					if (processed == unsubscribe.length - 1)
@@ -209,7 +206,8 @@ var Synch = {
 				}			
 			};
 			req.onerror = function (error) {		
-				Log.WriteLn(message + " Remove from Feedly. Error: " + error);
+				Log.WriteLn(FormatEventMsg(message + " Remove from Feedly. Error",
+						error, processed, unsubscribe.length)); 
 				
 				// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
 				let node = unsubscribe[processed].domNode; 
