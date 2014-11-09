@@ -108,7 +108,6 @@ function GetRootFolder() {
 		Log.WriteLn("GetRootFolder. No root folder. Account = " + accountName);
 		return null;			
 	}		
-	Log.WriteLn("GetRootFolder. Retrieved root folder. Account = " + accountName);			
 	return rootFolder;
 }
 

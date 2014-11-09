@@ -158,8 +158,12 @@ var Synch = {
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {
 					Log.WriteLn(message + " Add to Feedly. Status: " + e.currentTarget.status +
-							" Response Text: " + e.currentTarget.responseText);
-					Synch.AddFeed2Dom(subscribe[processed].id);
+							" Response Text: " + e.currentTarget.responseText);					
+					let domNode = Synch.FindDomNode(subscribe[processed].id);
+					if (domNode == null)					
+						Synch.AddFeed2Dom(subscribe[processed].id);
+					else
+						Log.WriteLn(message + " Already in status file. Unexpected situation");
 					if (writeStatusFile && processed == subscribe.length - 1)
 						Synch.WriteStatusFile();
 					processed++;

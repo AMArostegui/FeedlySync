@@ -22,7 +22,7 @@ var FeedEvents = {
 				
 					// Trap OPML import ending
 					let feedSubscriptions = subscriptionsWindow.FeedSubscriptions; 
-					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinishedPrimary;
+					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinished;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
 						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
 						FeedEvents.OnImportOPMLFinished();
@@ -45,9 +45,12 @@ var FeedEvents = {
 		//					Feed2-n-l-1 => Synchronized
 		//					Feed2-n-l-2, ..., Feed2-n-l-M => Local
 		//					Folder(...) : All folder in lower levels are local		
-		CheckFolderLevel : function(aParentFolder) {
-			if (aParentFolder == null)
+		CheckFolderLevel : function(aFolder) {
+			if (aFolder == null)
 				return false;
+			let aParentFolder = aFolder.parent;
+			if (aParentFolder == null)
+				return false;			
 			let rootFolder = GetRootFolder();
 			if (rootFolder == null)
 				return false;
@@ -81,7 +84,7 @@ var FeedEvents = {
 				Log.WriteLn("FeedEvents.OnAddFeed. Subscribing not using dialog. Unexpected situation");
 				return;				
 			}
-			if (!FeedEvents.CheckFolderLevel(aFeed.folder.parent))
+			if (!FeedEvents.CheckFolderLevel(aFeed.folder))
 				return;			
 			if (aFeed.mFolder == null || aFeed.mFolder.parent == null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. No parent folder. Cannot retrieve category");
@@ -135,9 +138,14 @@ var FeedEvents = {
 		
 		OnDeleteFeed : function(aId, aServer, aParentFolder) {
 			if (Synch.updateRunning)
-				return;			
-			if (!FeedEvents.CheckFolderLevel(aParentFolder))
 				return;
+			
+			// Do not use Synch.CheckFolderLevel. By this point, parent folder is recycle bin
+			let rootFolder = GetRootFolder();
+			if (rootFolder == null)
+				return;
+			if (aParentFolder.rootFolder != rootFolder)
+				return;			
 			let node = Synch.FindDomNode(aId.Value);
 			if (node == null)
 				return;
@@ -171,9 +179,9 @@ var FeedEvents = {
 				FeedEvents.OnAddFeed(aFeed);				
 			};			
 			FeedUtils.deleteFeedPrimary = FeedUtils.deleteFeed;
-			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {
+			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {				
+				FeedEvents.OnDeleteFeed(aId, aServer, aParentFolder);
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
-				FeedEvents.OnDeleteFeed(aId, aServer, aParentFolder);				
 			};			
 		},
 
