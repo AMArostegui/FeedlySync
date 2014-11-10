@@ -136,10 +136,13 @@ var Synch = {
 
 		let processed = 0;
 		let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
-		fullUrl = encodeURI(fullUrl);		
-	    for (let i = 0; i < subscribe.length; i++) {
+		fullUrl = encodeURI(fullUrl);
+		function SrvSubscribeFeed() {
+			if (processed >= subscribe.length)
+				return;
+			
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-						.createInstance(Components.interfaces.nsIXMLHttpRequest);
+				.createInstance(Components.interfaces.nsIXMLHttpRequest);
 			req.open("POST", fullUrl, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.setRequestHeader("Content-Type", "application/json");
@@ -147,12 +150,12 @@ var Synch = {
 			jsonSubscribe += "\t\"categories\" : [\n";
 			jsonSubscribe += "\t\t{\n";
 			jsonSubscribe += "\t\t\t\"id\" : \"user/" + Auth.userId + 
-							"/category/" + subscribe[i].category + "\",\n";
-			jsonSubscribe += "\t\t\t\"label\" : \"" + subscribe[i].category + "\"\n";
+							"/category/" + subscribe[processed].category + "\",\n";
+			jsonSubscribe += "\t\t\t\"label\" : \"" + subscribe[processed].category + "\"\n";
 			jsonSubscribe += "\t\t}\n";
 			jsonSubscribe += "\t],\n";
-			jsonSubscribe += "\t\"id\" : \"feed/" + subscribe[i].id + "\",\n";
-			jsonSubscribe += "\t\"title\" : \"" + subscribe[i].name + "\"\n";
+			jsonSubscribe += "\t\"id\" : \"feed/" + subscribe[processed].id + "\",\n";
+			jsonSubscribe += "\t\"title\" : \"" + subscribe[processed].name + "\"\n";
 			jsonSubscribe += "}";						
 			req.onload = function (e) {
 				if (e.currentTarget.readyState == 4) {					
@@ -166,6 +169,7 @@ var Synch = {
 					if (writeStatusFile && processed == subscribe.length - 1)
 						Synch.WriteStatusFile();
 					processed++;
+					SrvSubscribeFeed();
 				}			
 			};
 			req.onerror = function (error) {		
@@ -173,25 +177,29 @@ var Synch = {
 						error, processed, subscribe.length));
 				if (writeStatusFile && processed == subscribe.length - 1)
 					Synch.WriteStatusFile();
-				processed++;				
+				processed++;
+				SrvSubscribeFeed();
 			};
 			Log.WriteLn(message + " Add to Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
-			req.send(jsonSubscribe);	    
-	    }		
+			req.send(jsonSubscribe);			
+		};
+		SrvSubscribeFeed();
 	},
 	
 	SrvUnsubscribe : function(unsubscribe, message) {
 		if (!(Object.prototype.toString.call(unsubscribe) === "[object Array]")) {
 			unsubscribe = [].concat(unsubscribe);
-		}		
+		}
 		
-		// Update the status file when we're done
-	    let processed = 0;
-	    let url = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/");
-	    for (let i = 0; i < unsubscribe.length; i++) {
+		let processed = 0;
+		let url = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/");
+		function SrvUnsubscribeFeed() {
+			if (processed >= unsubscribe.length)
+				return;
+			
 			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-				.createInstance(Components.interfaces.nsIXMLHttpRequest);
-			let fullUrl = url + encodeURIComponent("feed/" + unsubscribe[i].id);
+			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+			let fullUrl = url + encodeURIComponent("feed/" + unsubscribe[processed].id);
 			req.open("DELETE", fullUrl, true);
 			req.setRequestHeader(getPref("Synch.tokenParam"), Auth.tokenAccess);
 			req.onload = function (e) {
@@ -199,10 +207,13 @@ var Synch = {
 					Log.WriteLn(FormatEventMsg(message + " Remove from Feedly",
 							e, processed, unsubscribe.length));				
 					let node = unsubscribe[processed].domNode; 
-					node.parentNode.removeChild(node);					
+					node.parentNode.removeChild(node);
+					
+					// Update the status file when we're done
 					if (processed == unsubscribe.length - 1)
 						Synch.WriteStatusFile();
 					processed++;
+					SrvUnsubscribeFeed();
 				}			
 			};
 			req.onerror = function (error) {		
@@ -216,10 +227,12 @@ var Synch = {
 				if (processed == unsubscribe.length - 1)
 					Synch.WriteStatusFile();
 				processed++;
+				SrvUnsubscribeFeed();
 			};
 			Log.WriteLn(message + " Remove from Feedly. Url: " + fullUrl);
-			req.send(null);	    	
-	    }		
+			req.send(null);		
+		};
+		SrvUnsubscribeFeed();
 	},
 	
 	// Flag to indicate whether Synch.Update method is running
