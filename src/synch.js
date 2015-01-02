@@ -16,8 +16,11 @@ var Synch = {
 	// Ensure authentication before running action
 	AuthAndRun : function(action) {
 		if (!Auth.Ready()) {
-			Auth.OnFinished = function() {
-				action();
+			Auth.OnFinished = function(success) {
+				if (success)
+					action();
+				else
+					Log.WriteLn("Synch.AuthAndRun. Unable to authenticate. Action=" + action);
 			};
 			Auth.Init();
 		}

@@ -1,1 +1,2 @@
-locale	FeedlySync	en	locale/en/
+locale FeedlySync en locale/en/
+content FeedlySync content/
