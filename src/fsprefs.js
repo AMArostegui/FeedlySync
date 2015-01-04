@@ -33,17 +33,6 @@ const PREFS = {
 	"Auth.grantTypeVal" : "authorization_code",
 	"Auth.refreshTokenPar" : "refresh_token",	
 
-	"Auth.domainGoogle" : "accounts.google.com",
-	"Auth.domainTwitter" : "twitterState",
-	"Auth.domainLive" : "login.live.com",
-	"Auth.domainFacebook" : "www.facebook.com",
-	"Auth.domainRedir" : "localhost",
-
-	"Auth.retryMax" : 20,
-	"Auth.delayFirst" : 3000,
-	"Auth.delayRetry1" : 3000,
-	"Auth.delayRetry2" : 6000,
-	
 	"Auth.tokenRefresh" : "",
 	"Auth.userId" : "",
 	"Auth.expiringMargin" : 90,	

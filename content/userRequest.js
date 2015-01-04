@@ -9,18 +9,19 @@ function onPageLoad(aEvent) {
     	return;
     
     let request = window.arguments[0].wrappedJSObject;
-    if (request.authWndDOMLoaded(doc.location.href))
+    if (request.authWndDOMLoaded(doc.location))
     	window.close();
 }
 
 function loadRequestedUrl() {
 	let request = window.arguments[0].wrappedJSObject;
-	
-	let header = document.getElementById( "headerMessage");		
-	header.textContent = request.promptText;
+	request.log("UserRequest.loadRequestedUrl");
 	
 	let browser = document.getElementById("requestFrame");	
 	browser.addEventListener("DOMContentLoaded", onPageLoad, true);	
+
+	let title = request.promptText;
+	document.title = title;
 	
 	let url = request.browseUrl;
 	browser.setAttribute("src", url);

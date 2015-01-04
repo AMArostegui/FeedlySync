@@ -119,9 +119,13 @@ function FormatEventMsg(message, evnt, i, j) {
 			" Response text: " + evnt.currentTarget.responseText;		
 }
 
-function getParameterByName(name, location) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+function getParameterByName(val, location) {
+    let tmp = [];
+    let items = location.search.substr(1).split("&");
+    for (let index = 0; index < items.length; index++) {
+        tmp = items[index].split("=");
+        if (tmp[0] === val)
+        	return decodeURIComponent(tmp[1]);
+    }
+    return "";
 }

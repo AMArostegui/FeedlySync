@@ -99,10 +99,11 @@ var Auth = {
 		stateVal : "",
 
 		authWndDOMLoaded : function(location) {
-		    if (location.substring(0, 16) == "http://localhost") {
+			let redirUrl = getPref("Auth.redirVal");
+		    if (location.href.substring(0, redirUrl.length) == redirUrl) {
 		    	let paramCode = null;
 		    	let paramError = getParameterByName("error", location);
-		    	if (paramError == null)
+		    	if (paramError == "")
 		    		paramCode = getParameterByName("code", location);
 
 		    	if (paramCode == null) {
@@ -123,12 +124,16 @@ var Auth = {
     		Log.WriteLn("Auth.UserRequest.dismissed");
     		Auth.FireOnFinished(false);
 		},
+
+		log : function(str) {
+			Log.WriteLn(str);
+		}
 	},
 	GetCode : function () {
 		let userGuid = sessionId();
 		Auth.UserRequest.stateVal = encodeURI(userGuid);
-		
-		Auth.UserRequest.browseUrl = getPref("baseUrl") + getPref("Auth.getCodeOp") + "?" +
+		Auth.UserRequest.promptText = _("authWndCaption", getPref("locale"));
+		Auth.UserRequest.browseUrl = getPref("baseSslUrl") + getPref("Auth.getCodeOp") + "?" +
 						getPref("Auth.resTypePar") + "=" + getPref("Auth.resTypeVal") + "&" +						 
 						getPref("Auth.cliIdPar") + "=" + getPref("Auth.cliIdVal") + "&" +
 						getPref("Auth.redirPar") + "=" + getPref("Auth.redirVal") + getPref("Auth.redirSetCode") + "&" +
