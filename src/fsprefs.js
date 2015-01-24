@@ -7,15 +7,13 @@ const PREFS = {
 	
 	// Log preferences	
 	"Log.Active" : false,
-	"Log.Output" : 0,	
+	"Log.ToFile" : false,							
 	
 	//Authentication preferences
 	"Auth.getCodeOp" : "/v3/auth/auth",
 	"Auth.getTokenOp" : "/v3/auth/token",
-	"Auth.redirSetCode" : "",				 // "/feedlySetCode"
-	"Auth.redirSetToken" : "", 			 // "/feedlySetToken"
-	"Auth.redirGetCode" : "/addOnGetCode",
-	"Auth.redirGetToken" : "/addOnGetToken",
+	"Auth.redirSetCode" : "",				 	// "/feedlySetCode"
+	"Auth.redirSetToken" : "", 			 		// "/feedlySetToken"
 
 	"Auth.resTypePar" : "response_type",
 	"Auth.resTypeVal" : "code",
@@ -41,5 +39,5 @@ const PREFS = {
 	"Synch.tokenParam" : "Authorization",
 	"Synch.subsOp" : "/v3/subscriptions",
 	"Synch.account" : "",
-	"Synch.downloadOnly" : false,
+	"Synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
 };

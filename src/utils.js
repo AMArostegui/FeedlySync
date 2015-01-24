@@ -5,11 +5,11 @@ var Log = {
 	
 	WriteLn : function(str) {	
 		if (getPref("Log.Active")) {
-			switch (getPref("Log.Output")) {
-			case 0:
+			switch (getPref("Log.ToFile")) {
+			case false:
 				app.console.log(str);
 				break;
-			case 1:
+			case true:
 				if (this.File == null) {					
 					let today = new Date();
 					let dd = today.getDate();

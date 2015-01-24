@@ -8,6 +8,7 @@
 		<em:description>Synchronize Thunderbird's RSS and Feedly</em:description>
 		<em:creator>Antonio Miras</em:creator>
 		<em:bootstrap>true</em:bootstrap>
+		<em:optionsURL>chrome://FeedlySync/content/options.xul</em:optionsURL>
 		<em:targetApplication>
 			<Description>
 				<!-- Thunderbird -->
