@@ -131,10 +131,7 @@ var FeedEvents = {
 				return false;
 			if (item.server == null || item.server.type != "rss")
 				return false;
-			let rootFolder = GetRootFolder();
-			if (rootFolder == null)
-				return false;
-			return item.prettyName == rootFolder.prettyName; 
+			return item.prettyName == getPref("Synch.account"); 
 		},
 
 		unsubscribed : [],
