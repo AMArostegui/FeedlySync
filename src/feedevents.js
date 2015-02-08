@@ -62,6 +62,8 @@ var FeedEvents = {
 		subscribed : [],	
 		
 		OnImportOPMLFinished : function() {
+			if (FeedEvents.subscribed.length <= 0)
+				return;
 			Log.WriteLn("FeedEvents.OnImportOPMLFinished. Count=" + FeedEvents.subscribed.length);
 			FeedEvents.feedFolders = {};
 			let action = function() {
@@ -122,14 +124,31 @@ var FeedEvents = {
 			}				
 		},
 		
+		IsRootFolder : function(parentItem, item) {
+			if (parentItem != null)
+				return false;
+			if (!(item instanceof Ci.nsIMsgFolder))
+				return false;
+			if (item.server == null || item.server.type != "rss")
+				return false;
+			let rootFolder = GetRootFolder();
+			if (rootFolder == null)
+				return false;
+			return item.prettyName == rootFolder.prettyName; 
+		},
+
 		unsubscribed : [],
 		
 		OnItemRemoved : function(parentItem, item) {
 			if (Synch.updateRunning)
 				return;
+			if (FeedEvents.IsRootFolder(parentItem, item)) {
+				setPref("Synch.account", "");
+				Synch.DeleteStatusFile();
+				return;
+			}
 			if (FeedEvents.unsubscribed.length <= 0)
 				return;
-			
 			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
 			let action = function () {
 				Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");

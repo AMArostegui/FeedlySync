@@ -30,6 +30,12 @@ var Synch = {
 
 	domFeedStatus : null,
 	
+	DeleteStatusFile : function () {
+		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
+		if (fileFeedStatus.exists())
+			fileFeedStatus.remove();
+	},
+
 	ReadStatusFile : function() {
 		domFeedStatus = null;
 		let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
