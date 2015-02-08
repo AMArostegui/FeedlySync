@@ -1,6 +1,9 @@
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
 
+let prefLocale = null;
+let prefBranch = null;
+
 function onLoad() {
 	// Clean combobox
 	let popup = document.getElementById("accountPopup");
@@ -10,10 +13,12 @@ function onLoad() {
 	    popup.removeChild(popup.firstChild);
 	
 	// Preferences
-	let prefLocale = Components.classes["@mozilla.org/chrome/chrome-registry;1"]
+	if (prefLocale == null)
+		prefLocale = Components.classes["@mozilla.org/chrome/chrome-registry;1"]
 					 .getService(Components.interfaces.nsIXULChromeRegistry)
-					 .getSelectedLocale("global");	
-	let prefBranch = Components.classes["@mozilla.org/preferences-service;1"]
+					 .getSelectedLocale("global");
+	if (prefBranch == null)
+		prefBranch = Components.classes["@mozilla.org/preferences-service;1"]
 					 .getService(Components.interfaces.nsIPrefService)
 					 .getBranch("extensions.FeedlySync.");
 	let prefFolder = "";
@@ -36,6 +41,7 @@ function onLoad() {
 				let menuItem = document.createElement("menuitem");
 				menuItem.setAttribute("label", server.prettyName);
 				menuItem.setAttribute("value", server.prettyName);
+				menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "')");
 				popup.appendChild(menuItem);
 				count++;
 			}
@@ -47,6 +53,7 @@ function onLoad() {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
 		menuItem.setAttribute("value", "");
+		menuItem.setAttribute("oncommand", "onSelected('')");
 		popup.appendChild(menuItem);		
 		return;		
 	}
@@ -55,6 +62,11 @@ function onLoad() {
 	if (list == null)
 		return;
 	list.selectedIndex = sel;
+}
+
+function onSelected(selected) {
+	if (prefBranch != null)
+		prefBranch.setCharPref("Synch.account", selected);	
 }
 
 function onNewAccount() {
