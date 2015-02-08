@@ -127,6 +127,8 @@ var FeedEvents = {
 		OnItemRemoved : function(parentItem, item) {
 			if (Synch.updateRunning)
 				return;
+			if (FeedEvents.unsubscribed.length <= 0)
+				return;
 			
 			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
 			let action = function () {
