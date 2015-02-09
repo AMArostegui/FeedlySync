@@ -13,8 +13,17 @@ var Synch = {
 		Synch.GetFeedlySubs();
 	},
 	
-	// Ensure authentication before running action
+	// Ensure account and authentication before running action
 	AuthAndRun : function(action) {
+		if (getPref("Synch.account") == "") {
+			Services.ww.openWindow(null, "chrome://FeedlySync/content/options.xul",
+					null, "chrome,private,centerscreen,modal", this);	
+			if (getPref("Synch.account") == "") {
+				Log.WriteLn("Synch.AuthAndRun. No account. Action=" + action);
+				return;				
+			}							
+		}
+		
 		if (!Auth.Ready()) {
 			Auth.OnFinished = function(success) {
 				if (success)
