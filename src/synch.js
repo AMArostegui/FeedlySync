@@ -31,9 +31,10 @@ var Synch = {
 	domFeedStatus : null,
 	
 	DeleteStatusFile : function () {
+		let id = addonId;
 		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
 		if (fileFeedStatus.exists())
-			fileFeedStatus.remove();
+			fileFeedStatus.remove(false);
 	},
 
 	ReadStatusFile : function() {
