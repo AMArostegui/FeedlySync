@@ -1,13 +1,18 @@
-Cu.import("resource:///modules/mailServices.js");
+Components.utils.import("resource:///modules/mailServices.js");
 
 var Log = {
+	App : null,
 	File : null,
 	
 	WriteLn : function(str) {	
 		if (getPref("Log.Active")) {
 			switch (getPref("Log.ToFile")) {
 			case false:
-				app.console.log(str);
+				if (Log.App == null) {
+					Log.App = Components.classes["@mozilla.org/steel/application;1"].
+						getService(Components.interfaces.steelIApplication);
+				}
+				Log.App.console.log(str);
 				break;
 			case true:
 				if (this.File == null) {					

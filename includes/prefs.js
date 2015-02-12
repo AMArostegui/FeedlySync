@@ -38,6 +38,8 @@
  * Get the preference value of type specified in PREFS
  */
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
 function getPref(key, aDefault) {
   // Cache the prefbranch after first use
   if (getPref.branch == null)
@@ -85,11 +87,11 @@ function setDefaultPrefs() {
 function setPref(aKey, aVal) {
   switch (typeof(aVal)) {
     case "string":
-      var ss = Cc["@mozilla.org/supports-string;1"]
-          .createInstance(Ci.nsISupportsString);
+      var ss = Components.classes["@mozilla.org/supports-string;1"]
+          .createInstance(Components.interfaces.nsISupportsString);
       ss.data = aVal;
       Services.prefs.getBranch(PREF_BRANCH)
-          .setComplexValue(aKey, Ci.nsISupportsString, ss);
+          .setComplexValue(aKey, Components.interfaces.nsISupportsString, ss);
       break;
   }
 }

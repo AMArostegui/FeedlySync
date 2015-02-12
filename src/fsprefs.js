@@ -1,7 +1,8 @@
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
 	// Global preferences	
-	locale : Cc["@mozilla.org/chrome/chrome-registry;1"].getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global"),	
+	locale : Components.classes["@mozilla.org/chrome/chrome-registry;1"]
+				.getService(Components.interfaces.nsIXULChromeRegistry).getSelectedLocale("global"),
 	baseUrl : "http://sandbox.feedly.com",
 	baseSslUrl : "https://sandbox.feedly.com",
 	

@@ -1,6 +1,6 @@
 /* 
  *	Feedly Synchronizer Add-on for Mozilla Thunderbird.
- *	Copyright (C) 2014  Antonio Miras
+ *	Copyright (C) 2015  Antonio Miras
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
-Cu.import("resource://gre/modules/Services.jsm");
+
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
@@ -45,10 +45,9 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 })(this);
 
 (function(global) global.include = function include(src) {
-	var o = {};
+	let o = {};
 	Components.utils.import("resource://gre/modules/Services.jsm", o);
-	var uri = o.Services.io.newURI(
-			src, null, o.Services.io.newURI(__SCRIPT_URI_SPEC__, null, null));
+	let uri = o.Services.io.newURI(src, null, o.Services.io.newURI(__SCRIPT_URI_SPEC__, null, null));
 	o.Services.scriptloader.loadSubScript(uri.spec, global);
 })(this);
 
@@ -62,16 +61,15 @@ var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 
 // END: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
-var app = Cc["@mozilla.org/steel/application;1"].
-	getService(Components.interfaces.steelIApplication);
 var win = null;
 var addonId = "FeedlySync@AMArostegui";
 
+include("src/fsprefs.js");
+include("includes/prefs.js");
 include("src/utils.js");
 include("src/feedevents.js");
 include("includes/l10n.js");
-include("src/fsprefs.js");
-include("includes/prefs.js");
+
 include("src/auth.js");
 
 function install(data) {

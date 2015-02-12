@@ -30,8 +30,8 @@ var l10n = (function(global) {
   let splitter = /(\w+)-\w+/;
 
   // get user's locale
-  let locale = Cc["@mozilla.org/chrome/chrome-registry;1"]
-      .getService(Ci.nsIXULChromeRegistry).getSelectedLocale("global");
+  let locale = Components.classes["@mozilla.org/chrome/chrome-registry;1"]
+      .getService(Components.interfaces.nsIXULChromeRegistry).getSelectedLocale("global");
 
   function getStr(aStrBundle, aKey) {
     if (!aStrBundle) return false;
