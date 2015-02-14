@@ -4,15 +4,19 @@ Components.utils.import("resource://gre/modules/AddonManager.jsm");
 
 let addonId = "FeedlySync@AMArostegui";
 let loadedModules = false;
+let instantApply = null;
+let services = null;
+let selected = null;
 
 function include(src, uriSpec) {
-	let o = {};
-	Components.utils.import("resource://gre/modules/Services.jsm", o);
-	let uri = o.Services.io.newURI(src, null, o.Services.io.newURI(uriSpec, null, null));
-	o.Services.scriptloader.loadSubScript(uri.spec, this);
+	let uri = services.Services.io.newURI(src, null, services.Services.io.newURI(uriSpec, null, null));
+	services.Services.scriptloader.loadSubScript(uri.spec, this);
 }
 
 function loadModules(addon) {
+	services = {};
+	Components.utils.import("resource://gre/modules/Services.jsm", services);
+
 	let resourceUri = addon.getResourceURI();
 	let addonUriSpec = resourceUri.spec + "bootstrap.js";
 
@@ -30,6 +34,8 @@ function onLoad() {
 		AddonManager.getAddonByID(addonId, loadModules);
 		return;
 	}
+	if (instantApply == null)
+		instantApply = services.Services.prefs.getBoolPref("browser.preferences.instantApply");
 
 	// Clean combobox
 	Log.WriteLn("Options.onLoad");
@@ -80,13 +86,23 @@ function onLoad() {
 	list.selectedIndex = sel;
 }
 
-function onSelected(selected) {
-	Log.WriteLn("Options.onSelected. Selected=" + selected);
-	setPref("Synch.account", selected);
+function onSelected(sel) {
+	Log.WriteLn("Options.onSelected. Selected=" + sel + " InstantApply=" + instantApply);
+	if (instantApply)
+		setPref("Synch.account", sel);
+	else
+		selected = sel;
 }
 
 function onNewAccount() {
 	window.openDialog("chrome://messenger-newsblog/content/feedAccountWizard.xul",
 			"", "chrome,modal,titlebar,centerscreen");
 	onLoad();
+}
+
+function onDialogAccept() {	
+	if (!instantApply) {
+		Log.WriteLn("Options.onDialogAccept. Selected=" + selected);
+		setPref("Synch.account", selected);		
+	}		
 }
