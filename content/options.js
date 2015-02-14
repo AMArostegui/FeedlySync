@@ -26,10 +26,10 @@ function loadModules(addon) {
 	include("includes/l10n.js", addonUriSpec);
 
 	loadedModules = true;
-	onLoad();
+	onLoadAccounts();
 }
 
-function onLoad() {
+function onLoadAccounts() {
 	if (!loadedModules) {
 		AddonManager.getAddonByID(addonId, loadModules);
 		return;
@@ -38,7 +38,7 @@ function onLoad() {
 		instantApply = services.Services.prefs.getBoolPref("browser.preferences.instantApply");
 
 	// Clean combobox
-	Log.WriteLn("Options.onLoad");
+	Log.WriteLn("Options.onLoadAccounts");
 	let popup = document.getElementById("accountPopup");
 	if (popup == null)
 		return;	
@@ -70,7 +70,7 @@ function onLoad() {
 	}
 	
 	// No RSS accounts or nothing selected yet. Populate combobox with dummy node
-	Log.WriteLn("Options.onLoad. Selected Folder = " + sel + " Folder Count = " + count);
+	Log.WriteLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
 	if (sel == -1 || count <= 0) {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
@@ -95,9 +95,10 @@ function onSelected(sel) {
 }
 
 function onNewAccount() {
+	Log.WriteLn("Options.onNewAccount");
 	window.openDialog("chrome://messenger-newsblog/content/feedAccountWizard.xul",
 			"", "chrome,modal,titlebar,centerscreen");
-	onLoad();
+	onLoadAccounts();
 }
 
 function onDialogAccept() {	

@@ -13,18 +13,31 @@ var Synch = {
 		Synch.GetFeedlySubs();
 	},
 	
+	actionInProgress : null,
+
+	OpenSettingsDialog : function(addon) {
+		Log.WriteLn("Synch.OpenSettingDialog");
+		Services.ww.openWindow(null, addon.optionsURL, null, "chrome,private,centerscreen,modal", this);
+		if (getPref("Synch.account") == "")
+			Log.WriteLn("Synch.OpenSettingDialog. No account. Action=" + Synch.actionInProgress);
+		else
+			Synch.AuthAndRun(Synch.actionInProgress);
+		Synch.actionInProgress = null;
+	},
+
 	// Ensure account and authentication before running action
 	AuthAndRun : function(action) {
-		if (getPref("Synch.account") == "") {
-			Services.ww.openWindow(null, "chrome://FeedlySync/content/options.xul",
-					null, "chrome,private,centerscreen,modal", this);	
-			if (getPref("Synch.account") == "") {
-				Log.WriteLn("Synch.AuthAndRun. No account. Action=" + action);
-				return;				
-			}							
+		let account = getPref("Synch.account");
+		let ready = Auth.Ready();
+		Log.WriteLn("Synch.AuthAndRun. Account = " + account + " Ready = " + ready);
+
+		if (account == "") {
+			AddonManager.getAddonByID(addonId, Synch.OpenSettingsDialog);
+			Synch.actionInProgress = action;
+			return;
 		}
 		
-		if (!Auth.Ready()) {
+		if (!ready) {
 			Auth.OnFinished = function(success) {
 				if (success)
 					action();
