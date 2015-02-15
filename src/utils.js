@@ -93,24 +93,24 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 
 function GetRootFolder() {
 	let selServer = null;
-	let accountName = getPref("Synch.account");
+	let accountKey = getPref("Synch.account");
 	for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
 		let server = account.incomingServer;
 		if (server) {
 			if ("rss" == server.type &&
-				server.prettyName == accountName) {
+				account.key == accountKey) {
 				selServer = server;
 				break;
 			}
 		}
 	}		
 	if (selServer == null) {
-		Log.WriteLn("GetRootFolder. No server found. Account = " + accountName);
+		Log.WriteLn("GetRootFolder. No server found. Account Key = " + accountKey);
 		return null;			
 	}							
 	let rootFolder = selServer.rootFolder;
 	if (rootFolder == null) {
-		Log.WriteLn("GetRootFolder. No root folder. Account = " + accountName);
+		Log.WriteLn("GetRootFolder. No root folder. Account Key = " + accountKey);
 		return null;			
 	}		
 	return rootFolder;

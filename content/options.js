@@ -6,7 +6,8 @@ let addonId = "FeedlySync@AMArostegui";
 let loadedModules = false;
 let instantApply = null;
 let services = null;
-let selected = null;
+let selectedName = null;
+let selectedKey = null;
 
 function include(src, uriSpec) {
 	let uri = services.Services.io.newURI(src, null, services.Services.io.newURI(uriSpec, null, null));
@@ -45,7 +46,7 @@ function onLoadAccounts() {
 	while (popup.firstChild)
 	    popup.removeChild(popup.firstChild);
 	
-	let prefFolder = getPref("Synch.account");
+	let prefAccount = getPref("Synch.account");
 	let prefLocale = getPref("locale");
 	
 	// Populate combobox	
@@ -56,13 +57,13 @@ function onLoadAccounts() {
 		let server = account.incomingServer;
 		if (server) {
 			if ("rss" == server.type) {
-				if (prefFolder == server.prettyName)
+				if (prefAccount == account.key)
 					sel = count;
 				
 				let menuItem = document.createElement("menuitem");
 				menuItem.setAttribute("label", server.prettyName);
-				menuItem.setAttribute("value", server.prettyName);
-				menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "')");
+				menuItem.setAttribute("value", account.key);
+				menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "', '" + account.key + "')");
 				popup.appendChild(menuItem);
 				count++;
 			}
@@ -75,7 +76,7 @@ function onLoadAccounts() {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
 		menuItem.setAttribute("value", "");
-		menuItem.setAttribute("oncommand", "onSelected('')");
+		menuItem.setAttribute("oncommand", "onSelected('', '')");
 		popup.appendChild(menuItem);		
 		return;		
 	}
@@ -86,12 +87,14 @@ function onLoadAccounts() {
 	list.selectedIndex = sel;
 }
 
-function onSelected(sel) {
-	Log.WriteLn("Options.onSelected. Selected=" + sel + " InstantApply=" + instantApply);
+function onSelected(selPrettyName, selKey) {
+	Log.WriteLn("Options.onSelected. Selected=" + selPrettyName + " (" + selKey + ") " + "InstantApply=" + instantApply);
 	if (instantApply)
-		setPref("Synch.account", sel);
-	else
-		selected = sel;
+		setPref("Synch.account", selKey);
+	else {
+		selectedName = selPrettyName;
+		selectedKey = selKey;
+	}
 }
 
 function onNewAccount() {
@@ -103,7 +106,7 @@ function onNewAccount() {
 
 function onDialogAccept() {	
 	if (!instantApply) {
-		Log.WriteLn("Options.onDialogAccept. Selected=" + selected);
-		setPref("Synch.account", selected);		
+		Log.WriteLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
+		setPref("Synch.account", selectedKey);
 	}		
 }

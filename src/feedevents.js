@@ -131,7 +131,12 @@ var FeedEvents = {
 				return false;
 			if (item.server == null || item.server.type != "rss")
 				return false;
-			return item.prettyName == getPref("Synch.account"); 
+
+			let accountKey = getPref("Synch.account");
+			if (accountKey == "")
+				return false;
+
+			return null == MailServices.accounts.getAccount(accountKey);
 		},
 
 		unsubscribed : [],
@@ -140,10 +145,12 @@ var FeedEvents = {
 			if (Synch.updateRunning)
 				return;
 			if (FeedEvents.IsRootFolder(parentItem, item)) {
+				Log.WriteLn("FeedEvents.OnItemRemoved. Removing synchronized account");
 				setPref("Synch.account", "");
 				Synch.DeleteStatusFile();
 				return;
 			}
+
 			if (FeedEvents.unsubscribed.length <= 0)
 				return;
 			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
