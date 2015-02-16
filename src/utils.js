@@ -1,5 +1,21 @@
 Components.utils.import("resource:///modules/mailServices.js");
 
+var SynchDirection = {
+	Both : 0,
+	Down : 1,
+	Up : 2,
+
+	IsBoth : function() {
+		return getPref("Synch.direction") == SynchDirection.Both;
+	},
+	IsDownload : function() {
+		return getPref("Synch.direction") == SynchDirection.Down;
+	},
+	IsUpload : function() {
+		return getPref("Synch.direction") == SynchDirection.Up;
+	}
+};
+
 var Log = {
 	App : null,
 	File : null,
