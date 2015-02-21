@@ -1,4 +1,4 @@
-/* 
+/*
  *	Feedly Synchronizer Add-on for Mozilla Thunderbird.
  *	Copyright (C) 2015  Antonio Miras
  *
@@ -65,17 +65,17 @@ var win = null;
 var addonId = "FeedlySync@AMArostegui";
 
 include("src/fsprefs.js");
-include("includes/prefs.js");
+include("packages/prefs.js");
 include("src/utils.js");
 include("src/feedevents.js");
-include("includes/l10n.js");
+include("packages/l10n.js");
 
 include("src/auth.js");
 
 function install(data) {
 }
 
-function uninstall() {	
+function uninstall() {
 }
 
 function startup(data, reason) {

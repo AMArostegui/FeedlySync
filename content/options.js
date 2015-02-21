@@ -22,9 +22,9 @@ function loadModules(addon) {
 	let addonUriSpec = resourceUri.spec + "bootstrap.js";
 
 	include("src/fsprefs.js", addonUriSpec);
-	include("includes/prefs.js", addonUriSpec);
+	include("packages/prefs.js", addonUriSpec);
 	include("src/utils.js", addonUriSpec);
-	include("includes/l10n.js", addonUriSpec);
+	include("packages/l10n.js", addonUriSpec);
 
 	loadedModules = true;
 	onLoadAccounts();
@@ -42,24 +42,24 @@ function onLoadAccounts() {
 	Log.WriteLn("Options.onLoadAccounts");
 	let popup = document.getElementById("accountPopup");
 	if (popup == null)
-		return;	
+		return;
 	while (popup.firstChild)
 	    popup.removeChild(popup.firstChild);
-	
+
 	let prefAccount = getPref("Synch.account");
 	let prefLocale = getPref("locale");
-	
-	// Populate combobox	
+
+	// Populate combobox
 	let count = 0;
-	let sel = -1;	
+	let sel = -1;
 	for each (let account in fixIterator(MailServices.accounts.accounts,
-			Components.interfaces.nsIMsgAccount)) {			
+			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
 			if ("rss" == server.type) {
 				if (prefAccount == account.key)
 					sel = count;
-				
+
 				let menuItem = document.createElement("menuitem");
 				menuItem.setAttribute("label", server.prettyName);
 				menuItem.setAttribute("value", account.key);
@@ -69,7 +69,7 @@ function onLoadAccounts() {
 			}
 		}
 	}
-	
+
 	// No RSS accounts or nothing selected yet. Populate combobox with dummy node
 	Log.WriteLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
 	if (sel == -1 || count <= 0) {
@@ -77,10 +77,10 @@ function onLoadAccounts() {
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
 		menuItem.setAttribute("value", "");
 		menuItem.setAttribute("oncommand", "onSelected('', '')");
-		popup.appendChild(menuItem);		
-		return;		
+		popup.appendChild(menuItem);
+		return;
 	}
-			
+
 	let list = document.getElementById("accountList");
 	if (list == null)
 		return;
@@ -104,9 +104,9 @@ function onNewAccount() {
 	onLoadAccounts();
 }
 
-function onDialogAccept() {	
+function onDialogAccept() {
 	if (!instantApply) {
 		Log.WriteLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
 		setPref("Synch.account", selectedKey);
-	}		
+	}
 }
