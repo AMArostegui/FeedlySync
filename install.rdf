@@ -3,9 +3,9 @@
 	<Description about="urn:mozilla:install-manifest">
 		<em:type>2</em:type> <!-- 2 : Extension -->
 		<em:id>FeedlySync@AMArostegui</em:id>
-		<em:version>0.1</em:version>
-		<em:name>Feedly Synchronizer</em:name>
-		<em:description>Synchronize Thunderbird's RSS and Feedly</em:description>
+		<em:version>1.0</em:version>
+        <em:name>Feedly Synchronizer</em:name>
+        <em:description>Synchronize your favorite RSS sources with Thundebird and Feedly</em:description>
 		<em:creator>Antonio Miras</em:creator>
 		<em:bootstrap>true</em:bootstrap>
 		<em:optionsURL>chrome://FeedlySync/content/options.xul</em:optionsURL>
@@ -17,5 +17,19 @@
 				<em:maxVersion>40.0</em:maxVersion>
 			</Description>
 		</em:targetApplication>
+	    <em:localized>
+	      <Description>
+	        <em:locale>es</em:locale>
+	        <em:name>Feedly Synchronizer</em:name>
+	        <em:description>Sincroniza Thunderbird y Feedly con tus fuentes RSS favoritas</em:description>
+	      </Description>
+	    </em:localized>
+	    <em:localized>
+	      <Description>
+	        <em:locale>en</em:locale>
+	        <em:name>Feedly Synchronizer</em:name>
+	        <em:description>Synchronize your favorite RSS sources with Thundebird and Feedly</em:description>
+	      </Description>
+	    </em:localized>
 	</Description>
 </RDF>
