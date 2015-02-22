@@ -19,7 +19,7 @@ var synch = {
 		log.writeLn("synch.OpenSettingDialog");
 		Services.ww.openWindow(null, addon.optionsURL, null, "chrome,private,centerscreen,modal", this);
 		if (getPref("synch.account") === "")
-			log.writeLn("synch.OpenSettingDialog. No account. Action=" + synch.actionInProgress);
+			log.writeLn("Synch.OpenSettingDialog. No account. Action=" + synch.actionInProgress);
 		else
 			synch.authAndRun(synch.actionInProgress);
 		synch.actionInProgress = null;

@@ -7,38 +7,38 @@ const PREFS = {
 	baseSslUrl : "https://sandbox.feedly.com",
 	
 	// Log preferences	
-	"Log.Active" : false,
-	"Log.ToFile" : false,							
+	"log.active" : false,
+	"log.toFile" : false,
 	
 	//Authentication preferences
-	"Auth.getCodeOp" : "/v3/auth/auth",
-	"Auth.getTokenOp" : "/v3/auth/token",
-	"Auth.redirSetCode" : "",				 	// "/feedlySetCode"
-	"Auth.redirSetToken" : "", 			 		// "/feedlySetToken"
+	"auth.getCodeOp" : "/v3/auth/auth",
+	"auth.getTokenOp" : "/v3/auth/token",
+	"auth.redirSetCode" : "",				 	// "/feedlySetCode"
+	"auth.redirSetToken" : "", 			 		// "/feedlySetToken"
 
-	"Auth.resTypePar" : "response_type",
-	"Auth.resTypeVal" : "code",
-	"Auth.cliIdPar" : "client_id",
-	"Auth.cliIdVal" : "sandbox",
-	"Auth.cliSecPar" : "client_secret",
-	"Auth.cliSecVal" : "YDRYI5E8OP2JKXYSDW79",
-	"Auth.redirPar" : "redirect_uri",
-	"Auth.redirVal" : "http://localhost:8080",
-	"Auth.scopePar" : "scope",
-	"Auth.scopeVal" : "https://cloud.feedly.com/subscriptions",
-	"Auth.statePar" : "state",
-	"Auth.codePar" : "code",
-	"Auth.grantTypePar" : "grant_type",
-	"Auth.grantTypeVal" : "authorization_code",
-	"Auth.refreshTokenPar" : "refresh_token",	
+	"auth.resTypePar" : "response_type",
+	"auth.resTypeVal" : "code",
+	"auth.cliIdPar" : "client_id",
+	"auth.cliIdVal" : "sandbox",
+	"auth.cliSecPar" : "client_secret",
+	"auth.cliSecVal" : "YDRYI5E8OP2JKXYSDW79",
+	"auth.redirPar" : "redirect_uri",
+	"auth.redirVal" : "http://localhost:8080",
+	"auth.scopePar" : "scope",
+	"auth.scopeVal" : "https://cloud.feedly.com/subscriptions",
+	"auth.statePar" : "state",
+	"auth.codePar" : "code",
+	"auth.grantTypePar" : "grant_type",
+	"auth.grantTypeVal" : "authorization_code",
+	"auth.refreshTokenPar" : "refresh_token",
 
-	"Auth.tokenRefresh" : "",
-	"Auth.userId" : "",
-	"Auth.expiringMargin" : 90,	
+	"auth.tokenRefresh" : "",
+	"auth.userId" : "",
+	"auth.expiringMargin" : 90,
 	
 	// Synchronizing preferences	
-	"Synch.tokenParam" : "Authorization",
-	"Synch.subsOp" : "/v3/subscriptions",
-	"Synch.account" : "",
-	"Synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
+	"synch.tokenParam" : "Authorization",
+	"synch.subsOp" : "/v3/subscriptions",
+	"synch.account" : "",
+	"synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
 };

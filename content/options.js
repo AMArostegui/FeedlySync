@@ -46,7 +46,7 @@ function onLoadAccounts() {
 	while (popup.firstChild)
 	    popup.removeChild(popup.firstChild);
 
-	let prefAccount = getPref("Synch.account");
+	let prefAccount = getPref("synch.account");
 	let prefLocale = getPref("locale");
 
 	// Populate combobox
@@ -90,7 +90,7 @@ function onLoadAccounts() {
 function onSelected(selPrettyName, selKey) {
 	log.writeLn("Options.onSelected. Selected=" + selPrettyName + " (" + selKey + ") " + "InstantApply=" + instantApply);
 	if (instantApply)
-		setPref("Synch.account", selKey);
+		setPref("synch.account", selKey);
 	else {
 		selectedName = selPrettyName;
 		selectedKey = selKey;
@@ -107,6 +107,6 @@ function onNewAccount() {
 function onDialogAccept() {
 	if (!instantApply) {
 		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
-		setPref("Synch.account", selectedKey);
+		setPref("synch.account", selectedKey);
 	}
 }

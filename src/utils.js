@@ -6,13 +6,13 @@ var synchDirection = {
 	up : 2,
 
 	isBoth : function() {
-		return getPref("Synch.direction") == synchDirection.both;
+		return getPref("synch.direction") == synchDirection.both;
 	},
 	isDownload : function() {
-		return getPref("Synch.direction") == synchDirection.down;
+		return getPref("synch.direction") == synchDirection.down;
 	},
 	isUpload : function() {
-		return getPref("Synch.direction") == synchDirection.up;
+		return getPref("synch.direction") == synchDirection.up;
 	}
 };
 
@@ -21,8 +21,8 @@ var log = {
 	file : null,
 	
 	writeLn : function(str) {	
-		if (getPref("Log.Active")) {
-			switch (getPref("Log.ToFile")) {
+		if (getPref("log.active")) {
+			switch (getPref("log.toFile")) {
 			case false:
 				if (log.app === null) {
 					log.app = Components.classes["@mozilla.org/steel/application;1"].
@@ -110,7 +110,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 
 function getRootFolder() {
 	let selServer = null;
-	let accountKey = getPref("Synch.account");
+	let accountKey = getPref("synch.account");
 	for each (var account in fixIterator(MailServices.accounts.accounts, Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
