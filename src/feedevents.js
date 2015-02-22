@@ -62,7 +62,7 @@ var feedEvents = {
 		subscribed : [],
 
 		onImportOPMLFinished : function() {
-			if (SynchDirection.IsDownload())
+			if (synchDirection.isDownload())
 				return;
 
 			if (feedEvents.subscribed.length <= 0)
@@ -81,7 +81,7 @@ var feedEvents = {
 		feedFolders : {},
 
 		onAddFeed : function(aFeed) {
-			if (SynchDirection.IsDownload())
+			if (synchDirection.isDownload())
 				return;
 
 			if (synch.updateRunning)
@@ -148,7 +148,7 @@ var feedEvents = {
 		unsubscribed : [],
 
 		OnItemRemoved : function(parentItem, item) {
-			if (SynchDirection.IsDownload())
+			if (synchDirection.isDownload())
 				return;
 
 			if (synch.updateRunning)
@@ -171,7 +171,7 @@ var feedEvents = {
 		},
 
 		onDeleteFeed : function(aId, aServer, aParentFolder) {
-			if (SynchDirection.IsDownload())
+			if (synchDirection.isDownload())
 				return;
 
 			if (synch.updateRunning)

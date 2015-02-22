@@ -10,13 +10,13 @@
 
 	<prefpane id="pane_main" index="main" label="&main.tab;">
 		<preferences>
-			<preference id="SynchDirection" name="extensions.FeedlySync.Synch.direction"
+			<preference id="SynchDirection" name="extensions.FeedlySync.synch.direction"
 				type="int" />
-			<preference id="SynchAccount" name="extensions.FeedlySync.Synch.account"
+			<preference id="SynchAccount" name="extensions.FeedlySync.synch.account"
 				type="string" />
-			<preference id="LogActive" name="extensions.FeedlySync.Log.Active"
+			<preference id="LogActive" name="extensions.FeedlySync.log.active"
 				type="bool" />
-			<preference id="LogOutput" name="extensions.FeedlySync.Log.Output"
+			<preference id="LogOutput" name="extensions.FeedlySync.log.output"
 				type="bool" />
 		</preferences>
 		<groupbox flex="1">
