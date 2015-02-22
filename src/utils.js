@@ -21,14 +21,14 @@ var log = {
 	file : null,
 	
 	writeLn : function(str) {	
-		if (getPref("Log.Active")) {
-			switch (getPref("Log.ToFile")) {
+		if (getPref("log.Active")) {
+			switch (getPref("log.ToFile")) {
 			case false:
-				if (Log.App === null) {
-					Log.App = Components.classes["@mozilla.org/steel/application;1"].
+				if (log.App === null) {
+					log.App = Components.classes["@mozilla.org/steel/application;1"].
 						getService(Components.interfaces.steelIApplication);
 				}
-				Log.App.console.log(str);
+				log.App.console.log(str);
 				break;
 			case true:
 				if (this.File === null) {
@@ -90,12 +90,12 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 	
 	let menuItemRef = doc.getElementById(strMenuItemRef);
 	if (menuItemRef === null) {
-		Log.WriteLn("addMenuItem. Could not find menu item: " + strMenuItemRef);
+		log.WriteLn("addMenuItem. Could not find menu item: " + strMenuItemRef);
 		return;		
 	}
 	let menuPopup = doc.getElementById(strMenuPopup);
 	if (menuPopup === null) {
-		Log.WriteLn("addMenuItem. Could not find menu popup: " + strMenuPopup);
+		log.WriteLn("addMenuItem. Could not find menu popup: " + strMenuPopup);
 		return;		
 	}		
 	menuPopup.insertBefore(menuItemSync, menuItemRef);	
@@ -121,12 +121,12 @@ function getRootFolder() {
 		}
 	}		
 	if (selServer === null) {
-		Log.WriteLn("getRootFolder. No server found. Account Key = " + accountKey);
+		log.WriteLn("getRootFolder. No server found. Account Key = " + accountKey);
 		return null;			
 	}							
 	let rootFolder = selServer.rootFolder;
 	if (rootFolder === null) {
-		Log.WriteLn("getRootFolder. No root folder. Account Key = " + accountKey);
+		log.WriteLn("getRootFolder. No root folder. Account Key = " + accountKey);
 		return null;			
 	}		
 	return rootFolder;
