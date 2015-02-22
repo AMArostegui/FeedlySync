@@ -21,14 +21,14 @@ var log = {
 	file : null,
 	
 	writeLn : function(str) {	
-		if (getPref("log.Active")) {
-			switch (getPref("log.ToFile")) {
+		if (getPref("Log.Active")) {
+			switch (getPref("Log.ToFile")) {
 			case false:
-				if (log.App === null) {
-					log.App = Components.classes["@mozilla.org/steel/application;1"].
+				if (log.app === null) {
+					log.app = Components.classes["@mozilla.org/steel/application;1"].
 						getService(Components.interfaces.steelIApplication);
 				}
-				log.App.console.log(str);
+				log.app.console.log(str);
 				break;
 			case true:
 				if (this.File === null) {
@@ -79,7 +79,8 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 
 	function removeMenuItem() {
 		var menuitem = doc.getElementById(fileMenuitemID);
-		menuitem.parentNode.removeChild(menuitem);
+		if (menuitem !== null)
+			menuitem.parentNode.removeChild(menuitem);
 	}
 	removeMenuItem();
 
