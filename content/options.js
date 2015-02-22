@@ -39,7 +39,7 @@ function onLoadAccounts() {
 		instantApply = services.Services.prefs.getBoolPref("browser.preferences.instantApply");
 
 	// Clean combobox
-	Log.WriteLn("Options.onLoadAccounts");
+	log.writeLn("Options.onLoadAccounts");
 	let popup = document.getElementById("accountPopup");
 	if (popup === null)
 		return;
@@ -71,7 +71,7 @@ function onLoadAccounts() {
 	}
 
 	// No RSS accounts or nothing selected yet. Populate combobox with dummy node
-	Log.WriteLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
+	log.writeLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
 	if (sel == -1 || count <= 0) {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
@@ -88,7 +88,7 @@ function onLoadAccounts() {
 }
 
 function onSelected(selPrettyName, selKey) {
-	Log.WriteLn("Options.onSelected. Selected=" + selPrettyName + " (" + selKey + ") " + "InstantApply=" + instantApply);
+	log.writeLn("Options.onSelected. Selected=" + selPrettyName + " (" + selKey + ") " + "InstantApply=" + instantApply);
 	if (instantApply)
 		setPref("Synch.account", selKey);
 	else {
@@ -98,7 +98,7 @@ function onSelected(selPrettyName, selKey) {
 }
 
 function onNewAccount() {
-	Log.WriteLn("Options.onNewAccount");
+	log.writeLn("Options.onNewAccount");
 	window.openDialog("chrome://messenger-newsblog/content/feedAccountWizard.xul",
 			"", "chrome,modal,titlebar,centerscreen");
 	onLoadAccounts();
@@ -106,7 +106,7 @@ function onNewAccount() {
 
 function onDialogAccept() {
 	if (!instantApply) {
-		Log.WriteLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
+		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
 		setPref("Synch.account", selectedKey);
 	}
 }

@@ -83,20 +83,20 @@ function startup(data, reason) {
 }
 
 function shutdown(data, reason) {
-	FeedEvents.RemoveListener();
+	feedEvents.removeListener();
 	unload();
 }
 
 function main(window) {
 	win = window;
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
-	Synch.ReadStatusFile();
-	FeedEvents.AddListener();
+	synch.readStatusFile();
+	feedEvents.addListener();
 }
 
 function syncTBFeedly() {
 	let action = function() {
-		Synch.Init();
+		synch.init();
 	};
-	Synch.AuthAndRun(action);
+	synch.authAndRun(action);
 }

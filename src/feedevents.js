@@ -1,35 +1,35 @@
 Components.utils.import("resource:///modules/FeedUtils.jsm");
 include("src/synch.js");
 
-var FeedEvents = {
+var feedEvents = {
 		retryCount : 0,
 
-		MainWndCmdListener : function(event) {
+		mainWndCmdListener : function(event) {
 			if (event === null || event.target === null)
 				return;
 			if (event.target.id !== "folderPaneContext-subscribe")
 				return;
 
 			// Wait until subscriptions window is ready to trap its commands
-			FeedEvents.retryCount = 0;
+			feedEvents.retryCount = 0;
 			let subscriptionsWindow = null;
 			let interval = win.setInterval(function() {
 				subscriptionsWindow =
 				    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 				if (subscriptionsWindow !== null) {
 					win.clearInterval(interval);
-					Log.WriteLn("FeedEvents.MainWndCmdListener");
+					log.writeLn("FeedEvents.mainWndCmdListener");
 
 					// Trap OPML import ending
 					let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
 					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinished;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
 						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
-						FeedEvents.OnImportOPMLFinished();
+						feedEvents.onImportOPMLFinished();
 					};
 				}
-				else if (FeedEvents.retryCount < 20)
-					FeedEvents.retryCount++;
+				else if (feedEvents.retryCount < 20)
+					feedEvents.retryCount++;
 				else
 					win.clearInterval(interval);
 			}, 300);
@@ -45,13 +45,13 @@ var FeedEvents = {
 		//					Feed2-n-l-1 => Synchronized
 		//					Feed2-n-l-2, ..., Feed2-n-l-M => Local
 		//					Folder(...) : All folder in lower levels are local
-		CheckFolderLevel : function(aFolder) {
+		checkFolderLevel : function(aFolder) {
 			if (aFolder === null)
 				return false;
 			let aParentFolder = aFolder.parent;
 			if (aParentFolder === null)
 				return false;
-			let rootFolder = GetRootFolder();
+			let rootFolder = getRootFolder();
 			if (rootFolder === null)
 				return false;
 			if (aParentFolder.parent !== rootFolder)
@@ -61,41 +61,41 @@ var FeedEvents = {
 
 		subscribed : [],
 
-		OnImportOPMLFinished : function() {
+		onImportOPMLFinished : function() {
 			if (SynchDirection.IsDownload())
 				return;
 
-			if (FeedEvents.subscribed.length <= 0)
+			if (feedEvents.subscribed.length <= 0)
 				return;
-			Log.WriteLn("FeedEvents.OnImportOPMLFinished. Count=" + FeedEvents.subscribed.length);
-			FeedEvents.feedFolders = {};
+			log.writeLn("FeedEvents.onImportOPMLFinished. Count=" + feedEvents.subscribed.length);
+			feedEvents.feedFolders = {};
 			let action = function() {
-				Synch.SrvSubscribe(FeedEvents.subscribed, "FeedEvents.OnImportOPMLFinished", true);
-				FeedEvents.subscribed = [];
+				synch.srvSubscribe(feedEvents.subscribed, "FeedEvents.onImportOPMLFinished", true);
+				feedEvents.subscribed = [];
 			};
-			Synch.AuthAndRun(action);
+			synch.authAndRun(action);
 		},
 
 		// Helper dictionary. Stores whether a folder contains feeds
 		// Intended to avoid calling repeatedly FeedUtils.getFeedUrlsInFolder which seems inefficient
 		feedFolders : {},
 
-		OnAddFeed : function(aFeed) {
+		onAddFeed : function(aFeed) {
 			if (SynchDirection.IsDownload())
 				return;
 
-			if (Synch.updateRunning)
+			if (synch.updateRunning)
 				return;
 			let subscriptionsWindow =
 			    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subscriptionsWindow === null) {
-				Log.WriteLn("FeedEvents.OnAddFeed. Subscribing not using dialog. Unexpected situation");
+				log.writeLn("FeedEvents.onAddFeed. Subscribing not using dialog. Unexpected situation");
 				return;
 			}
-			if (!FeedEvents.CheckFolderLevel(aFeed.folder))
+			if (!feedEvents.checkFolderLevel(aFeed.folder))
 				return;
 			if (aFeed.mFolder === null || aFeed.mFolder.parent === null) {
-				Log.WriteLn("FeedEvents.OnAddFeed. No parent folder. Cannot retrieve category");
+				log.writeLn("FeedEvents.onAddFeed. No parent folder. Cannot retrieve category");
 				return;
 			}
 
@@ -103,20 +103,20 @@ var FeedEvents = {
 			if (feedSubscriptions.mActionMode !== feedSubscriptions.kImportingOPML) {
 				let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
 				if (feedUrlArray !== null && feedUrlArray.length > 1) {
-					Log.WriteLn("FeedEvents.OnAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);
+					log.writeLn("FeedEvents.onAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);
 					return;
 				}
 				let action = function() {
-					Synch.SrvSubscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
-						"FeedEvents.OnAddFeed", true);
+					synch.srvSubscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
+						"FeedEvents.onAddFeed", true);
 				};
-				Synch.AuthAndRun(action);
+				synch.authAndRun(action);
 			}
 			else {
-				switch (FeedEvents.feedFolders[aFeed.mFolder.URI]) {
+				switch (feedEvents.feedFolders[aFeed.mFolder.URI]) {
 				// Mark as processed to avoid subsequent calling
 				case undefined:
-					FeedEvents.feedFolders[aFeed.mFolder.URI] = true;
+					feedEvents.feedFolders[aFeed.mFolder.URI] = true;
 					let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
 					if (feedUrlArray !== null && feedUrlArray.length > 1)
 						return;
@@ -126,11 +126,11 @@ var FeedEvents = {
 				case true:
 					return;
 				}
-				FeedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name } );
+				feedEvents.subscribed.push( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name } );
 			}
 		},
 
-		IsRootFolder : function(parentItem, item) {
+		isRootFolder : function(parentItem, item) {
 			if (parentItem !== null)
 				return false;
 			if (!(item instanceof Components.interfaces.nsIMsgFolder))
@@ -138,7 +138,7 @@ var FeedEvents = {
 			if (item.server === null || item.server.type !== "rss")
 				return false;
 
-			let accountKey = getPref("Synch.account");
+			let accountKey = getPref("synch.account");
 			if (accountKey === "")
 				return false;
 
@@ -151,82 +151,82 @@ var FeedEvents = {
 			if (SynchDirection.IsDownload())
 				return;
 
-			if (Synch.updateRunning)
+			if (synch.updateRunning)
 				return;
-			if (FeedEvents.IsRootFolder(parentItem, item)) {
-				Log.WriteLn("FeedEvents.OnItemRemoved. Removing synchronized account");
-				setPref("Synch.account", "");
-				Synch.DeleteStatusFile();
+			if (feedEvents.isRootFolder(parentItem, item)) {
+				log.writeLn("FeedEvents.OnItemRemoved. Removing synchronized account");
+				setPref("synch.account", "");
+				synch.deleteStatusFile();
 				return;
 			}
 
-			if (FeedEvents.unsubscribed.length <= 0)
+			if (feedEvents.unsubscribed.length <= 0)
 				return;
-			Log.WriteLn("FeedEvents.OnItemRemoved. Count=" + FeedEvents.unsubscribed.length);
+			log.writeLn("FeedEvents.OnItemRemoved. Count=" + feedEvents.unsubscribed.length);
 			let action = function () {
-				Synch.SrvUnsubscribe(FeedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
-				FeedEvents.unsubscribed = [];
+				synch.srvUnsubscribe(feedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
+				feedEvents.unsubscribed = [];
 			};
-			Synch.AuthAndRun(action);
+			synch.authAndRun(action);
 		},
 
-		OnDeleteFeed : function(aId, aServer, aParentFolder) {
+		onDeleteFeed : function(aId, aServer, aParentFolder) {
 			if (SynchDirection.IsDownload())
 				return;
 
-			if (Synch.updateRunning)
+			if (synch.updateRunning)
 				return;
 
-			// Do not use Synch.CheckFolderLevel. By this point, parent folder is recycle bin
-			let rootFolder = GetRootFolder();
+			// Do not use synch.checkFolderLevel. By this point, parent folder is recycle bin
+			let rootFolder = getRootFolder();
 			if (rootFolder === null)
 				return;
 			if (aParentFolder.rootFolder !== rootFolder)
 				return;
-			let node = Synch.FindDomNode(aId.Value);
+			let node = synch.findDomNode(aId.Value);
 			if (node === null)
 				return;
 
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd !== null) {
 				let action = function() {
-					Synch.SrvUnsubscribe( { id : aId.Value, domNode : node },
-						"FeedEvents.OnDeleteFeed");
+					synch.srvUnsubscribe( { id : aId.Value, domNode : node },
+						"FeedEvents.onDeleteFeed");
 				};
-				Synch.AuthAndRun(action);
+				synch.authAndRun(action);
 			}
 			else
-				FeedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
+				feedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
 		},
 
-		AddListener : function() {
-			Log.WriteLn("FeedEvents.AddListener");
+		addListener : function() {
+			log.writeLn("FeedEvents.AddListener");
 
 			// Folder events listener
 			let notifyFlags = Components.interfaces.nsIFolderListener.removed;
 			MailServices.mailSession.AddFolderListener(this, notifyFlags);
 
 			// Main window command listener
-			win.addEventListener("command", FeedEvents.MainWndCmdListener, false);
+			win.addEventListener("command", feedEvents.mainWndCmdListener, false);
 
 			// We need to know when user's subscribed/unsuscbrided to a Feed
 			FeedUtils.addFeedPrimary = FeedUtils.addFeed;
 			FeedUtils.addFeed = function(aFeed) {
 				FeedUtils.addFeedPrimary(aFeed);
-				FeedEvents.OnAddFeed(aFeed);
+				feedEvents.onAddFeed(aFeed);
 			};
 			FeedUtils.deleteFeedPrimary = FeedUtils.deleteFeed;
 			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {
-				FeedEvents.OnDeleteFeed(aId, aServer, aParentFolder);
+				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
 		},
 
-		RemoveListener : function() {
-			Log.WriteLn("FeedEvents.RemoveListener");
+		removeListener : function() {
+			log.writeLn("FeedEvents.RemoveListener");
 			MailServices.mailSession.RemoveFolderListener(this);
 
-			win.removeEventListener("command", FeedEvents.MainWndCmdListener);
+			win.removeEventListener("command", feedEvents.mainWndCmdListener);
 
 			FeedUtils.addFeed = FeedUtils.addFeedPrimary;
 			FeedUtils.addFeedPrimary = null;

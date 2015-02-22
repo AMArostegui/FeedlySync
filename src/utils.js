@@ -1,26 +1,26 @@
 Components.utils.import("resource:///modules/mailServices.js");
 
-var SynchDirection = {
-	Both : 0,
-	Down : 1,
-	Up : 2,
+var synchDirection = {
+	both : 0,
+	down : 1,
+	up : 2,
 
-	IsBoth : function() {
-		return getPref("Synch.direction") == SynchDirection.Both;
+	isBoth : function() {
+		return getPref("Synch.direction") == synchDirection.both;
 	},
-	IsDownload : function() {
-		return getPref("Synch.direction") == SynchDirection.Down;
+	isDownload : function() {
+		return getPref("Synch.direction") == synchDirection.down;
 	},
-	IsUpload : function() {
-		return getPref("Synch.direction") == SynchDirection.Up;
+	isUpload : function() {
+		return getPref("Synch.direction") == synchDirection.up;
 	}
 };
 
-var Log = {
-	App : null,
-	File : null,
+var log = {
+	app : null,
+	file : null,
 	
-	WriteLn : function(str) {	
+	writeLn : function(str) {	
 		if (getPref("Log.Active")) {
 			switch (getPref("Log.ToFile")) {
 			case false:
@@ -107,7 +107,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 	unload(removeMenuItem, win);
 }
 
-function GetRootFolder() {
+function getRootFolder() {
 	let selServer = null;
 	let accountKey = getPref("Synch.account");
 	for each (var account in fixIterator(MailServices.accounts.accounts, Components.interfaces.nsIMsgAccount)) {
@@ -121,18 +121,18 @@ function GetRootFolder() {
 		}
 	}		
 	if (selServer === null) {
-		Log.WriteLn("GetRootFolder. No server found. Account Key = " + accountKey);
+		Log.WriteLn("getRootFolder. No server found. Account Key = " + accountKey);
 		return null;			
 	}							
 	let rootFolder = selServer.rootFolder;
 	if (rootFolder === null) {
-		Log.WriteLn("GetRootFolder. No root folder. Account Key = " + accountKey);
+		Log.WriteLn("getRootFolder. No root folder. Account Key = " + accountKey);
 		return null;			
 	}		
 	return rootFolder;
 }
 
-function FormatEventMsg(message, evnt, i, j) {
+function formatEventMsg(message, evnt, i, j) {
 	return message +
 			(i !== undefined && j !== undefined ? " (" + (i + 1) + "/" + j + ")" : "") +
 			" Url: " + evnt.currentTarget.channel.URI.spec +
