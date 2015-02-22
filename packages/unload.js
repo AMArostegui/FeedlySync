@@ -55,18 +55,18 @@
 exports.unload = function unload(callback, container) {
   // Initialize the array of unloaders on the first usage
   let unloaders = unload.unloaders;
-  if (unloaders == null)
+  if (unloaders === null)
     unloaders = unload.unloaders = [];
 
   // Calling with no arguments runs all the unloader callbacks
-  if (callback == null) {
+  if (callback === null) {
     unloaders.slice().forEach(function(unloader) unloader());
     unloaders.length = 0;
     return;
   }
 
   // The callback is bound to the lifetime of the container if we have one
-  if (container != null) {
+  if (container !== null) {
     // Remove the unloader when the container unloads
     container.addEventListener("unload", unloader, false);
 
@@ -76,7 +76,7 @@ exports.unload = function unload(callback, container) {
       container.removeEventListener("unload", unloader, false);
       removeUnloader();
       origCallback();
-    }
+    };
   }
 
   // Wrap the callback in a function that ignores failures
@@ -95,4 +95,4 @@ exports.unload = function unload(callback, container) {
       unloaders.splice(index, 1);
   }
   return removeUnloader;
-}
+};

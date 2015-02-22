@@ -24,14 +24,14 @@ var Log = {
 		if (getPref("Log.Active")) {
 			switch (getPref("Log.ToFile")) {
 			case false:
-				if (Log.App == null) {
+				if (Log.App === null) {
 					Log.App = Components.classes["@mozilla.org/steel/application;1"].
 						getService(Components.interfaces.steelIApplication);
 				}
 				Log.App.console.log(str);
 				break;
 			case true:
-				if (this.File == null) {					
+				if (this.File === null) {
 					let today = new Date();
 					let dd = today.getDate();
 					if (dd < 10)
@@ -45,7 +45,7 @@ var Log = {
 					this.File =
 						FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
 					if (!this.File.exists())
-						this.File.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+						this.File.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 				}
 				
 				let now = new Date();
@@ -79,7 +79,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 
 	function removeMenuItem() {
 		var menuitem = doc.getElementById(fileMenuitemID);
-		menuitem && menuitem.parentNode.removeChild(menuitem);
+		menuitem.parentNode.removeChild(menuitem);
 	}
 	removeMenuItem();
 
@@ -89,12 +89,12 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 	menuItemSync.addEventListener("command", synchronize, true);
 	
 	let menuItemRef = doc.getElementById(strMenuItemRef);
-	if (menuItemRef == null) {
+	if (menuItemRef === null) {
 		Log.WriteLn("addMenuItem. Could not find menu item: " + strMenuItemRef);
 		return;		
 	}
-	let menuPopup = doc.getElementById(strMenuPopup)
-	if (menuPopup == null) {
+	let menuPopup = doc.getElementById(strMenuPopup);
+	if (menuPopup === null) {
 		Log.WriteLn("addMenuItem. Could not find menu popup: " + strMenuPopup);
 		return;		
 	}		
@@ -110,7 +110,7 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 function GetRootFolder() {
 	let selServer = null;
 	let accountKey = getPref("Synch.account");
-	for each (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {			
+	for each (var account in fixIterator(MailServices.accounts.accounts, Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
 			if ("rss" == server.type &&
@@ -120,12 +120,12 @@ function GetRootFolder() {
 			}
 		}
 	}		
-	if (selServer == null) {
+	if (selServer === null) {
 		Log.WriteLn("GetRootFolder. No server found. Account Key = " + accountKey);
 		return null;			
 	}							
 	let rootFolder = selServer.rootFolder;
-	if (rootFolder == null) {
+	if (rootFolder === null) {
 		Log.WriteLn("GetRootFolder. No root folder. Account Key = " + accountKey);
 		return null;			
 	}		
@@ -134,7 +134,7 @@ function GetRootFolder() {
 
 function FormatEventMsg(message, evnt, i, j) {
 	return message +
-			(i != undefined && j != undefined ? " (" + (i + 1) + "/" + j + ")" : "") +
+			(i !== undefined && j !== undefined ? " (" + (i + 1) + "/" + j + ")" : "") +
 			" Url: " + evnt.currentTarget.channel.URI.spec +
 			" Status: " + evnt.currentTarget.status + " Status Text: " + evnt.currentTarget.statusText + 
 			" Response text: " + evnt.currentTarget.responseText;		
@@ -143,7 +143,7 @@ function FormatEventMsg(message, evnt, i, j) {
 function getParameterByName(val, location) {
     let tmp = [];
     let items = location.search.substr(1).split("&");
-    for (let index = 0; index < items.length; index++) {
+    for (var index = 0; index < items.length; index++) {
         tmp = items[index].split("=");
         if (tmp[0] === val)
         	return decodeURIComponent(tmp[1]);

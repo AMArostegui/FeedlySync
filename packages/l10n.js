@@ -64,7 +64,7 @@ var l10n = (function(global) {
       if (aLocale) {
         localeBundle = Services.strings.createBundle(filepath(aLocale));
 
-        let locale_base = aLocale.match(splitter)
+        let locale_base = aLocale.match(splitter);
         if (locale_base)
           localeBasicBundle = Services.strings.createBundle(
               filepath(locale_base[1]));
@@ -75,7 +75,7 @@ var l10n = (function(global) {
           || getStr(defaultBundle, aKey)
           || getStr(defaultBasicBundle, aKey)
           || getStr(addonsDefaultBundle, aKey);
-    }
+    };
   }
 
   l10n.unload = Services.strings.flushBundles;

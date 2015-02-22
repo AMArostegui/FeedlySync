@@ -1,8 +1,8 @@
-Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/AddonManager.jsm");
-Cu.import("resource:///modules/iteratorUtils.jsm");
-Cu.import("resource://gre/modules/FileUtils.jsm");
-Cu.import("resource://gre/modules/NetUtil.jsm");
+Components.utils.import("resource://gre/modules/Services.jsm");
+Components.utils.import("resource://gre/modules/AddonManager.jsm");
+Components.utils.import("resource:///modules/iteratorUtils.jsm");
+Components.utils.import("resource://gre/modules/FileUtils.jsm");
+Components.utils.import("resource://gre/modules/NetUtil.jsm");
 
 const FEED_LOCALSTATUS_SYNC = 1;
 const FEED_LOCALSTATUS_DEL = 2;
@@ -18,7 +18,7 @@ var Synch = {
 	OpenSettingsDialog : function(addon) {
 		Log.WriteLn("Synch.OpenSettingDialog");
 		Services.ww.openWindow(null, addon.optionsURL, null, "chrome,private,centerscreen,modal", this);
-		if (getPref("Synch.account") == "")
+		if (getPref("Synch.account") === "")
 			Log.WriteLn("Synch.OpenSettingDialog. No account. Action=" + Synch.actionInProgress);
 		else
 			Synch.AuthAndRun(Synch.actionInProgress);
@@ -31,7 +31,7 @@ var Synch = {
 		let ready = Auth.Ready();
 		Log.WriteLn("Synch.AuthAndRun. Account = " + account + " Ready = " + ready);
 
-		if (account == "") {
+		if (account === "") {
 			AddonManager.getAddonByID(addonId, Synch.OpenSettingsDialog);
 			Synch.actionInProgress = action;
 			return;
@@ -67,7 +67,7 @@ var Synch = {
 		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
 		if (!fileFeedStatus.exists()) {
 			Log.WriteLn("Synch.ReadStatusFile. File not found. Creating");
-			fileFeedStatus.create(Ci.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+			fileFeedStatus.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 			let strDom = "<?xml version=\"1.0\"?>";
 			strDom += "<feeds>";
 			strDom += "</feeds>";
@@ -148,15 +148,15 @@ var Synch = {
 
 	FindDomNode : function(id, status) {
 		let xpathExpression;
-		if (status == undefined || status == null)
+		if (status === undefined || status === null)
 			xpathExpression = "/feeds/feed[id='" + id + "']";
 		else
 		    xpathExpression = "/feeds/feed[id='" + id +
     			"' and status=" + FEED_LOCALSTATUS_DEL + "]";
 
 	    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-	    		null, Ci.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-	    if (xpathResult == null)
+	    		null, Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+	    if (xpathResult === null)
 	    	return null;
 	    return xpathResult.iterateNext();
 	},
@@ -188,14 +188,14 @@ var Synch = {
 		try {
 			Synch.subscribeRunning = true;
 
-			if (!(Object.prototype.toString.call(subscribe) === "[object Array]")) {
+			if (Object.prototype.toString.call(subscribe) !== "[object Array]") {
 				subscribe = [].concat(subscribe);
 			}
 
 			let processed = 0;
 			let fullUrl = getPref("baseSslUrl") + getPref("Synch.subsOp");
 			fullUrl = encodeURI(fullUrl);
-			function SrvSubscribeFeed() {
+			var SrvSubscribeFeed = function() {
 				if (processed >= subscribe.length)
 					return;
 
@@ -220,7 +220,7 @@ var Synch = {
 						Log.WriteLn(FormatEventMsg(message + " Add to Feedly",
 								e, processed, subscribe.length));
 						let domNode = Synch.FindDomNode(subscribe[processed].id);
-						if (domNode == null)
+						if (domNode === null)
 							Synch.AddFeed2Dom(subscribe[processed].id);
 						else
 							Log.WriteLn(message + " Already in status file. Unexpected situation");
@@ -277,13 +277,13 @@ var Synch = {
 		try {
 			Synch.unsubscribeRunning = true;
 
-			if (!(Object.prototype.toString.call(unsubscribe) === "[object Array]")) {
+			if (Object.prototype.toString.call(unsubscribe) !== "[object Array]") {
 				unsubscribe = [].concat(unsubscribe);
 			}
 
 			let processed = 0;
 			let url = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/");
-			function SrvUnsubscribeFeed() {
+			var SrvUnsubscribeFeed = function() {
 				if (processed >= unsubscribe.length)
 					return;
 
@@ -343,7 +343,7 @@ var Synch = {
 	// Synchronize Thunderbird and Feedly
 	Update : function (feedlySubs) {
 		let rootFolder = GetRootFolder();
-		if (rootFolder == null)
+		if (rootFolder === null)
 			return;
 
 		let writeDOM = false;
@@ -353,19 +353,20 @@ var Synch = {
 			// TODO: Hay que ver que se hace con los uncategorized
 			// First pass: Thunderbird subscriptions
 			let subscribe = [];
-			for each (let fldCategory in fixIterator(rootFolder.subFolders, Ci.nsIMsgFolder)) {
-				for each (let fldName in fixIterator(fldCategory.subFolders, Ci.nsIMsgFolder)) {
+			for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
+				for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
 					let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
-					if (tbSubs == null)
+					if (tbSubs === null)
 						continue;
 
-					for (let i = 0; i < tbSubs.length; i++) {
+					for (var i = 0; i < tbSubs.length; i++) {
 						// Why is the first element always empty?
-						if (tbSubs[i] == "")
+						if (tbSubs[i] === "")
 							continue;
 
 						// Seek pair feed-category in Feedly
 						let found = false;
+						var k = 0;
 					    for (var j = 0; j < feedlySubs.length; j++) {
 					        let feed = feedlySubs[j];
 
@@ -376,7 +377,7 @@ var Synch = {
 					        }
 					        let feedId = feed.id.substring(5, feed.id.length);
 					        if (feedId == tbSubs[i]) {
-						        for (var k = 0; k < feed.categories.length; k++) {
+						        for (k = 0; k < feed.categories.length; k++) {
 						        	if (feed.categories[k].label == fldCategory.prettiestName) {
 						        		found = true;
 						        		break;
@@ -390,7 +391,7 @@ var Synch = {
 					    // Feed-category found on both server and client. Won't be processed in second pass
 					    if (found) {
 							feedlySubs[j].categories.splice(k, 1);
-							if (feedlySubs[j].categories.length == 0)
+							if (feedlySubs[j].categories.length === 0)
 								feedlySubs.splice(j, 1);
 					    	continue;
 					    }
@@ -399,10 +400,10 @@ var Synch = {
 					    let node = Synch.FindDomNode(tbSubs[i]);
 
 				    	// Check whether this feed was previously synchronized. If so, delete locally
-						if (node != null) {
+						if (node !== null) {
 							if (!SynchDirection.IsUpload()) {
 								let nodeStatus = node.getElementsByTagName("status");
-								if (nodeStatus != null && nodeStatus.length == 1) {
+								if (nodeStatus !== null && nodeStatus.length == 1) {
 									nodeStatus = nodeStatus[0];
 									if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
 										fldName.parent.propagateDelete(fldName, true, win.msgWindow);
@@ -439,15 +440,15 @@ var Synch = {
 			// Second pass: Feedly subscriptions.
 			// After first pass, remaining categories are guaranteed not to be present on Thunderbird
 			let unsubscribe = [];
-		    for (let subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
+		    for (var subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 		        let feed = feedlySubs[subIdx];
 		        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
-		        for (let categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
+		        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
 		        	let categoryName = feed.categories[categoryIdx].label;
 
 					// Check whether this feed was locally deleted. If so, delete on server
 				    let node = Synch.FindDomNode(feedId, FEED_LOCALSTATUS_DEL);
-					if (node != null) {
+					if (node !== null) {
 						if (!SynchDirection.IsDownload()) {
 							let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("Synch.subsOp") + "/") +
 								encodeURIComponent(feed.id);
@@ -461,17 +462,17 @@ var Synch = {
 					else {
 						if (!SynchDirection.IsUpload()) {
 							// Create category if necessary
-							let fldCategory;
+							let fldCategory2;
 							try {
-								fldCategory = rootFolder.getChildNamed(categoryName);
+								fldCategory2 = rootFolder.getChildNamed(categoryName);
 							}
 							catch (ex) {
-								fldCategory = null;
+								fldCategory2 = null;
 							}
-							if (fldCategory == null) {
-								rootFolder.QueryInterface(Ci.nsIMsgLocalMailFolder).
+							if (fldCategory2 === null) {
+								rootFolder.QueryInterface(Components.interfaces.nsIMsgLocalMailFolder).
 									createLocalSubfolder(categoryName);
-								fldCategory = rootFolder.getChildNamed(categoryName);
+								fldCategory2 = rootFolder.getChildNamed(categoryName);
 								Log.WriteLn("Synch.Update. Svr=1 TB=0. Add to TB. Creating category: " + categoryName);
 							}
 							else
@@ -481,15 +482,15 @@ var Synch = {
 							let feedName = feed.title;
 							let fldFeed;
 							try {
-								fldFeed = fldCategory.getChildNamed(feedName);
+								fldFeed = fldCategory2.getChildNamed(feedName);
 							}
 							catch (ex) {
 								fldFeed = null;
 							}
-							if (fldFeed == null) {
-								fldCategory.QueryInterface(Ci.nsIMsgLocalMailFolder).
+							if (fldFeed === null) {
+								fldCategory2.QueryInterface(Components.interfaces.nsIMsgLocalMailFolder).
 									createLocalSubfolder(feedName);
-								fldFeed = fldCategory.getChildNamed(feedName);
+								fldFeed = fldCategory2.getChildNamed(feedName);
 							}
 
 							// Subscribe

@@ -1,13 +1,13 @@
-Cu.import("resource:///modules/FeedUtils.jsm");
+Components.utils.import("resource:///modules/FeedUtils.jsm");
 include("src/synch.js");
 
 var FeedEvents = {
 		retryCount : 0,
 
 		MainWndCmdListener : function(event) {
-			if (event == null || event.target == null)
+			if (event === null || event.target === null)
 				return;
-			if (event.target.id != "folderPaneContext-subscribe")
+			if (event.target.id !== "folderPaneContext-subscribe")
 				return;
 
 			// Wait until subscriptions window is ready to trap its commands
@@ -16,7 +16,7 @@ var FeedEvents = {
 			let interval = win.setInterval(function() {
 				subscriptionsWindow =
 				    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
-				if (subscriptionsWindow != null) {
+				if (subscriptionsWindow !== null) {
 					win.clearInterval(interval);
 					Log.WriteLn("FeedEvents.MainWndCmdListener");
 
@@ -46,15 +46,15 @@ var FeedEvents = {
 		//					Feed2-n-l-2, ..., Feed2-n-l-M => Local
 		//					Folder(...) : All folder in lower levels are local
 		CheckFolderLevel : function(aFolder) {
-			if (aFolder == null)
+			if (aFolder === null)
 				return false;
 			let aParentFolder = aFolder.parent;
-			if (aParentFolder == null)
+			if (aParentFolder === null)
 				return false;
 			let rootFolder = GetRootFolder();
-			if (rootFolder == null)
+			if (rootFolder === null)
 				return false;
-			if (aParentFolder.parent != rootFolder)
+			if (aParentFolder.parent !== rootFolder)
 				return false;
 			return true;
 		},
@@ -88,21 +88,21 @@ var FeedEvents = {
 				return;
 			let subscriptionsWindow =
 			    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
-			if (subscriptionsWindow == null) {
+			if (subscriptionsWindow === null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. Subscribing not using dialog. Unexpected situation");
 				return;
 			}
 			if (!FeedEvents.CheckFolderLevel(aFeed.folder))
 				return;
-			if (aFeed.mFolder == null || aFeed.mFolder.parent == null) {
+			if (aFeed.mFolder === null || aFeed.mFolder.parent === null) {
 				Log.WriteLn("FeedEvents.OnAddFeed. No parent folder. Cannot retrieve category");
 				return;
 			}
 
 			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-			if (feedSubscriptions.mActionMode != feedSubscriptions.kImportingOPML) {
+			if (feedSubscriptions.mActionMode !== feedSubscriptions.kImportingOPML) {
 				let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
-				if (feedUrlArray != null && feedUrlArray.length > 1) {
+				if (feedUrlArray !== null && feedUrlArray.length > 1) {
 					Log.WriteLn("FeedEvents.OnAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);
 					return;
 				}
@@ -118,7 +118,7 @@ var FeedEvents = {
 				case undefined:
 					FeedEvents.feedFolders[aFeed.mFolder.URI] = true;
 					let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
-					if (feedUrlArray != null && feedUrlArray.length > 1)
+					if (feedUrlArray !== null && feedUrlArray.length > 1)
 						return;
 					break;
 
@@ -131,18 +131,18 @@ var FeedEvents = {
 		},
 
 		IsRootFolder : function(parentItem, item) {
-			if (parentItem != null)
+			if (parentItem !== null)
 				return false;
-			if (!(item instanceof Ci.nsIMsgFolder))
+			if (!(item instanceof Components.interfaces.nsIMsgFolder))
 				return false;
-			if (item.server == null || item.server.type != "rss")
+			if (item.server === null || item.server.type !== "rss")
 				return false;
 
 			let accountKey = getPref("Synch.account");
-			if (accountKey == "")
+			if (accountKey === "")
 				return false;
 
-			return null == MailServices.accounts.getAccount(accountKey);
+			return null === MailServices.accounts.getAccount(accountKey);
 		},
 
 		unsubscribed : [],
@@ -179,16 +179,16 @@ var FeedEvents = {
 
 			// Do not use Synch.CheckFolderLevel. By this point, parent folder is recycle bin
 			let rootFolder = GetRootFolder();
-			if (rootFolder == null)
+			if (rootFolder === null)
 				return;
-			if (aParentFolder.rootFolder != rootFolder)
+			if (aParentFolder.rootFolder !== rootFolder)
 				return;
 			let node = Synch.FindDomNode(aId.Value);
-			if (node == null)
+			if (node === null)
 				return;
 
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
-			if (subsWnd != null) {
+			if (subsWnd !== null) {
 				let action = function() {
 					Synch.SrvUnsubscribe( { id : aId.Value, domNode : node },
 						"FeedEvents.OnDeleteFeed");
@@ -203,7 +203,7 @@ var FeedEvents = {
 			Log.WriteLn("FeedEvents.AddListener");
 
 			// Folder events listener
-			let notifyFlags = Ci.nsIFolderListener.removed;
+			let notifyFlags = Components.interfaces.nsIFolderListener.removed;
 			MailServices.mailSession.AddFolderListener(this, notifyFlags);
 
 			// Main window command listener

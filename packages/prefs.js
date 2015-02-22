@@ -42,7 +42,7 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 
 function getPref(key, aDefault) {
   // Cache the prefbranch after first use
-  if (getPref.branch == null)
+  if (getPref.branch === null)
     getPref.branch = Services.prefs.getBranch(PREF_BRANCH);
 
   var prefType = getPref.branch.getPrefType(key);

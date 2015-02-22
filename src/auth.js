@@ -27,14 +27,14 @@ var Auth = {
 	running : false,
 
 	Ready : function() {
-		return Auth.tokenAccess != "";
+		return Auth.tokenAccess !== "";
 	},
 
 	// Notify authentication process is over
 	OnFinished : null,
 	FireOnFinished : function(success) {
 		Auth.running = false;
-		if (Auth.OnFinished != null)
+		if (Auth.OnFinished !== null)
 			Auth.OnFinished(success);
 		else
 			Log.WriteLn("Auth.FireOnFinished. No OnFinished event handler");
@@ -43,7 +43,7 @@ var Auth = {
 	// Try to load authentication information locally.
 	Resume : function() {
 		Auth.tokenRefresh = getPref("Auth.tokenRefresh");
-		if (Auth.tokenRefresh == "")
+		if (Auth.tokenRefresh === "")
 			return false;
 		
 		Log.WriteLn("Auth.Resume");		
@@ -57,9 +57,9 @@ var Auth = {
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
-			if (e.currentTarget.readyState == 4) {
+			if (e.currentTarget.readyState === 4) {
 				Log.WriteLn(FormatEventMsg("Auth.Resume", e));
-				if (e.currentTarget.status == 200) {
+				if (e.currentTarget.status === 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Auth.tokenAccess = jsonResponse.access_token;
 					Auth.userId = jsonResponse.id;
@@ -100,13 +100,13 @@ var Auth = {
 
 		authWndDOMLoaded : function(location) {
 			let redirUrl = getPref("Auth.redirVal");
-		    if (location.href.substring(0, redirUrl.length) == redirUrl) {
+		    if (location.href.substring(0, redirUrl.length) === redirUrl) {
 		    	let paramCode = null;
 		    	let paramError = getParameterByName("error", location);
-		    	if (paramError == "")
+		    	if (paramError === "")
 		    		paramCode = getParameterByName("code", location);
 
-		    	if (paramCode == null) {
+		    	if (paramCode === null) {
 		    		Log.WriteLn("Auth.UserRequest.authWndDOMLoaded: Error: " + paramError);
 		    		Auth.FireOnFinished(false);
 		    	}
@@ -163,9 +163,9 @@ var Auth = {
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
 		req.onload = function (e) {
-			if (e.currentTarget.readyState == 4) {
+			if (e.currentTarget.readyState ===  4) {
 				Log.WriteLn(FormatEventMsg("Auth.GetTokens. e=", e));
-				if (e.currentTarget.status == 200) {
+				if (e.currentTarget.status === 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					Auth.tokenAccess = jsonResponse.access_token;
 					Auth.tokenRefresh = jsonResponse.refresh_token;
@@ -195,4 +195,4 @@ var Auth = {
 		Log.WriteLn("Auth.GetTokens. Url: " + fullUrl);
 		req.send(null);		
 	},	
-}
+};

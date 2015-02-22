@@ -16,9 +16,6 @@
  *
  */
 
-const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
-
-
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 // BEGIN: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
@@ -41,7 +38,7 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 			tools.Services.scriptloader.loadSubScript(uri.spec, scope);
 		}
 		return modules[src] = scope.exports;
-	}
+	};
 })(this);
 
 (function(global) global.include = function include(src) {
@@ -55,7 +52,7 @@ var addon = {
 	getResourceURI: function(filePath) ({
 		spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
 	})
-}
+};
 var { unload } = require("unload");
 var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 

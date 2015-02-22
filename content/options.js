@@ -35,13 +35,13 @@ function onLoadAccounts() {
 		AddonManager.getAddonByID(addonId, loadModules);
 		return;
 	}
-	if (instantApply == null)
+	if (instantApply === null)
 		instantApply = services.Services.prefs.getBoolPref("browser.preferences.instantApply");
 
 	// Clean combobox
 	Log.WriteLn("Options.onLoadAccounts");
 	let popup = document.getElementById("accountPopup");
-	if (popup == null)
+	if (popup === null)
 		return;
 	while (popup.firstChild)
 	    popup.removeChild(popup.firstChild);
@@ -52,7 +52,7 @@ function onLoadAccounts() {
 	// Populate combobox
 	let count = 0;
 	let sel = -1;
-	for each (let account in fixIterator(MailServices.accounts.accounts,
+	for each (var account in fixIterator(MailServices.accounts.accounts,
 			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
@@ -82,7 +82,7 @@ function onLoadAccounts() {
 	}
 
 	let list = document.getElementById("accountList");
-	if (list == null)
+	if (list === null)
 		return;
 	list.selectedIndex = sel;
 }

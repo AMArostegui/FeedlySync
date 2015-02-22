@@ -55,7 +55,7 @@ exports.runOnLoad = function runOnLoad(window, callback, winType) {
     if (window.document.documentElement.getAttribute("windowtype") == winType)
       callback(window);
   }, false);
-}
+};
 
 
 /**
@@ -85,7 +85,7 @@ exports.runOnWindows = function runOnWindows(callback, winType) {
     else
       runOnLoad(browserWindow, watcher, winType);
   }
-}
+};
 
 /**
  * Apply a callback to each open and new browser windows.
@@ -115,4 +115,4 @@ exports.watchWindows = function watchWindows(callback, winType) {
 
   // Make sure to stop watching for windows if we're unloading
   unload(function() Services.ww.unregisterNotification(windowWatcher));
-}
+};
