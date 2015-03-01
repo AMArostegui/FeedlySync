@@ -48,11 +48,6 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 	o.Services.scriptloader.loadSubScript(uri.spec, global);
 })(this);
 
-var addon = {
-	getResourceURI: function(filePath) ({
-		spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
-	})
-};
 var { unload } = require("unload");
 var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 
@@ -66,7 +61,6 @@ include("packages/prefs.js");
 include("src/utils.js");
 include("src/feedevents.js");
 include("packages/l10n.js");
-
 include("src/auth.js");
 
 function install(data) {
@@ -76,8 +70,14 @@ function uninstall() {
 }
 
 function startup(data, reason) {
-	l10n(addon, "FeedlySync.properties");
+	let uriResolver = {
+		getResourceURI: function(filePath) ({
+			spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
+		})
+	};
+	l10n(uriResolver, "FeedlySync.properties");
 	unload(l10n.unload);
+
 	setDefaultPrefs();
 	watchWindows(main, "mail:3pane");
 }

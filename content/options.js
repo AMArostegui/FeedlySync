@@ -26,6 +26,13 @@ function loadModules(addon) {
 	include("src/utils.js", addonUriSpec);
 	include("packages/l10n.js", addonUriSpec);
 
+	let uriResolver = {
+		getResourceURI: function(filePath) ({
+			spec: addonUriSpec + "/../" + filePath
+		})
+	};
+	l10n(uriResolver, "FeedlySync.properties");
+
 	loadedModules = true;
 	onLoadAccounts();
 }
@@ -52,6 +59,8 @@ function onLoadAccounts() {
 	// Populate combobox
 	let count = 0;
 	let sel = -1;
+	let prettyName0 = null;
+	let key0 = null;
 	for each (var account in fixIterator(MailServices.accounts.accounts,
 			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
@@ -59,6 +68,11 @@ function onLoadAccounts() {
 			if ("rss" == server.type) {
 				if (prefAccount == account.key)
 					sel = count;
+
+				if (prettyName0 == null)
+					prettyName0 = server.prettyName;
+				if (key0 == null)
+					key0 = account.key;
 
 				let menuItem = document.createElement("menuitem");
 				menuItem.setAttribute("label", server.prettyName);
@@ -72,13 +86,17 @@ function onLoadAccounts() {
 
 	// No RSS accounts or nothing selected yet. Populate combobox with dummy node
 	log.writeLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
-	if (sel == -1 || count <= 0) {
+	if (count <= 0) {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
 		menuItem.setAttribute("value", "");
 		menuItem.setAttribute("oncommand", "onSelected('', '')");
 		popup.appendChild(menuItem);
-		return;
+		sel = 0;
+	}
+	else if (sel == -1) {
+		sel = 0;
+		onSelected(prettyName0, key0);
 	}
 
 	let list = document.getElementById("accountList");
@@ -88,7 +106,7 @@ function onLoadAccounts() {
 }
 
 function onSelected(selPrettyName, selKey) {
-	log.writeLn("Options.onSelected. Selected=" + selPrettyName + " (" + selKey + ") " + "InstantApply=" + instantApply);
+	log.writeLn("Options.onSelected. Selected = " + selPrettyName + " (" + selKey + ") " + "InstantApply = " + instantApply);
 	if (instantApply)
 		setPref("synch.account", selKey);
 	else {

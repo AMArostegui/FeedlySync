@@ -25,7 +25,6 @@
 				<hbox align="center">
 					<menulist id="accountList" flex="1">
 						<menupopup id="accountPopup">
-							<menuitem label="&syncAccountNone.label;" value="" />
 						</menupopup>
 					</menulist>
 					<button id="createButton" label="&syncAccountCreate.label;"
