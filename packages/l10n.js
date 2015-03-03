@@ -61,6 +61,7 @@ var l10n = (function(global) {
 
 	    return global._ = function l10n_underscore(aKey, aLocale) {
 	    	let localeBundle, localeBasicBundle;
+
 		    if (aLocale) {
 		    	localeBundle = Services.strings.createBundle(filepath(aLocale));
 		        let locale_base = aLocale.match(splitter);
