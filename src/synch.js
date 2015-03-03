@@ -367,7 +367,8 @@ var synch = {
 						if (tbSubs[i] === "")
 							continue;
 
-						// Seek pair feed-category in Feedly
+						// Seek pair feed-category in Feedly. So far, TB cannot subscribe to the same feed
+						// in different folders.
 						let found = false;
 						var k = 0;
 					    for (var j = 0; j < feedlySubs.length; j++) {
