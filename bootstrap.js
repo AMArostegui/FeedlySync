@@ -64,12 +64,16 @@ include("packages/l10n.js");
 include("src/auth.js");
 
 function install(data) {
+	log.writeLn("Install");
 }
 
 function uninstall() {
+	log.writeLn("Uninstall");
 }
 
 function startup(data, reason) {
+	log.writeLn("Startup. Reason = " + reason);
+
 	let uriResolver = {
 		getResourceURI: function(filePath) ({
 			spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
@@ -83,6 +87,7 @@ function startup(data, reason) {
 }
 
 function shutdown(data, reason) {
+	log.writeLn("Shutdown. Reason = " + reason);
 	feedEvents.removeListener();
 	unload();
 }
@@ -92,6 +97,7 @@ function main(window) {
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
 	synch.readStatusFile();
 	feedEvents.addListener();
+	syncTBFeedly();
 }
 
 function syncTBFeedly() {

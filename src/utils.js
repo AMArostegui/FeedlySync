@@ -19,8 +19,8 @@ var synchDirection = {
 var log = {
 	app : null,
 	file : null,
-	
-	writeLn : function(str) {	
+
+	writeLn : function(str) {
 		if (getPref("log.active")) {
 			switch (getPref("log.toFile")) {
 			case false:
@@ -28,26 +28,26 @@ var log = {
 					log.app = Components.classes["@mozilla.org/steel/application;1"].
 						getService(Components.interfaces.steelIApplication);
 				}
-				log.app.console.log(str);
+				log.app.console.log("FeedlySync: " + str);
 				break;
 			case true:
 				if (this.File === null) {
 					let today = new Date();
 					let dd = today.getDate();
 					if (dd < 10)
-					    dd = "0" + dd;					
+					    dd = "0" + dd;
 					let mm = today.getMonth() + 1;
 					if (mm < 10)
-					    mm = "0" + mm;					
+					    mm = "0" + mm;
 					let logFile = today.getFullYear() + mm + dd + ".log";
-					
+
 					let id = addonId;
 					this.File =
 						FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
 					if (!this.File.exists())
 						this.File.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 				}
-				
+
 				let now = new Date();
 				let hh = now.getHours();
 				if (hh < 10)
@@ -57,24 +57,24 @@ var log = {
 					mm = "0" + mm;
 				let ss = now.getSeconds();
 				if (ss < 10)
-					ss = "0" + ss;				
-				
+					ss = "0" + ss;
+
 				let outStream = FileUtils.openFileOutputStream(this.File, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
 				let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
 				                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-				converter.charset = "UTF-8";				
+				converter.charset = "UTF-8";
 				let inStream = converter.convertToInputStream(
 						hh + ":" + mm + ":" + ss + " " + str + "\r\n");
-				NetUtil.asyncCopy(inStream, outStream);				
+				NetUtil.asyncCopy(inStream, outStream);
 				break;
-			}		
+			}
 		}
 	}
 };
 
 const fileMenuitemID = "menu_SyncItem";
 
-function addMenuItem(strMenuPopup, strMenuItemRef, callback) {	
+function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 	var doc = win.document;
 
 	function removeMenuItem() {
@@ -84,25 +84,25 @@ function addMenuItem(strMenuPopup, strMenuItemRef, callback) {
 	}
 	removeMenuItem();
 
-	let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");	
+	let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");
 	menuItemSync.setAttribute("id", fileMenuitemID);
 	menuItemSync.setAttribute("label", _("synchronize", getPref("locale")));
 	menuItemSync.addEventListener("command", synchronize, true);
-	
+
 	let menuItemRef = doc.getElementById(strMenuItemRef);
 	if (menuItemRef === null) {
 		log.WriteLn("addMenuItem. Could not find menu item: " + strMenuItemRef);
-		return;		
+		return;
 	}
 	let menuPopup = doc.getElementById(strMenuPopup);
 	if (menuPopup === null) {
 		log.WriteLn("addMenuItem. Could not find menu popup: " + strMenuPopup);
-		return;		
-	}		
-	menuPopup.insertBefore(menuItemSync, menuItemRef);	
-	
+		return;
+	}
+	menuPopup.insertBefore(menuItemSync, menuItemRef);
+
 	function synchronize() {
-		callback();		
+		callback();
 	}
 
 	unload(removeMenuItem, win);
@@ -120,16 +120,16 @@ function getRootFolder() {
 				break;
 			}
 		}
-	}		
+	}
 	if (selServer === null) {
 		log.WriteLn("getRootFolder. No server found. Account Key = " + accountKey);
-		return null;			
-	}							
+		return null;
+	}
 	let rootFolder = selServer.rootFolder;
 	if (rootFolder === null) {
 		log.WriteLn("getRootFolder. No root folder. Account Key = " + accountKey);
-		return null;			
-	}		
+		return null;
+	}
 	return rootFolder;
 }
 
@@ -137,8 +137,8 @@ function formatEventMsg(message, evnt, i, j) {
 	return message +
 			(i !== undefined && j !== undefined ? " (" + (i + 1) + "/" + j + ")" : "") +
 			" Url: " + evnt.currentTarget.channel.URI.spec +
-			" Status: " + evnt.currentTarget.status + " Status Text: " + evnt.currentTarget.statusText + 
-			" Response text: " + evnt.currentTarget.responseText;		
+			" Status: " + evnt.currentTarget.status + " Status Text: " + evnt.currentTarget.statusText +
+			" Response text: " + evnt.currentTarget.responseText;
 }
 
 function getParameterByName(val, location) {

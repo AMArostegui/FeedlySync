@@ -167,9 +167,15 @@ var synch = {
 			log.writeLn(message + " Add to Feedly while in download mode. Unexpected situation. Aborted");
 			return;
 		}
+		if (Object.prototype.toString.call(subscribe) !== "[object Array]") {
+			subscribe = [].concat(subscribe);
+		}
+		if (subscribe.length <= 0)
+			return;
+
 		log.writeLn(message + " Add to Feedly. Begin");
 
-		// Looks like the server is limited to one subscription each time.
+		// Looks like server is limited to one subscription each time.
 		// Sometimes when trying to subscribe when another operation is running, we get
 		// a response 200 status, but in fact, the feed hasn't subscribed
 		// Wait until all operations are done
@@ -186,10 +192,6 @@ var synch = {
 
 		try {
 			synch.subscribeRunning = true;
-
-			if (Object.prototype.toString.call(subscribe) !== "[object Array]") {
-				subscribe = [].concat(subscribe);
-			}
 
 			let processed = 0;
 			let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
@@ -259,6 +261,12 @@ var synch = {
 			log.writeLn(message + " Remove from Feedly while in download mode. Unexpected situation. Aborted");
 			return;
 		}
+		if (Object.prototype.toString.call(unsubscribe) !== "[object Array]") {
+			unsubscribe = [].concat(unsubscribe);
+		}
+		if (unsubscribe.length <= 0)
+			return;
+
 		log.writeLn(message + " Remove from Feedly. Begin");
 
 		// Take a look to comment in SrvSubscribe
@@ -275,10 +283,6 @@ var synch = {
 
 		try {
 			synch.unsubscribeRunning = true;
-
-			if (Object.prototype.toString.call(unsubscribe) !== "[object Array]") {
-				unsubscribe = [].concat(unsubscribe);
-			}
 
 			let processed = 0;
 			let url = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
