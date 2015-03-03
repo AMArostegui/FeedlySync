@@ -9,7 +9,7 @@ function sessionId() {
 	s4() + '-' + s4() + s4() + s4();
 }
 
-var auth = {		
+var auth = {
 	init : function() {
 		if (auth.running) {
 			log.writeLn("auth.Init: Already running. Aborted");
@@ -20,7 +20,7 @@ var auth = {
 		if (!auth.resume())
 			auth.getCode();
 	},
-	
+
 	tokenAccess : "",
 	tokenRefresh : "",
 	userId : "",
@@ -39,14 +39,14 @@ var auth = {
 		else
 			log.writeLn("auth.fireOnFinished. No OnFinished event handler");
 	},
-		
+
 	// Try to load authentication information locally.
 	resume : function() {
 		auth.tokenRefresh = getPref("auth.tokenRefresh");
 		if (auth.tokenRefresh === "")
 			return false;
-		
-		log.writeLn("auth.resume");		
+
+		log.writeLn("auth.resume");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = getPref("baseSslUrl") + getPref("auth.getTokenOp") + "?" +
@@ -65,33 +65,33 @@ var auth = {
 					auth.userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("auth.expiringMargin") / 100);
-					
+
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
 						win.clearInterval(renewInterval);
 						log.writeLn("auth.resume. Renew access token");
 						auth.resume();
-					}, expiresIn);					
-					
+					}, expiresIn);
+
 					log.writeLn("auth.resume: Got access token");
 					auth.fireOnFinished(true);
 				}
 				else {
 					auth.getCode();
-				}					
+				}
 			}
 		};
-		req.onerror = function(error) {		
+		req.onerror = function(error) {
 			log.writeLn(formatEventMsg("auth.resume. Error", error));
 			auth.tokenRefresh = "";
 			setPref("auth.tokenRefresh", "");
 			auth.fireOnFinished(false);
 		};
 		log.writeLn("auth.resume. Url: " + fullUrl);
-		req.send(null);		
+		req.send(null);
 		return true;
-	},	
-	
+	},
+
 	// Full authentication
 	userRequest : {
 		browseUrl : "",
@@ -112,7 +112,7 @@ var auth = {
 		    	}
 		    	else
 		    		auth.getTokens(paramCode);
-		    	
+
 		    	// Close user authentication window
 		    	return true;
 		    }
@@ -134,14 +134,14 @@ var auth = {
 		auth.userRequest.stateVal = encodeURI(userGuid);
 		auth.userRequest.promptText = _("authWndCaption", getPref("locale"));
 		auth.userRequest.browseUrl = getPref("baseSslUrl") + getPref("auth.getCodeOp") + "?" +
-						getPref("auth.resTypePar") + "=" + getPref("auth.resTypeVal") + "&" +						 
+						getPref("auth.resTypePar") + "=" + getPref("auth.resTypeVal") + "&" +
 						getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
-						getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + getPref("auth.redirSetCode") + "&" +
+						getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
 						getPref("auth.scopePar") + "=" + getPref("auth.scopeVal") + "&" +
 						getPref("auth.statePar") + "=" + auth.userRequest.stateVal;
 		auth.userRequest.browseUrl = encodeURI(auth.userRequest.browseUrl);
 		log.writeLn("auth.getCode. Url: " +  auth.userRequest.browseUrl);
-		
+
 		this.wrappedJSObject = this.userRequest;
 		Services.ww.openWindow(null, "chrome://FeedlySync/content/userRequest.xul",
 			null, "chrome,private,centerscreen", this);
@@ -157,7 +157,7 @@ var auth = {
 			getPref("auth.codePar") + "=" + code + "&" +
 			getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
 			getPref("auth.cliSecPar") + "=" + getPref("auth.cliSecVal") + "&" +
-			getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + getPref("auth.redirSetToken") + "&" +
+			getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
 			getPref("auth.statePar") + "=" + auth.userRequest.stateVal + "&" +
 			getPref("auth.grantTypePar") + "=" + getPref("auth.grantTypeVal");
 		fullUrl = encodeURI(fullUrl);
@@ -173,14 +173,14 @@ var auth = {
 					auth.userId = jsonResponse.id;
 					let expiresIn = jsonResponse.expires_in * 1000;
 					expiresIn = Math.round(expiresIn * getPref("auth.expiringMargin") / 100);
-					
+
 					// Set timer to renew access token before expiration
 					let renewInterval = win.setInterval(function() {
 						win.clearInterval(renewInterval);
 						log.writeLn("auth.getTokens. Renew access token");
 						auth.resume();
-					}, expiresIn);					
-					
+					}, expiresIn);
+
 					log.writeLn("auth.getTokens: Sucessfully authenticated");
 					auth.fireOnFinished(true);
 				}
@@ -188,11 +188,11 @@ var auth = {
 					auth.fireOnFinished(false);
 			}
 		};
-		req.onerror = function(error) {		
+		req.onerror = function(error) {
 			log.writeLn(formatEventMsg("auth.getTokens. Error", error));
 			auth.fireOnFinished(false);
 		};
 		log.writeLn("auth.getTokens. Url: " + fullUrl);
-		req.send(null);		
-	},	
+		req.send(null);
+	},
 };

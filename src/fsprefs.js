@@ -14,8 +14,6 @@ const PREFS = {
 	//Authentication preferences
 	"auth.getCodeOp" : "/v3/auth/auth",
 	"auth.getTokenOp" : "/v3/auth/token",
-	"auth.redirSetCode" : "",				 	// "/feedlySetCode"
-	"auth.redirSetToken" : "", 			 		// "/feedlySetToken"
 
 	"auth.resTypePar" : "response_type",
 	"auth.resTypeVal" : "code",
