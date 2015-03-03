@@ -1,15 +1,16 @@
+Components.utils.import("resource://gre/modules/Services.jsm");
+
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
-	// Global preferences	
-	locale : Components.classes["@mozilla.org/chrome/chrome-registry;1"]
-				.getService(Components.interfaces.nsIXULChromeRegistry).getSelectedLocale("global"),
+	// Global preferences
+	locale : Services.locale.getLocaleComponentForUserAgent(),
 	baseUrl : "http://sandbox.feedly.com",
 	baseSslUrl : "https://sandbox.feedly.com",
-	
-	// Log preferences	
+
+	// Log preferences
 	"log.active" : false,
 	"log.toFile" : false,
-	
+
 	//Authentication preferences
 	"auth.getCodeOp" : "/v3/auth/auth",
 	"auth.getTokenOp" : "/v3/auth/token",
@@ -35,8 +36,8 @@ const PREFS = {
 	"auth.tokenRefresh" : "",
 	"auth.userId" : "",
 	"auth.expiringMargin" : 90,
-	
-	// Synchronizing preferences	
+
+	// Synchronizing preferences
 	"synch.tokenParam" : "Authorization",
 	"synch.subsOp" : "/v3/subscriptions",
 	"synch.account" : "",
