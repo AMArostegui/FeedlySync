@@ -319,8 +319,14 @@ var synch = {
 
 					// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
 					let node = unsubscribe[processed].domNode;
-					let statusNode = node.getElementById("status");
-					statusNode.nodeValue = FEED_LOCALSTATUS_DEL;
+					let statusNodes = node.getElementsByTagName("status");
+					if (statusNodes.length > 0) {
+						let statusNode = statusNodes[0];
+						statusNode.textContent = FEED_LOCALSTATUS_DEL;
+					}
+					else
+						log.writeLn(message + " No status node. Unexpected situation");
+
 					if (processed == unsubscribe.length - 1) {
 						synch.writeStatusFile();
 						synch.unsubscribeRunning = false;
