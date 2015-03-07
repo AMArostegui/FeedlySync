@@ -300,7 +300,8 @@ var synch = {
 						log.writeLn(formatEventMsg(message + " Remove from Feedly",
 								e, processed, unsubscribe.length));
 						let node = unsubscribe[processed].domNode;
-						node.parentNode.removeChild(node);
+						if (node !== null)
+							node.parentNode.removeChild(node);
 
 						// Update the status file when we're done
 						if (processed == unsubscribe.length - 1) {
@@ -474,7 +475,12 @@ var synch = {
 
 					// Feed not synchronized. Add to Thunderbird
 					else {
-						if (!synchDirection.isUpload()) {
+						if (synchDirection.isUpload()) {
+							let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/") +
+								encodeURIComponent(feed.id);
+							unsubscribe.push( { id : fullUrl, domNode : node } );
+						}
+						else {
 							// Create category if necessary
 							let fldCategory2;
 							try {
