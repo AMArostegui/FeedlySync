@@ -411,7 +411,11 @@ var synch = {
 
 				    	// Check whether this feed was previously synchronized. If so, delete locally
 						if (node !== null) {
-							if (!synchDirection.isUpload()) {
+							if (synchDirection.isUpload()) {
+								subscribe.push( { id : tbSubs[i] , name : fldName.prettiestName,
+									category : fldCategory.prettiestName } );
+							}
+							else {
 								let nodeStatus = node.getElementsByTagName("status");
 								if (nodeStatus !== null && nodeStatus.length == 1) {
 									nodeStatus = nodeStatus[0];
