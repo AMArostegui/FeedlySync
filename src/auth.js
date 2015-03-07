@@ -77,14 +77,14 @@ var auth = {
 					auth.fireOnFinished(true);
 				}
 				else {
+					auth.tokenRefresh = "";
+					setPref("auth.tokenRefresh", "");
 					auth.getCode();
 				}
 			}
 		};
 		req.onerror = function(error) {
 			log.writeLn(formatEventMsg("auth.resume. Error", error));
-			auth.tokenRefresh = "";
-			setPref("auth.tokenRefresh", "");
 			auth.fireOnFinished(false);
 		};
 		log.writeLn("auth.resume. Url: " + fullUrl);
