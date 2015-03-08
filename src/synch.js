@@ -196,7 +196,7 @@ var synch = {
 			let processed = 0;
 			let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
 			fullUrl = encodeURI(fullUrl);
-			var SrvSubscribeFeed = function() {
+			let srvSubscribeFeed = function() {
 				if (processed >= subscribe.length)
 					return;
 
@@ -232,7 +232,7 @@ var synch = {
 						}
 						else {
 							processed++;
-							SrvSubscribeFeed();
+							srvSubscribeFeed();
 						}
 					}
 				};
@@ -242,12 +242,12 @@ var synch = {
 					if (writeStatusFile && processed == subscribe.length - 1)
 						synch.writeStatusFile();
 					processed++;
-					SrvSubscribeFeed();
+					srvSubscribeFeed();
 				};
 				log.writeLn(message + " Add to Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
 				req.send(jsonSubscribe);
 			};
-			SrvSubscribeFeed();
+			srvSubscribeFeed();
 		}
 		finally {
 			synch.subscribeRunning = false;
@@ -286,12 +286,12 @@ var synch = {
 
 			let processed = 0;
 			let url = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
-			var SrvUnsubscribeFeed = function() {
+			let srvUnsubscribeFeed = function() {
 				if (processed >= unsubscribe.length)
 					return;
 
 				let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-				.createInstance(Components.interfaces.nsIXMLHttpRequest);
+					.createInstance(Components.interfaces.nsIXMLHttpRequest);
 				let fullUrl = url + encodeURIComponent("feed/" + unsubscribe[processed].id);
 				req.open("DELETE", fullUrl, true);
 				req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
@@ -310,7 +310,7 @@ var synch = {
 						}
 						else {
 							processed++;
-							SrvUnsubscribeFeed();
+							srvUnsubscribeFeed();
 						}
 					}
 				};
@@ -334,13 +334,13 @@ var synch = {
 					}
 					else {
 						processed++;
-						SrvUnsubscribeFeed();
+						srvUnsubscribeFeed();
 					}
 				};
 				log.writeLn(message + " Remove from Feedly. Url: " + fullUrl);
 				req.send(null);
 			};
-			SrvUnsubscribeFeed();
+			srvUnsubscribeFeed();
 		}
 		finally {
 			synch.unsubscribeRunning = false;
@@ -465,8 +465,7 @@ var synch = {
 				    let node = synch.findDomNode(feedId, FEED_LOCALSTATUS_DEL);
 					if (node !== null) {
 						if (!synchDirection.isDownload()) {
-							let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/") +
-								encodeURIComponent(feed.id);
+							let fullUrl = encodeURI(feedId);
 
 							// Just save the Id of the feed I want to unsubscribe. Will be processed later
 							unsubscribe.push( { id : fullUrl, domNode : node } );
@@ -476,8 +475,7 @@ var synch = {
 					// Feed not synchronized. Add to Thunderbird
 					else {
 						if (synchDirection.isUpload()) {
-							let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/") +
-								encodeURIComponent(feed.id);
+							let fullUrl = encodeURI(feedId);
 							unsubscribe.push( { id : fullUrl, domNode : node } );
 						}
 						else {
