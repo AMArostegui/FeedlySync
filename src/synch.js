@@ -440,7 +440,11 @@ var synch = {
 
 						// Not synchronized. Add to Feedly
 						else {
-							if (!synchDirection.isDownload()) {
+							if (synchDirection.isDownload()) {
+								fldName.parent.propagateDelete(fldName, true, win.msgWindow);
+								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
+							}
+							else {
 								subscribe.push( { id : tbSubs[i] , name : fldName.prettiestName,
 									category : fldCategory.prettiestName } );
 							}
