@@ -199,6 +199,8 @@ var feedEvents = {
 				feedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
 		},
 
+		synchTimerId : null,
+
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener");
 
@@ -220,6 +222,13 @@ var feedEvents = {
 				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
+
+			// Synchronization timeout
+			// Set timer to renew access token before expiration
+			feedEvents.synchTimerId = win.setInterval(function synchTimeout() {
+				log.writeLn("feedEvents.synchTimeout");
+				syncTBFeedly();
+			}, getPref("synch.timeout"));
 		},
 
 		removeListener : function() {
@@ -232,5 +241,8 @@ var feedEvents = {
 			FeedUtils.addFeedPrimary = null;
 			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
 			FeedUtils.deleteFeedPrimary = null;
+
+			win.clearInterval(feedEvents.synchTimerId);
+			feedEvents.synchTimerId = null;
 		}
 	};

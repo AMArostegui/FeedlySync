@@ -4,7 +4,8 @@
 <!DOCTYPE prefwindow SYSTEM "chrome://FeedlySync/locale/options.dtd">
 
 <prefwindow id="FeedlySyncPrefs" title="&title.label;"
-	onload="onLoadAccounts()" ondialogaccept="onDialogAccept()" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+	onload="onLoadAccounts()" ondialogaccept="onDialogAccept()"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
 	<script type="application/javascript" src="chrome://FeedlySync/content/options.js" />
 
@@ -18,6 +19,8 @@
 				type="bool" />
 			<preference id="LogOutput" name="extensions.FeedlySync.log.output"
 				type="bool" />
+			<preference id="SynchTimeout" name="extensions.FeedlySync.synch.timeout"
+				type="int" />
 		</preferences>
 		<groupbox flex="1">
 			<groupbox>

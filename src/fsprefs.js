@@ -40,4 +40,5 @@ const PREFS = {
 	"synch.subsOp" : "/v3/subscriptions",
 	"synch.account" : "",
 	"synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
+	"synch.timeout" : 300000					// 5 minutes
 };
