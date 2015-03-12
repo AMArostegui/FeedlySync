@@ -56,7 +56,8 @@
 					<label value="&syncTimeout.label;" />
 				</hbox>
 				<hbox flex="1">
-					<textbox width="80" value="5" min="1" max="10000000" maxlength="8" type="number" />
+					<textbox preference="SynchTimeout" width="80" value="5"
+						min="1" max="10000000" maxlength="8" type="number" />
 				</hbox>
 			</hbox>
 		</groupbox>

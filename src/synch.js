@@ -540,4 +540,35 @@ var synch = {
 			synch.updateRunning = false;
 		}
 	},
+	
+	synchTimerId : null,
+	
+	setTimer : function () {
+		let timeout = getPref("synch.timeout") * 60 * 1000;
+		log.writeLn("synch.setTimer. Timeout = " + timeout);
+		
+		// Synchronization timeout
+		// Set timer to renew access token before expiration
+		if (synch.synchTimerId !== null)
+			win.clearInterval(synch.synchTimerId);		
+		 
+		feedEvents.synchTimerId = win.setInterval(function synchTimeout() {
+			let account = getPref("synch.account");
+			let ready = auth.ready();
+			log.writeLn("feedEvents.synchTimeout Account = " + account + " Ready = " + ready);
+			
+			// Doesn't look like a good idea to automatically show a window without user interaction
+			if (account !== "" && ready)
+				syncTBFeedly();
+		}, timeout);		
+	},
+	
+	delTimer : function () {
+		log.writeLn("synch.delTimer");
+		
+		if (synch.synchTimerId !== null) {
+			win.clearInterval(synch.synchTimerId);
+			synch.synchTimerId = null;			
+		}
+	},
 };

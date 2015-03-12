@@ -197,9 +197,7 @@ var feedEvents = {
 			}
 			else
 				feedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
-		},
-
-		synchTimerId : null,
+		},		
 
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener");
@@ -222,19 +220,8 @@ var feedEvents = {
 				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
-
-			// Synchronization timeout
-			// Set timer to renew access token before expiration
-			let timeout = getPref("synch.timeout") * 60 * 1000; 
-			feedEvents.synchTimerId = win.setInterval(function synchTimeout() {
-				let account = getPref("synch.account");
-				let ready = auth.ready();
-				log.writeLn("feedEvents.synchTimeout Account = " + account + " Ready = " + ready);
-				
-				// Doesn't look like a good idea to automatically show a window without user interaction
-				if (account !== "" && ready)
-					syncTBFeedly();
-			}, timeout);
+			
+			synch.setTimer();
 		},
 
 		removeListener : function() {
@@ -247,8 +234,7 @@ var feedEvents = {
 			FeedUtils.addFeedPrimary = null;
 			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
 			FeedUtils.deleteFeedPrimary = null;
-
-			win.clearInterval(feedEvents.synchTimerId);
-			feedEvents.synchTimerId = null;
+			
+			synch.delTimer();
 		}
 	};
