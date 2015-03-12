@@ -23,9 +23,12 @@
 				type="int" />
 		</preferences>
 		<groupbox flex="1">
-			<groupbox>
-				<caption label="&syncAccountGroup.label;" />
-				<hbox align="center">
+			<caption label="&syncGroup.label;" />
+			<hbox>
+				<hbox width="180">
+					<label value="&syncAccountGroup.label;" />
+				</hbox>
+				<hbox flex="1">
 					<menulist id="accountList" flex="1">
 						<menupopup id="accountPopup">
 						</menupopup>
@@ -33,24 +36,36 @@
 					<button id="createButton" label="&syncAccountCreate.label;"
 						oncommand="onNewAccount()" />
 				</hbox>
-			</groupbox>
-			<groupbox>
-				<caption label="&syncModeGroup.label;" />
-				<menulist preference="SynchDirection">
-					<menupopup>
-						<menuitem label="&syncModeSync.label;" value="0" />
-						<menuitem label="&syncModeDown.label;" value="1" />
-						<menuitem label="&syncModeUp.label;" value="2" />
-					</menupopup>
-				</menulist>
-			</groupbox>
-			<groupbox>
-				<caption label="&logGroup.label;" />
-				<checkbox preference="LogActive" id="logActive" label="&logActive.label;"
-					accesskey="&logActive.accesskey;" />
-				<checkbox preference="LogOutput" id="logOutput" label="&logOutput.label;"
-					accesskey="&logOutput.accesskey;" />
-			</groupbox>
+			</hbox>
+			<hbox>
+				<hbox width="180">
+					<label value="&syncModeGroup.label;" />
+				</hbox>
+				<hbox flex="1">
+					<menulist preference="SynchDirection">
+						<menupopup>
+							<menuitem label="&syncModeSync.label;" value="0" />
+							<menuitem label="&syncModeDown.label;" value="1" />
+							<menuitem label="&syncModeUp.label;" value="2" />
+						</menupopup>
+					</menulist>
+				</hbox>
+			</hbox>
+			<hbox>
+				<hbox width="180">
+					<label value="&syncTimeout.label;" />
+				</hbox>
+				<hbox flex="1">
+					<textbox width="80" value="5" type="number" />
+				</hbox>
+			</hbox>
+		</groupbox>
+		<groupbox>
+			<caption label="&logGroup.label;" />
+			<checkbox preference="LogActive" id="logActive" label="&logActive.label;"
+				accesskey="&logActive.accesskey;" />
+			<checkbox preference="LogOutput" id="logOutput" label="&logOutput.label;"
+				accesskey="&logOutput.accesskey;" />
 		</groupbox>
 	</prefpane>
 </prefwindow>
