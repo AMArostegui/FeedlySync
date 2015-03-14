@@ -125,6 +125,7 @@ function onNewAccount() {
 function onDialogAccept() {
 	if (!instantApply) {
 		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
-		setPref("synch.account", selectedKey);
+		if (selectedKey !== null)
+			setPref("synch.account", selectedKey);
 	}
 }

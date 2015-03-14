@@ -552,7 +552,7 @@ var synch = {
 		if (synch.synchTimerId !== null)
 			win.clearInterval(synch.synchTimerId);		
 		 
-		feedEvents.synchTimerId = win.setInterval(function synchTimeout() {
+		synch.synchTimerId = win.setInterval(function synchTimeout() {
 			let account = getPref("synch.account");
 			let ready = auth.ready();
 			log.writeLn("feedEvents.synchTimeout Account = " + account + " Ready = " + ready);
@@ -571,4 +571,13 @@ var synch = {
 			synch.synchTimerId = null;			
 		}
 	},
+	
+	observe : function (aSubject, aTopic, aData) {
+		if (aData !== "extensions.FeedlySync.synch.timeout")
+			return;		
+		log.writeLn("synch.observe. Timeout preference changed");
+		
+		synch.delTimer();
+		synch.setTimer();
+   },
 };

@@ -221,6 +221,8 @@ var feedEvents = {
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
 			
+			// Update timer and preference listener			
+			Services.prefs.addObserver("extensions.FeedlySync.synch.timeout", synch, false);
 			synch.setTimer();
 		},
 
@@ -235,6 +237,7 @@ var feedEvents = {
 			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
 			FeedUtils.deleteFeedPrimary = null;
 			
+			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);			
 			synch.delTimer();
 		}
 	};
