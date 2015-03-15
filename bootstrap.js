@@ -95,14 +95,14 @@ function shutdown(data, reason) {
 function main(window) {
 	win = window;
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
-	synch.readStatusFile();
+	synch.startup();
 	feedEvents.addListener();
 	syncTBFeedly();
 }
 
 function syncTBFeedly() {
 	let action = function() {
-		synch.init();
+		synch.begin();
 	};
 	synch.authAndRun(action);
 }

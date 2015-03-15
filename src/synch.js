@@ -5,8 +5,19 @@ const FEED_LOCALSTATUS_SYNC = 1;
 const FEED_LOCALSTATUS_DEL = 2;
 
 var synch = {
-	// Get the user's subscriptions from Feedly
-	init : function () {
+	activityMng : null,
+
+	// Object initialization
+	startup : function() {
+		if (synch.activityMng === null) {
+			synch.activityMng = Components.classes["@mozilla.org/activity-manager;1"].
+				getService(Components.interfaces.nsIActivityManager);
+		}
+		synch.readStatusFile();
+	},
+
+	// Begin synchronization process 
+	begin : function () {
 		synch.getFeedlySubs();
 	},
 
@@ -158,6 +169,7 @@ var synch = {
 	    return xpathResult.iterateNext();
 	},
 
+	subscribeProcess : null,
 	subscribeTo : [],
 
 	srvSubscribe : function(subscribe, message, writeStatusFile) {
@@ -181,13 +193,55 @@ var synch = {
 			log.writeLn(message + " Add to Feedly. Queued = " + subscribe.length + " Count = " + synch.subscribeTo.length);
 			return;
 		}
-		else
+		else {
 			log.writeLn(message + " Add to Feedly. Begin. Count = " + synch.subscribeTo.length);
+
+			synch.subscribeProcess = Components.classes["@mozilla.org/activity-process;1"].
+				createInstance(Components.interfaces.nsIActivityProcess);
+			let folder = getRootFolder();
+			synch.subscribeProcess.init(_("beginSubs", getPref("locale")) + ": " + folder.prettiestName, null);
+			synch.subscribeProcess.contextType = "account";
+			synch.subscribeProcess.contextObj = folder.server;
+			synch.activityMng.addActivity(synch.subscribeProcess);
+		}
 
 		try {
 			let processed = 0;
 			let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
 			fullUrl = encodeURI(fullUrl);
+
+			let next = function() {
+				if (writeStatusFile && processed == synch.subscribeTo.length - 1) {
+					synch.subscribeProcess.state = Components.interfaces.nsIActivityProcess.STATE_COMPLETED;
+					synch.activityMng.removeActivity(synch.subscribeProcess.id);
+
+					let event = Components.classes["@mozilla.org/activity-event;1"].
+						createInstance(Components.interfaces.nsIActivityEvent);
+					let folder = getRootFolder();
+
+					event.init(_("endSubs", getPref("locale")) + ": " + folder.prettiestName,
+					           null,
+					           "",
+					           synch.subscribeProcess.startTime,
+					           Date.now());
+					event.contextType = synch.subscribeProcess.contextType;
+					event.contextObj = synch.subscribeProcess.contextObj;
+					synch.activityMng.addActivity(event);
+					synch.subscribeProcess = null;
+
+					synch.writeStatusFile();
+					synch.subscribeTo = [];
+				}
+				else {
+					let msg = _("runSubs", getPref("locale")) + ": (" + (processed + 1) + "/" + synch.subscribeTo.length +")";
+					synch.subscribeProcess.setProgress(msg,
+							processed + 1, synch.subscribeTo.length);
+
+					processed++;
+					srvSubscribeFeed();
+				}
+			};
+
 			let srvSubscribeFeed = function() {
 				if (processed >= synch.subscribeTo.length)
 					return;
@@ -218,37 +272,25 @@ var synch = {
 						else
 							log.writeLn(message + " Already in status file. Unexpected situation");
 
-						if (writeStatusFile && processed == synch.subscribeTo.length - 1) {
-							synch.writeStatusFile();
-							synch.subscribeTo = [];
-						}
-						else {
-							processed++;
-							srvSubscribeFeed();
-						}
+						next();
 					}
 				};
 				req.onerror = function (error) {
 					log.writeLn(formatEventMsg(message + " Add to Feedly. Error",
 							error, processed, synch.subscribeTo.length));
-					if (writeStatusFile && processed == synch.subscribeTo.length - 1) {
-						synch.writeStatusFile();
-						synch.subscribeTo = [];
-					}
-					else {
-						processed++;
-						srvSubscribeFeed();
-					}
+					next();
 				};
 				log.writeLn(message + " Add to Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
 				req.send(jsonSubscribe);
 			};
+
 			srvSubscribeFeed();
 		}
 		finally {
 		}
 	},
 
+	unsubscribeProcess : null,
 	unsubscribeTo : [],
 
 	srvUnsubscribe : function(unsubscribe, message) {
@@ -268,12 +310,54 @@ var synch = {
 			log.writeLn(message + " Remove from Feedly. Queued = " + unsubscribe.length + " Count = " + synch.unsubscribeTo.length);
 			return;
 		}
-		else
+		else {
+			synch.unsubscribeProcess = Components.classes["@mozilla.org/activity-process;1"].
+			createInstance(Components.interfaces.nsIActivityProcess);
+			let folder = getRootFolder();
+			synch.unsubscribeProcess.init(_("beginUnsubs", getPref("locale")) + ": " + folder.prettiestName, null);
+			synch.unsubscribeProcess.contextType = "account";
+			synch.unsubscribeProcess.contextObj = folder.server;
+			synch.activityMng.addActivity(synch.unsubscribeProcess);
+
 			log.writeLn(message + " Remove from Feedly. Begin. Count = " + synch.unsubscribeTo.length);
+		}
 
 		try {
 			let processed = 0;
 			let url = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
+
+			let next = function() {
+				if (processed == synch.unsubscribeTo.length - 1) {
+					synch.unsubscribeProcess.state = Components.interfaces.nsIActivityProcess.STATE_COMPLETED;
+					synch.activityMng.removeActivity(synch.unsubscribeProcess.id);
+
+					let event = Components.classes["@mozilla.org/activity-event;1"].
+						createInstance(Components.interfaces.nsIActivityEvent);
+					let folder = getRootFolder();
+
+					event.init(_("endUnsubs", getPref("locale")) + ": " + folder.prettiestName,
+					           null,
+					           "",
+					           synch.unsubscribeProcess.startTime,
+					           Date.now());
+					event.contextType = synch.unsubscribeProcess.contextType;
+					event.contextObj = synch.unsubscribeProcess.contextObj;
+					synch.activityMng.addActivity(event);
+					synch.unsubscribeProcess = null;
+
+					synch.writeStatusFile();
+					synch.unsubscribeTo = [];
+				}
+				else {
+					let msg = _("runUnsubs", getPref("locale")) + ": (" + (processed + 1) + "/" + synch.unsubscribeTo.length +")";
+					synch.unsubscribeProcess.setProgress(msg,
+							processed + 1, synch.unsubscribeTo.length);
+
+					processed++;
+					srvUnsubscribeFeed();
+				}
+			};
+
 			let srvUnsubscribeFeed = function() {
 				if (processed >= synch.unsubscribeTo.length)
 					return;
@@ -291,15 +375,7 @@ var synch = {
 						if (node !== null)
 							node.parentNode.removeChild(node);
 
-						// Update the status file when we're done
-						if (processed == synch.unsubscribeTo.length - 1) {
-							synch.writeStatusFile();
-							synch.unsubscribeTo = [];
-						}
-						else {
-							processed++;
-							srvUnsubscribeFeed();
-						}
+						next();
 					}
 				};
 				req.onerror = function (error) {
@@ -316,15 +392,9 @@ var synch = {
 					else
 						log.writeLn(message + " No status node. Unexpected situation");
 
-					if (processed == synch.unsubscribeTo.length - 1) {
-						synch.writeStatusFile();
-						synch.unsubscribeTo = [];
-					}
-					else {
-						processed++;
-						srvUnsubscribeFeed();
-					}
+					next();
 				};
+
 				log.writeLn(message + " Remove from Feedly. Url: " + fullUrl);
 				req.send(null);
 			};
