@@ -17,7 +17,7 @@
 				type="string" />
 			<preference id="LogActive" name="extensions.FeedlySync.log.active"
 				type="bool" />
-			<preference id="LogOutput" name="extensions.FeedlySync.log.output"
+			<preference id="LogOutput" name="extensions.FeedlySync.log.toFile"
 				type="bool" />
 			<preference id="SynchTimeout" name="extensions.FeedlySync.synch.timeout"
 				type="int" />

@@ -1,4 +1,6 @@
 Components.utils.import("resource:///modules/mailServices.js");
+Components.utils.import("resource://gre/modules/FileUtils.jsm");
+Components.utils.import("resource://gre/modules/NetUtil.jsm");
 
 var synchDirection = {
 	both : 0,
@@ -18,55 +20,64 @@ var synchDirection = {
 
 var log = {
 	app : null,
+	eol : null,
 	file : null,
 
 	writeLn : function(str) {
 		if (getPref("log.active")) {
+			let now = new Date();
+
+			let hh = now.getHours();
+			if (hh < 10)
+				hh = "0" + hh;
+			let mm = now.getMinutes();
+			if (mm < 10)
+				mm = "0" + mm;
+			let ss = now.getSeconds();
+			if (ss < 10)
+				ss = "0" + ss;
+
+			let dd = now.getDate();
+			if (dd < 10)
+			    dd = "0" + dd;
+			let MM = now.getMonth() + 1;
+			if (MM < 10)
+			    MM = "0" + MM;
+
+			let logStr = "(" + now.getFullYear() + "/" + MM + "/" + dd + " " + hh + ":" + mm + ":" + ss + ") " + str;
+
+			if (log.app === null) {
+				log.app = Components.classes["@mozilla.org/steel/application;1"].
+					getService(Components.interfaces.steelIApplication);
+				if (log.app.platformIsWindows)
+					log.eol = '\r\n';
+				else if (log.app.platformIsMac)
+					log.eol = '\r';
+				else
+					log.eol = '\n';
+			}
+
 			switch (getPref("log.toFile")) {
-			case false:
-				if (log.app === null) {
-					log.app = Components.classes["@mozilla.org/steel/application;1"].
-						getService(Components.interfaces.steelIApplication);
-				}
-				log.app.console.log("FeedlySync: " + str);
-				break;
-			case true:
-				if (this.File === null) {
-					let today = new Date();
-					let dd = today.getDate();
-					if (dd < 10)
-					    dd = "0" + dd;
-					let mm = today.getMonth() + 1;
-					if (mm < 10)
-					    mm = "0" + mm;
-					let logFile = today.getFullYear() + mm + dd + ".log";
+				case false:
+					log.app.console.log("FeedlySync: " + logStr);
+					break;
+				case true:
+					if (log.file === null) {
+						let logFile = now.getFullYear() + MM + dd + ".log";
+						let id = addonId;
+						log.file =
+							FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
+						if (!log.file.exists())
+							log.file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+					}
 
-					let id = addonId;
-					this.File =
-						FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
-					if (!this.File.exists())
-						this.File.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
-				}
-
-				let now = new Date();
-				let hh = now.getHours();
-				if (hh < 10)
-					hh = "0" + hh;
-				let mm = now.getMinutes();
-				if (mm < 10)
-					mm = "0" + mm;
-				let ss = now.getSeconds();
-				if (ss < 10)
-					ss = "0" + ss;
-
-				let outStream = FileUtils.openFileOutputStream(this.File, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
-				let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-				                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-				converter.charset = "UTF-8";
-				let inStream = converter.convertToInputStream(
-						hh + ":" + mm + ":" + ss + " " + str + "\r\n");
-				NetUtil.asyncCopy(inStream, outStream);
-				break;
+					let outStream = FileUtils.openFileOutputStream(log.file, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
+					let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+					                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+					converter.charset = "UTF-8";
+					let inStream = converter.convertToInputStream(logStr + log.eol + log.eol);
+					NetUtil.asyncCopy(inStream, outStream);
+					break;
 			}
 		}
 	}

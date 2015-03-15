@@ -1,7 +1,5 @@
 Components.utils.import("resource://gre/modules/AddonManager.jsm");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
-Components.utils.import("resource://gre/modules/FileUtils.jsm");
-Components.utils.import("resource://gre/modules/NetUtil.jsm");
 
 const FEED_LOCALSTATUS_SYNC = 1;
 const FEED_LOCALSTATUS_DEL = 2;
@@ -540,43 +538,43 @@ var synch = {
 			synch.updateRunning = false;
 		}
 	},
-	
+
 	synchTimerId : null,
-	
+
 	setTimer : function () {
 		let timeout = getPref("synch.timeout") * 60 * 1000;
 		log.writeLn("synch.setTimer. Timeout = " + timeout);
-		
+
 		// Synchronization timeout
 		// Set timer to renew access token before expiration
 		if (synch.synchTimerId !== null)
-			win.clearInterval(synch.synchTimerId);		
-		 
+			win.clearInterval(synch.synchTimerId);
+
 		synch.synchTimerId = win.setInterval(function synchTimeout() {
 			let account = getPref("synch.account");
 			let ready = auth.ready();
 			log.writeLn("feedEvents.synchTimeout Account = " + account + " Ready = " + ready);
-			
+
 			// Doesn't look like a good idea to automatically show a window without user interaction
 			if (account !== "" && ready)
 				syncTBFeedly();
-		}, timeout);		
+		}, timeout);
 	},
-	
+
 	delTimer : function () {
 		log.writeLn("synch.delTimer");
-		
+
 		if (synch.synchTimerId !== null) {
 			win.clearInterval(synch.synchTimerId);
-			synch.synchTimerId = null;			
+			synch.synchTimerId = null;
 		}
 	},
-	
+
 	observe : function (aSubject, aTopic, aData) {
 		if (aData !== "extensions.FeedlySync.synch.timeout")
-			return;		
+			return;
 		log.writeLn("synch.observe. Timeout preference changed");
-		
+
 		synch.delTimer();
 		synch.setTimer();
    },
