@@ -20,7 +20,7 @@ const PREFS = {
 	"auth.cliIdPar" : "client_id",
 	"auth.cliIdVal" : "sandbox",
 	"auth.cliSecPar" : "client_secret",
-	"auth.cliSecVal" : "YDRYI5E8OP2JKXYSDW79",
+	"auth.cliSecVal" : "TODO",
 	"auth.redirPar" : "redirect_uri",
 	"auth.redirVal" : "http://localhost:8080",
 	"auth.scopePar" : "scope",
