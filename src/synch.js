@@ -6,6 +6,7 @@ const FEED_LOCALSTATUS_DEL = 2;
 
 var synch = {
 	activityMng : null,
+	process : null,
 
 	// Object initialization
 	startup : function() {
@@ -168,13 +169,103 @@ var synch = {
 	    	return null;
 	    return xpathResult.iterateNext();
 	},
+	
+	subscribeFeed : function(feed, op, msg, next) {
+		let onLoadAdd = function(e) {
+			if (e.currentTarget.readyState == 4) {
+				log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly",
+						e, processed, synch.subscribeTo.length));
+				let domNode = synch.findDomNode(synch.subscribeTo[processed].id);
+				if (domNode === null)
+					synch.addFeed2Dom(synch.subscribeTo[processed].id);
+				else
+					log.writeLn(message + " Already in status file. Unexpected situation");
 
-	subscribeProcess : null,
-	subscribeTo : [],
+				next();
+			}				
+		};
+		
+		let onLoadDel = function(e) {
+			if (e.currentTarget.readyState == 4) {
+				log.writeLn(formatEventMsg(message + " Remove from Feedly",
+						e, processed, synch.unsubscribeTo.length));
+				let node = synch.unsubscribeTo[processed].domNode;
+				if (node !== null)
+					node.parentNode.removeChild(node);
 
-	srvSubscribe : function(subscribe, message, writeStatusFile) {
+				next();
+			}				
+		};
+		
+		let onErrorAdd = function(error) {
+			log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly. Error",
+					error, processed, synch.subscribeTo.length));
+			
+			next();				
+		};
+		
+		let onErrorDel = function(error) {
+			log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly. Error",
+					error, processed, synch.subscribeTo.length));
+
+			// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
+			let node = synch.unsubscribeTo[processed].domNode;
+			let statusNodes = node.getElementsByTagName("status");
+			if (statusNodes.length > 0) {
+				let statusNode = statusNodes[0];
+				statusNode.textContent = FEED_LOCALSTATUS_DEL;
+			}
+			else
+				log.writeLn(message + " No status node. Unexpected situation");
+
+			next();				
+		};
+		
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let jsonSubscribe = null;
+		
+		if (subOp) {
+			req.open("POST", fullUrl, true);
+			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
+			req.setRequestHeader("Content-Type", "application/json");
+			jsonSubscribe = "{\n";
+			jsonSubscribe += "\t\"categories\" : [\n";
+			jsonSubscribe += "\t\t{\n";
+			jsonSubscribe += "\t\t\t\"id\" : \"user/" + auth.userId +
+							"/category/" + synch.subscribeTo[processed].category + "\",\n";
+			jsonSubscribe += "\t\t\t\"label\" : \"" + synch.subscribeTo[processed].category + "\"\n";
+			jsonSubscribe += "\t\t}\n";
+			jsonSubscribe += "\t],\n";
+			jsonSubscribe += "\t\"id\" : \"feed/" + synch.subscribeTo[processed].id + "\",\n";
+			jsonSubscribe += "\t\"title\" : \"" + synch.subscribeTo[processed].name + "\"\n";
+			jsonSubscribe += "}";				
+			
+			req.onload = onLoadAdd;
+			req.onerror = onErrorAdd;				
+		}				
+		else {
+			req.open("DELETE", fullUrl, true);
+			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
+			
+			req.onload = onLoadDel;
+			req.onerror = onErrorDel;				
+		}
+
+		log.writeLn(message + prefixLogMsg + "Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
+		req.send(jsonSubscribe);		
+	},
+	
+	subsTo : [],
+	subsOp : [],
+	subsLogMsg : [],
+	subsWrtStatus : [],	
+	
+	subscribe : function(subscribe, addOp, logMsg, writeStatusFile) {
+		let prefixLogMsg = addOp ? " Add to " : " Remove from "; 
+		
 		if (synchDirection.isDownload()) {
-			log.writeLn(message + " Add to Feedly while in download mode. Unexpected situation. Aborted");
+			log.writeLn(message + prefixLogMsg + "Feedly while in download mode. Unexpected situation. Aborted");
 			return;
 		}
 		if (Object.prototype.toString.call(subscribe) !== "[object Array]") {
@@ -187,221 +278,97 @@ var synch = {
 		// Sometimes when trying to subscribe when another operation is running, we get
 		// a response 200 status, but truth is the feed hasn't subscribed
 		// Enqueue all ops
-		let running = synch.subscribeTo.length > 0;
-		synch.subscribeTo = synch.subscribeTo.concat(subscribe);
+		let running = synch.subsTo.length > 0;
+		synch.subsTo.push(subscribe);
+		synch.subsOp.push(addOp);
+		synch.subsLogMsg.push(logMsg);
+		synch.subsWrtStatus.push(writeStatusFile);		
 		if (running) {
-			log.writeLn(message + " Add to Feedly. Queued = " + subscribe.length + " Count = " + synch.subscribeTo.length);
+			log.writeLn(message + prefixLogMsg + 
+					"Feedly. Queued. Entries = " + subscribe.length + " Op. Count = " + synch.subsTo.length);
 			return;
 		}
-		else {
-			log.writeLn(message + " Add to Feedly. Begin. Count = " + synch.subscribeTo.length);
-
-			synch.subscribeProcess = Components.classes["@mozilla.org/activity-process;1"].
+		else
+			log.writeLn(message + prefixLogMsg + "Feedly. Begin. Entries = " + synch.subsTo.length);
+			
+		let procOp = 0;
+		let procEntry = 0;
+		
+		let subTo;
+		let subOp;
+		let subLogMsg;
+		let subWrtStatus;			
+		
+		let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
+		fullUrl = encodeURI(fullUrl);
+		
+		let begin = function() {
+			// All operations done. Quit
+			if (procOp >= synch.subsTo.length)
+				return;
+			
+			synch.process = Components.classes["@mozilla.org/activity-process;1"].
 				createInstance(Components.interfaces.nsIActivityProcess);
+			
 			let folder = getRootFolder();
-			synch.subscribeProcess.init(_("beginSubs", getPref("locale")) + ": " + folder.prettiestName, null);
-			synch.subscribeProcess.contextType = "account";
-			synch.subscribeProcess.contextObj = folder.server;
-			synch.activityMng.addActivity(synch.subscribeProcess);
-		}
+			synch.process.init(_("beginSubs", getPref("locale")) + ": " + folder.prettiestName, null);
+			synch.process.contextType = "account";
+			synch.process.contextObj = folder.server;
+			synch.activityMng.addActivity(synch.process);
+			
+			procEntry = 0;
+			subTo = synch.subsTo[procOp];
+			subOp = synch.subsOp[procOp];
+			subLogMsg = synch.subsLogMsg[procOp];
+			subWrtStatus = synch.subsWrtStatus[procOp];
+			
+			synch.subscribeFeed(subTo[procEntry], subOp[procEntry], subLogMsg[procEntry], next);				
+		};			
 
-		try {
-			let processed = 0;
-			let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
-			fullUrl = encodeURI(fullUrl);
+		let next = function() {
+			if (procEntry == subTo.length - 1) {
+				synch.process.state = Components.interfaces.nsIActivityProcess.STATE_COMPLETED;
+				synch.activityMng.removeActivity(synch.process.id);
 
-			let next = function() {
-				if (writeStatusFile && processed == synch.subscribeTo.length - 1) {
-					synch.subscribeProcess.state = Components.interfaces.nsIActivityProcess.STATE_COMPLETED;
-					synch.activityMng.removeActivity(synch.subscribeProcess.id);
+				let event = Components.classes["@mozilla.org/activity-event;1"].
+					createInstance(Components.interfaces.nsIActivityEvent);
+				let folder = getRootFolder();
 
-					let event = Components.classes["@mozilla.org/activity-event;1"].
-						createInstance(Components.interfaces.nsIActivityEvent);
-					let folder = getRootFolder();
-
-					event.init(_("endSubs", getPref("locale")) + ": " + folder.prettiestName,
-					           null,
-					           "",
-					           synch.subscribeProcess.startTime,
-					           Date.now());
-					event.contextType = synch.subscribeProcess.contextType;
-					event.contextObj = synch.subscribeProcess.contextObj;
-					synch.activityMng.addActivity(event);
-					synch.subscribeProcess = null;
-
+				event.init(_("endSubs", getPref("locale")) + ": " + folder.prettiestName,
+				           null,
+				           "",
+				           synch.process.startTime,
+				           Date.now());
+				event.contextType = synch.process.contextType;
+				event.contextObj = synch.process.contextObj;
+				synch.activityMng.addActivity(event);
+				synch.process = null;
+				
+				if (subWrtStatus)
 					synch.writeStatusFile();
-					synch.subscribeTo = [];
-				}
-				else {
-					let msg = _("runSubs", getPref("locale")) + ": (" + (processed + 1) + "/" + synch.subscribeTo.length +")";
-					synch.subscribeProcess.setProgress(msg,
-							processed + 1, synch.subscribeTo.length);
+				
+				procOp++;
+				begin();
+			}
+			else {
+				let msg = _("runSubs", getPref("locale")) + ": (" + (procEntry + 1) + "/" + subTo.length +")";
+				synch.process.setProgress(msg,
+						procEntry + 1, subTo.length);
 
-					processed++;
-					srvSubscribeFeed();
-				}
-			};
-
-			let srvSubscribeFeed = function() {
-				if (processed >= synch.subscribeTo.length)
-					return;
-
-				let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-					.createInstance(Components.interfaces.nsIXMLHttpRequest);
-				req.open("POST", fullUrl, true);
-				req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
-				req.setRequestHeader("Content-Type", "application/json");
-				let jsonSubscribe = "{\n";
-				jsonSubscribe += "\t\"categories\" : [\n";
-				jsonSubscribe += "\t\t{\n";
-				jsonSubscribe += "\t\t\t\"id\" : \"user/" + auth.userId +
-								"/category/" + synch.subscribeTo[processed].category + "\",\n";
-				jsonSubscribe += "\t\t\t\"label\" : \"" + synch.subscribeTo[processed].category + "\"\n";
-				jsonSubscribe += "\t\t}\n";
-				jsonSubscribe += "\t],\n";
-				jsonSubscribe += "\t\"id\" : \"feed/" + synch.subscribeTo[processed].id + "\",\n";
-				jsonSubscribe += "\t\"title\" : \"" + synch.subscribeTo[processed].name + "\"\n";
-				jsonSubscribe += "}";
-				req.onload = function (e) {
-					if (e.currentTarget.readyState == 4) {
-						log.writeLn(formatEventMsg(message + " Add to Feedly",
-								e, processed, synch.subscribeTo.length));
-						let domNode = synch.findDomNode(synch.subscribeTo[processed].id);
-						if (domNode === null)
-							synch.addFeed2Dom(synch.subscribeTo[processed].id);
-						else
-							log.writeLn(message + " Already in status file. Unexpected situation");
-
-						next();
-					}
-				};
-				req.onerror = function (error) {
-					log.writeLn(formatEventMsg(message + " Add to Feedly. Error",
-							error, processed, synch.subscribeTo.length));
-					next();
-				};
-				log.writeLn(message + " Add to Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
-				req.send(jsonSubscribe);
-			};
-
-			srvSubscribeFeed();
-		}
-		finally {
-		}
+				procEntry++;
+				synch.subscribeFeed(subTo[procEntry], subOp[procEntry], subLogMsg[procEntry], next);
+			}
+		};			
+		
+		begin();
 	},
 
-	unsubscribeProcess : null,
-	unsubscribeTo : [],
+	srvSubscribe : function(subscribe, message, writeStatusFile) {
+		synch.subscribe(subscribe, true, message, writeStatusFile);
+	},
 
 	srvUnsubscribe : function(unsubscribe, message) {
-		if (synchDirection.isDownload()) {
-			log.writeLn(message + " Remove from Feedly while in download mode. Unexpected situation. Aborted");
-			return;
-		}
-		if (Object.prototype.toString.call(unsubscribe) !== "[object Array]") {
-			unsubscribe = [].concat(unsubscribe);
-		}
-		if (unsubscribe.length <= 0)
-			return;
-
-		let running = synch.unsubscribeTo.length > 0;
-		synch.unsubscribeTo = synch.unsubscribeTo.concat(unsubscribe);
-		if (running) {
-			log.writeLn(message + " Remove from Feedly. Queued = " + unsubscribe.length + " Count = " + synch.unsubscribeTo.length);
-			return;
-		}
-		else {
-			synch.unsubscribeProcess = Components.classes["@mozilla.org/activity-process;1"].
-			createInstance(Components.interfaces.nsIActivityProcess);
-			let folder = getRootFolder();
-			synch.unsubscribeProcess.init(_("beginUnsubs", getPref("locale")) + ": " + folder.prettiestName, null);
-			synch.unsubscribeProcess.contextType = "account";
-			synch.unsubscribeProcess.contextObj = folder.server;
-			synch.activityMng.addActivity(synch.unsubscribeProcess);
-
-			log.writeLn(message + " Remove from Feedly. Begin. Count = " + synch.unsubscribeTo.length);
-		}
-
-		try {
-			let processed = 0;
-			let url = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
-
-			let next = function() {
-				if (processed == synch.unsubscribeTo.length - 1) {
-					synch.unsubscribeProcess.state = Components.interfaces.nsIActivityProcess.STATE_COMPLETED;
-					synch.activityMng.removeActivity(synch.unsubscribeProcess.id);
-
-					let event = Components.classes["@mozilla.org/activity-event;1"].
-						createInstance(Components.interfaces.nsIActivityEvent);
-					let folder = getRootFolder();
-
-					event.init(_("endUnsubs", getPref("locale")) + ": " + folder.prettiestName,
-					           null,
-					           "",
-					           synch.unsubscribeProcess.startTime,
-					           Date.now());
-					event.contextType = synch.unsubscribeProcess.contextType;
-					event.contextObj = synch.unsubscribeProcess.contextObj;
-					synch.activityMng.addActivity(event);
-					synch.unsubscribeProcess = null;
-
-					synch.writeStatusFile();
-					synch.unsubscribeTo = [];
-				}
-				else {
-					let msg = _("runUnsubs", getPref("locale")) + ": (" + (processed + 1) + "/" + synch.unsubscribeTo.length +")";
-					synch.unsubscribeProcess.setProgress(msg,
-							processed + 1, synch.unsubscribeTo.length);
-
-					processed++;
-					srvUnsubscribeFeed();
-				}
-			};
-
-			let srvUnsubscribeFeed = function() {
-				if (processed >= synch.unsubscribeTo.length)
-					return;
-
-				let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-					.createInstance(Components.interfaces.nsIXMLHttpRequest);
-				let fullUrl = url + encodeURIComponent("feed/" + synch.unsubscribeTo[processed].id);
-				req.open("DELETE", fullUrl, true);
-				req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
-				req.onload = function (e) {
-					if (e.currentTarget.readyState == 4) {
-						log.writeLn(formatEventMsg(message + " Remove from Feedly",
-								e, processed, synch.unsubscribeTo.length));
-						let node = synch.unsubscribeTo[processed].domNode;
-						if (node !== null)
-							node.parentNode.removeChild(node);
-
-						next();
-					}
-				};
-				req.onerror = function (error) {
-					log.writeLn(formatEventMsg(message + " Remove from Feedly. Error",
-							error, processed, synch.unsubscribeTo.length));
-
-					// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
-					let node = synch.unsubscribeTo[processed].domNode;
-					let statusNodes = node.getElementsByTagName("status");
-					if (statusNodes.length > 0) {
-						let statusNode = statusNodes[0];
-						statusNode.textContent = FEED_LOCALSTATUS_DEL;
-					}
-					else
-						log.writeLn(message + " No status node. Unexpected situation");
-
-					next();
-				};
-
-				log.writeLn(message + " Remove from Feedly. Url: " + fullUrl);
-				req.send(null);
-			};
-			srvUnsubscribeFeed();
-		}
-		finally {
-		}
+		synch.subscribe(subscribe, false, message, true);
 	},
 
 	// Flag to indicate whether synch.Update method is running
