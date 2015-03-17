@@ -70,7 +70,7 @@ var feedEvents = {
 			log.writeLn("FeedEvents.onImportOPMLFinished. Count=" + feedEvents.subscribed.length);
 			feedEvents.feedFolders = {};
 			let action = function() {
-				synch.srvSubscribe(feedEvents.subscribed, "FeedEvents.onImportOPMLFinished", true);
+				synch.subscribe(feedEvents.subscribed, "FeedEvents.onImportOPMLFinished", true);
 				feedEvents.subscribed = [];
 			};
 			synch.authAndRun(action);
@@ -107,7 +107,7 @@ var feedEvents = {
 					return;
 				}
 				let action = function() {
-					synch.srvSubscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
+					synch.subscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
 						"FeedEvents.onAddFeed", true);
 				};
 				synch.authAndRun(action);
@@ -164,7 +164,7 @@ var feedEvents = {
 				return;
 			log.writeLn("FeedEvents.OnItemRemoved. Count=" + feedEvents.unsubscribed.length);
 			let action = function () {
-				synch.srvUnsubscribe(feedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
+				synch.unsubscribe(feedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
 				feedEvents.unsubscribed = [];
 			};
 			synch.authAndRun(action);
@@ -190,7 +190,7 @@ var feedEvents = {
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd !== null) {
 				let action = function() {
-					synch.srvUnsubscribe( { id : aId.Value, domNode : node },
+					synch.unsubscribe( { id : aId.Value, domNode : node },
 						"FeedEvents.onDeleteFeed");
 				};
 				synch.authAndRun(action);

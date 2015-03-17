@@ -97,7 +97,7 @@ function main(window) {
 	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
 	synch.startup();
 	feedEvents.addListener();
-	syncTBFeedly();
+	//syncTBFeedly();
 }
 
 function syncTBFeedly() {

@@ -127,7 +127,7 @@ var synch = {
 		req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
 		req.onload = function (e) {
 			if (e.currentTarget.readyState == 4) {
-				log.writeLn(formatEventMsg("synch.GetFeedlySubs", e));
+				log.writeLn(formatEventMsg("synch.getFeedlySubs", e));
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
 					synch.update(jsonResponse);
@@ -170,16 +170,15 @@ var synch = {
 	    return xpathResult.iterateNext();
 	},
 	
-	subscribeFeed : function(feed, op, msg, next) {
+	subscribeFeed : function(feed, op, next) {
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
-				log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly",
-						e, processed, synch.subscribeTo.length));
-				let domNode = synch.findDomNode(synch.subscribeTo[processed].id);
+				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadAdd ", e));
+				let domNode = synch.findDomNode(feed.id);
 				if (domNode === null)
-					synch.addFeed2Dom(synch.subscribeTo[processed].id);
+					synch.addFeed2Dom(feed.id);
 				else
-					log.writeLn(message + " Already in status file. Unexpected situation");
+					log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");
 
 				next();
 			}				
@@ -187,9 +186,8 @@ var synch = {
 		
 		let onLoadDel = function(e) {
 			if (e.currentTarget.readyState == 4) {
-				log.writeLn(formatEventMsg(message + " Remove from Feedly",
-						e, processed, synch.unsubscribeTo.length));
-				let node = synch.unsubscribeTo[processed].domNode;
+				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
+				let node = feed.domNode;
 				if (node !== null)
 					node.parentNode.removeChild(node);
 
@@ -198,25 +196,22 @@ var synch = {
 		};
 		
 		let onErrorAdd = function(error) {
-			log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly. Error",
-					error, processed, synch.subscribeTo.length));
-			
+			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorAdd ", error));			
 			next();				
 		};
 		
 		let onErrorDel = function(error) {
-			log.writeLn(formatEventMsg(message + prefixLogMsg + "Feedly. Error",
-					error, processed, synch.subscribeTo.length));
+			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorDel ", error));
 
 			// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
-			let node = synch.unsubscribeTo[processed].domNode;
+			let node = feed.domNode;
 			let statusNodes = node.getElementsByTagName("status");
 			if (statusNodes.length > 0) {
 				let statusNode = statusNodes[0];
 				statusNode.textContent = FEED_LOCALSTATUS_DEL;
 			}
 			else
-				log.writeLn(message + " No status node. Unexpected situation");
+				log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");
 
 			next();				
 		};
@@ -224,8 +219,9 @@ var synch = {
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let jsonSubscribe = null;
+		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
 		
-		if (subOp) {
+		if (op) {
 			req.open("POST", fullUrl, true);
 			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
 			req.setRequestHeader("Content-Type", "application/json");
@@ -233,18 +229,20 @@ var synch = {
 			jsonSubscribe += "\t\"categories\" : [\n";
 			jsonSubscribe += "\t\t{\n";
 			jsonSubscribe += "\t\t\t\"id\" : \"user/" + auth.userId +
-							"/category/" + synch.subscribeTo[processed].category + "\",\n";
-			jsonSubscribe += "\t\t\t\"label\" : \"" + synch.subscribeTo[processed].category + "\"\n";
+							"/category/" + feed.category + "\",\n";
+			jsonSubscribe += "\t\t\t\"label\" : \"" + feed.category + "\"\n";
 			jsonSubscribe += "\t\t}\n";
 			jsonSubscribe += "\t],\n";
-			jsonSubscribe += "\t\"id\" : \"feed/" + synch.subscribeTo[processed].id + "\",\n";
-			jsonSubscribe += "\t\"title\" : \"" + synch.subscribeTo[processed].name + "\"\n";
+			jsonSubscribe += "\t\"id\" : \"feed/" + feed.id + "\",\n";
+			jsonSubscribe += "\t\"title\" : \"" + feed.name + "\"\n";
 			jsonSubscribe += "}";				
 			
 			req.onload = onLoadAdd;
 			req.onerror = onErrorAdd;				
 		}				
-		else {
+		else {			
+			fullUrl = fullUrl + encodeURIComponent("feed/" + feed.id);
+			
 			req.open("DELETE", fullUrl, true);
 			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
 			
@@ -252,26 +250,23 @@ var synch = {
 			req.onerror = onErrorDel;				
 		}
 
-		log.writeLn(message + prefixLogMsg + "Feedly. Url: " + fullUrl + " Json: " + jsonSubscribe);
+		log.writeLn("synch.subscribeFeed. Add: " + op + " Url: " + fullUrl + " Json: " + jsonSubscribe);
 		req.send(jsonSubscribe);		
 	},
 	
 	subsTo : [],
 	subsOp : [],
-	subsLogMsg : [],
 	subsWrtStatus : [],	
 	
-	subscribe : function(subscribe, addOp, logMsg, writeStatusFile) {
-		let prefixLogMsg = addOp ? " Add to " : " Remove from "; 
-		
+	subscribeFeeds : function(subs, addOp, writeStatusFile) {
 		if (synchDirection.isDownload()) {
-			log.writeLn(message + prefixLogMsg + "Feedly while in download mode. Unexpected situation. Aborted");
+			log.writeLn("synch.subscribeFeeds. In download mode. Unexpected situation. Aborted");
 			return;
 		}
-		if (Object.prototype.toString.call(subscribe) !== "[object Array]") {
-			subscribe = [].concat(subscribe);
+		if (Object.prototype.toString.call(subs) !== "[object Array]") {
+			subs = [].concat(subs);
 		}
-		if (subscribe.length <= 0)
+		if (subs.length <= 0)
 			return;
 
 		// Looks like the server is limited to one subscription each time.
@@ -279,17 +274,15 @@ var synch = {
 		// a response 200 status, but truth is the feed hasn't subscribed
 		// Enqueue all ops
 		let running = synch.subsTo.length > 0;
-		synch.subsTo.push(subscribe);
+		synch.subsTo.push(subs);
 		synch.subsOp.push(addOp);
-		synch.subsLogMsg.push(logMsg);
 		synch.subsWrtStatus.push(writeStatusFile);		
 		if (running) {
-			log.writeLn(message + prefixLogMsg + 
-					"Feedly. Queued. Entries = " + subscribe.length + " Op. Count = " + synch.subsTo.length);
+			log.writeLn("synch.subscribeFeeds. Queued. Add = " + addOp + " Entries = " + subs.length + " Op. Count = " + synch.subsTo.length);
 			return;
 		}
 		else
-			log.writeLn(message + prefixLogMsg + "Feedly. Begin. Entries = " + synch.subsTo.length);
+			log.writeLn("synch.subscribeFeeds. Begin. Add = " + addOp + " Entries = " + synch.subsTo.length);
 			
 		let procOp = 0;
 		let procEntry = 0;
@@ -297,21 +290,23 @@ var synch = {
 		let subTo;
 		let subOp;
 		let subLogMsg;
-		let subWrtStatus;			
+		let subWrtStatus;		
 		
-		let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
-		fullUrl = encodeURI(fullUrl);
-		
-		let begin = function() {
+		let begin = function() {			
 			// All operations done. Quit
-			if (procOp >= synch.subsTo.length)
-				return;
+			if (procOp >= synch.subsTo.length) {
+				synch.subsTo = [];
+				synch.subsOp = [];
+				synch.subsWrtStatus = [];				
+				return;				
+			}				
 			
 			synch.process = Components.classes["@mozilla.org/activity-process;1"].
 				createInstance(Components.interfaces.nsIActivityProcess);
 			
-			let folder = getRootFolder();
-			synch.process.init(_("beginSubs", getPref("locale")) + ": " + folder.prettiestName, null);
+			let folder = getRootFolder();			
+			let procCaption = addOp ? _("beginSubs", getPref("locale")) : _("beginUnsubs", getPref("locale"));			
+			synch.process.init(procCaption + ": " + folder.prettiestName, null);
 			synch.process.contextType = "account";
 			synch.process.contextObj = folder.server;
 			synch.activityMng.addActivity(synch.process);
@@ -319,10 +314,12 @@ var synch = {
 			procEntry = 0;
 			subTo = synch.subsTo[procOp];
 			subOp = synch.subsOp[procOp];
-			subLogMsg = synch.subsLogMsg[procOp];
 			subWrtStatus = synch.subsWrtStatus[procOp];
 			
-			synch.subscribeFeed(subTo[procEntry], subOp[procEntry], subLogMsg[procEntry], next);				
+			log.writeLn("synch.subscribeFeeds. " + 
+					"Entries (" + (procEntry + 1) + "/" + subTo.length + ") " +
+					"Ops (" + (procOp + 1) + "/" + synch.subsTo.length + ")");
+			synch.subscribeFeed(subTo[procEntry], subOp, next);				
 		};			
 
 		let next = function() {
@@ -334,7 +331,8 @@ var synch = {
 					createInstance(Components.interfaces.nsIActivityEvent);
 				let folder = getRootFolder();
 
-				event.init(_("endSubs", getPref("locale")) + ": " + folder.prettiestName,
+				let evntCaption = addOp ? _("endSubs", getPref("locale")) : _("endUnsubs", getPref("locale"));
+				event.init(evntCaption + ": " + folder.prettiestName,
 				           null,
 				           "",
 				           synch.process.startTime,
@@ -351,27 +349,35 @@ var synch = {
 				begin();
 			}
 			else {
-				let msg = _("runSubs", getPref("locale")) + ": (" + (procEntry + 1) + "/" + subTo.length +")";
+				let procCaption = addOp ? _("runSubs", getPref("locale")) : _("runUnsubs", getPref("locale"));
+				let msg = procCaption + ": (" + (procEntry + 1) + "/" + subTo.length +")";
 				synch.process.setProgress(msg,
 						procEntry + 1, subTo.length);
 
 				procEntry++;
-				synch.subscribeFeed(subTo[procEntry], subOp[procEntry], subLogMsg[procEntry], next);
+				log.writeLn("synch.subscribeFeeds. " + 
+						"Entries (" + (procEntry + 1) + "/" + subTo.length + ") " +
+						"Ops (" + (procOp + 1) + "/" + synch.subsTo.length + ")");				
+				synch.subscribeFeed(subTo[procEntry], subOp, next);
 			}
 		};			
 		
 		begin();
 	},
 
-	srvSubscribe : function(subscribe, message, writeStatusFile) {
-		synch.subscribe(subscribe, true, message, writeStatusFile);
+	subscribe : function(subscribe, message, writeStatusFile) {
+		if (subscribe.length > 0)
+			log.writeLn("synch.subscribe. " + message);
+		synch.subscribeFeeds(subscribe, true, message, writeStatusFile);
 	},
 
-	srvUnsubscribe : function(unsubscribe, message) {
-		synch.subscribe(subscribe, false, message, true);
+	unsubscribe : function(unsubscribe, message) {
+		if (unsubscribe.length > 0)
+			log.writeLn("synch.unsubscribe. " + message);
+		synch.subscribeFeeds(unsubscribe, false, message);
 	},
 
-	// Flag to indicate whether synch.Update method is running
+	// Flag to indicate whether synch.update method is running
 	updateRunning : false,
 
 	// Synchronize Thunderbird and Feedly
@@ -567,8 +573,8 @@ var synch = {
 		    }
 
 		    if (!synchDirection.isDownload()) {
-			    synch.srvSubscribe(subscribe, "synch.update. Svr=0 TB=1", unsubscribe.length <= 0);
-			    synch.srvUnsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
+			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1", unsubscribe.length <= 0);
+			    synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
 		    }
 		}
 		finally {
