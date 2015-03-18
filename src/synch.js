@@ -503,6 +503,7 @@ var synch = {
 					else {
 						if (synchDirection.isUpload()) {
 							let fullUrl = encodeURI(feedId);
+							node = synch.findDomNode(feedId);
 							unsubscribe.push( { id : fullUrl, domNode : node } );
 						}
 						else {
