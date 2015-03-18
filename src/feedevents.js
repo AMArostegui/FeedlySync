@@ -70,7 +70,7 @@ var feedEvents = {
 			log.writeLn("FeedEvents.onImportOPMLFinished. Count=" + feedEvents.subscribed.length);
 			feedEvents.feedFolders = {};
 			let action = function() {
-				synch.subscribe(feedEvents.subscribed, "FeedEvents.onImportOPMLFinished", true);
+				synch.subscribe(feedEvents.subscribed, "FeedEvents.onImportOPMLFinished");
 				feedEvents.subscribed = [];
 			};
 			synch.authAndRun(action);
@@ -108,7 +108,7 @@ var feedEvents = {
 				}
 				let action = function() {
 					synch.subscribe( { id : aFeed.url, name : aFeed.title, category : aFeed.mFolder.parent.name },
-						"FeedEvents.onAddFeed", true);
+						"FeedEvents.onAddFeed");
 				};
 				synch.authAndRun(action);
 			}

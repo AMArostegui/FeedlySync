@@ -256,9 +256,8 @@ var synch = {
 	
 	subsTo : [],
 	subsOp : [],
-	subsWrtStatus : [],	
 	
-	subscribeFeeds : function(subs, addOp, writeStatusFile) {
+	subscribeFeeds : function(subs, addOp) {
 		if (synchDirection.isDownload()) {
 			log.writeLn("synch.subscribeFeeds. In download mode. Unexpected situation. Aborted");
 			return;
@@ -276,7 +275,6 @@ var synch = {
 		let running = synch.subsTo.length > 0;
 		synch.subsTo.push(subs);
 		synch.subsOp.push(addOp);
-		synch.subsWrtStatus.push(writeStatusFile);		
 		if (running) {
 			log.writeLn("synch.subscribeFeeds. Queued. Add = " + addOp + " Entries = " + subs.length + " Op. Count = " + synch.subsTo.length);
 			return;
@@ -289,15 +287,14 @@ var synch = {
 		
 		let subTo;
 		let subOp;
-		let subLogMsg;
-		let subWrtStatus;		
+		let subLogMsg;	
 		
 		let begin = function() {			
 			// All operations done. Quit
 			if (procOp >= synch.subsTo.length) {
 				synch.subsTo = [];
 				synch.subsOp = [];
-				synch.subsWrtStatus = [];				
+				synch.writeStatusFile();
 				return;				
 			}				
 			
@@ -314,7 +311,6 @@ var synch = {
 			procEntry = 0;
 			subTo = synch.subsTo[procOp];
 			subOp = synch.subsOp[procOp];
-			subWrtStatus = synch.subsWrtStatus[procOp];
 			
 			log.writeLn("synch.subscribeFeeds. " + 
 					"Entries (" + (procEntry + 1) + "/" + subTo.length + ") " +
@@ -342,9 +338,6 @@ var synch = {
 				synch.activityMng.addActivity(event);
 				synch.process = null;
 				
-				if (subWrtStatus)
-					synch.writeStatusFile();
-				
 				procOp++;
 				begin();
 			}
@@ -365,10 +358,10 @@ var synch = {
 		begin();
 	},
 
-	subscribe : function(subscribe, message, writeStatusFile) {
+	subscribe : function(subscribe, message) {
 		if (subscribe.length > 0)
 			log.writeLn("synch.subscribe. " + message);
-		synch.subscribeFeeds(subscribe, true, message, writeStatusFile);
+		synch.subscribeFeeds(subscribe, true, message);
 	},
 
 	unsubscribe : function(unsubscribe, message) {
@@ -573,7 +566,7 @@ var synch = {
 		    }
 
 		    if (!synchDirection.isDownload()) {
-			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1", unsubscribe.length <= 0);
+			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");
 			    synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
 		    }
 		}
