@@ -361,13 +361,13 @@ var synch = {
 	subscribe : function(subscribe, message) {
 		if (subscribe.length > 0)
 			log.writeLn("synch.subscribe. " + message);
-		synch.subscribeFeeds(subscribe, true, message);
+		synch.subscribeFeeds(subscribe, true);
 	},
 
 	unsubscribe : function(unsubscribe, message) {
 		if (unsubscribe.length > 0)
 			log.writeLn("synch.unsubscribe. " + message);
-		synch.subscribeFeeds(unsubscribe, false, message);
+		synch.subscribeFeeds(unsubscribe, false);
 	},
 
 	// Flag to indicate whether synch.update method is running
