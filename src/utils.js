@@ -125,7 +125,7 @@ var guiElements = {
 
 		let tbox = doc.getElementById("navigator-toolbox") || doc.getElementById("mail-toolbox");
 		if (tbox === null) {
-			log.WriteLn("guiElements.addToolbarBtn. Could not find toolbar");
+			log.writeLn("guiElements.addToolbarBtn. Could not find toolbar");
 			return;
 		}
 		tbox.palette.appendChild(guiElements.toolbarBtn);
@@ -177,12 +177,12 @@ var guiElements = {
 
 		let menuItemRef = doc.getElementById(strMenuItemRef);
 		if (menuItemRef === null) {
-			log.WriteLn("guiElements.addMenuItem. Could not find menu item: " + strMenuItemRef);
+			log.writeLn("guiElements.addMenuItem. Could not find menu item: " + strMenuItemRef);
 			return;
 		}
 		let menuPopup = doc.getElementById(strMenuPopup);
 		if (menuPopup === null) {
-			log.WriteLn("guiElements.addMenuItem. Could not find menu popup: " + strMenuPopup);
+			log.writeLn("guiElements.addMenuItem. Could not find menu popup: " + strMenuPopup);
 			return;
 		}
 		menuPopup.insertBefore(menuItemSync, menuItemRef);
@@ -205,12 +205,12 @@ function getRootFolder() {
 		}
 	}
 	if (selServer === null) {
-		log.WriteLn("getRootFolder. No server found. Account Key = " + accountKey);
+		log.writeLn("getRootFolder. No server found. Account Key = " + accountKey);
 		return null;
 	}
 	let rootFolder = selServer.rootFolder;
 	if (rootFolder === null) {
-		log.WriteLn("getRootFolder. No root folder. Account Key = " + accountKey);
+		log.writeLn("getRootFolder. No root folder. Account Key = " + accountKey);
 		return null;
 	}
 	return rootFolder;

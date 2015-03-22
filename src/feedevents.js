@@ -148,11 +148,6 @@ var feedEvents = {
 		unsubscribed : [],
 
 		OnItemRemoved : function(parentItem, item) {
-			if (synchDirection.isDownload())
-				return;
-
-			if (synch.updateRunning)
-				return;
 			if (feedEvents.isRootFolder(parentItem, item)) {
 				log.writeLn("FeedEvents.OnItemRemoved. Removing synchronized account");
 				setPref("synch.account", "");
@@ -160,8 +155,13 @@ var feedEvents = {
 				return;
 			}
 
+			if (synchDirection.isDownload())
+				return;
+			if (synch.updateRunning)
+				return;
 			if (feedEvents.unsubscribed.length <= 0)
 				return;
+
 			log.writeLn("FeedEvents.OnItemRemoved. Count=" + feedEvents.unsubscribed.length);
 			let action = function () {
 				synch.unsubscribe(feedEvents.unsubscribed, "FeedEvents.OnItemRemoved");
@@ -197,7 +197,7 @@ var feedEvents = {
 			}
 			else
 				feedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
-		},		
+		},
 
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener");
@@ -220,8 +220,8 @@ var feedEvents = {
 				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
 				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
-			
-			// Update timer and preference listener			
+
+			// Update timer and preference listener
 			Services.prefs.addObserver("extensions.FeedlySync.synch.timeout", synch, false);
 			synch.setTimer();
 		},
@@ -236,8 +236,8 @@ var feedEvents = {
 			FeedUtils.addFeedPrimary = null;
 			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
 			FeedUtils.deleteFeedPrimary = null;
-			
-			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);			
+
+			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);
 			synch.delTimer();
 		}
 	};
