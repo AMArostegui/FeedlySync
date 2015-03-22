@@ -127,5 +127,9 @@ function onDialogAccept() {
 		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
 		if (selectedKey !== null)
 			setPref("synch.account", selectedKey);
-	}
+	}	
+}
+
+function onUnload() {
+	l10n.unload();	
 }
