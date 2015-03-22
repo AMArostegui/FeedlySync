@@ -55,6 +55,11 @@ var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 
 var win = null;
 var addonId = "FeedlySync@AMArostegui";
+var uriResolver = {
+	getResourceURI: function(filePath) ({
+		spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
+	})
+};
 
 include("src/fsprefs.js");
 include("packages/prefs.js");
@@ -74,11 +79,6 @@ function uninstall() {
 function startup(data, reason) {
 	log.writeLn("Startup. Reason = " + reason);
 
-	let uriResolver = {
-		getResourceURI: function(filePath) ({
-			spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
-		})
-	};
 	l10n(uriResolver, "FeedlySync.properties");
 	unload(l10n.unload);
 
@@ -94,10 +94,11 @@ function shutdown(data, reason) {
 
 function main(window) {
 	win = window;
-	addMenuItem("taskPopup", "sanitizeHistory", syncTBFeedly);
+
+	guiElements.startup(syncTBFeedly, uriResolver);
 	synch.startup();
 	feedEvents.addListener();
-	//syncTBFeedly();
+	syncTBFeedly();
 }
 
 function syncTBFeedly() {

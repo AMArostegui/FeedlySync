@@ -7,11 +7,12 @@ const PREFS = {
 	baseUrl : "http://sandbox.feedly.com",
 	baseSslUrl : "https://sandbox.feedly.com",
 
-	// Log preferences
 	"log.active" : false,
 	"log.toFile" : false,
 
-	//Authentication preferences
+	"toolbar" : "",
+	"toolbar.before" : "",
+
 	"auth.getCodeOp" : "/v3/auth/auth",
 	"auth.getTokenOp" : "/v3/auth/token",
 
@@ -35,7 +36,6 @@ const PREFS = {
 	"auth.userId" : "",
 	"auth.expiringMargin" : 90,
 
-	// Synchronizing preferences
 	"synch.tokenParam" : "Authorization",
 	"synch.subsOp" : "/v3/subscriptions",
 	"synch.account" : "",
