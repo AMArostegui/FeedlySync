@@ -190,13 +190,13 @@ var feedEvents = {
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd !== null) {
 				let action = function() {
-					synch.unsubscribe( { id : aId.Value, domNode : node },
+					synch.unsubscribe( { id : aId.Value },
 						"FeedEvents.onDeleteFeed");
 				};
 				synch.authAndRun(action);
 			}
 			else
-				feedEvents.unsubscribed.push( { id : aId.Value, domNode : node } );
+				feedEvents.unsubscribed.push( { id : aId.Value } );
 		},
 
 		addListener : function() {

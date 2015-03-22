@@ -17,7 +17,7 @@ var synch = {
 		synch.readStatusFile();
 	},
 
-	// Begin synchronization process 
+	// Begin synchronization process
 	begin : function () {
 		synch.getFeedlySubs();
 	},
@@ -161,7 +161,7 @@ var synch = {
 			xpathExpression = "/feeds/feed[id='" + id + "']";
 		else
 		    xpathExpression = "/feeds/feed[id='" + id +
-    			"' and status=" + FEED_LOCALSTATUS_DEL + "]";
+    			"' and status=" + status + "]";
 
 	    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
 	    		null, Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
@@ -169,7 +169,7 @@ var synch = {
 	    	return null;
 	    return xpathResult.iterateNext();
 	},
-	
+
 	subscribeFeed : function(feed, op, next) {
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
@@ -181,46 +181,57 @@ var synch = {
 					log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");
 
 				next();
-			}				
+			}
 		};
-		
+
 		let onLoadDel = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
-				let node = feed.domNode;
-				if (node !== null)
-					node.parentNode.removeChild(node);
+				let domNode = synch.findDomNode(feed.id);
+				if (domNode !== null) {
+					let parentNode = domNode.parentNode;
+					if (parentNode !== null)
+						parentNode.removeChild(domNode);
+					else
+						log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");
+				}
+				else
+					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");
 
 				next();
-			}				
+			}
 		};
-		
+
 		let onErrorAdd = function(error) {
-			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorAdd ", error));			
-			next();				
+			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorAdd ", error));
+			next();
 		};
-		
+
 		let onErrorDel = function(error) {
 			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorDel ", error));
 
 			// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
-			let node = feed.domNode;
-			let statusNodes = node.getElementsByTagName("status");
-			if (statusNodes.length > 0) {
-				let statusNode = statusNodes[0];
-				statusNode.textContent = FEED_LOCALSTATUS_DEL;
+			let domNode = synch.findDomNode(feed.id);
+			if (domNode !== null) {
+				let statusNodes = domNode.getElementsByTagName("status");
+				if (statusNodes.length > 0) {
+					let statusNode = statusNodes[0];
+					statusNode.textContent = FEED_LOCALSTATUS_DEL;
+				}
+				else
+					log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");
 			}
 			else
-				log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");
+				log.writeLn("synch.subscribeFeed.onErrorDel. Not in status file. Unexpected situation");
 
-			next();				
+			next();
 		};
-		
+
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let jsonSubscribe = null;
 		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
-		
+
 		if (op) {
 			req.open("POST", fullUrl, true);
 			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
@@ -235,28 +246,28 @@ var synch = {
 			jsonSubscribe += "\t],\n";
 			jsonSubscribe += "\t\"id\" : \"feed/" + feed.id + "\",\n";
 			jsonSubscribe += "\t\"title\" : \"" + feed.name + "\"\n";
-			jsonSubscribe += "}";				
-			
+			jsonSubscribe += "}";
+
 			req.onload = onLoadAdd;
-			req.onerror = onErrorAdd;				
-		}				
-		else {			
+			req.onerror = onErrorAdd;
+		}
+		else {
 			fullUrl = fullUrl + encodeURIComponent("feed/" + feed.id);
-			
+
 			req.open("DELETE", fullUrl, true);
 			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
-			
+
 			req.onload = onLoadDel;
-			req.onerror = onErrorDel;				
+			req.onerror = onErrorDel;
 		}
 
 		log.writeLn("synch.subscribeFeed. Add: " + op + " Url: " + fullUrl + " Json: " + jsonSubscribe);
-		req.send(jsonSubscribe);		
+		req.send(jsonSubscribe);
 	},
-	
+
 	subsTo : [],
 	subsOp : [],
-	
+
 	subscribeFeeds : function(subs, addOp) {
 		if (synchDirection.isDownload()) {
 			log.writeLn("synch.subscribeFeeds. In download mode. Unexpected situation. Aborted");
@@ -281,42 +292,42 @@ var synch = {
 		}
 		else
 			log.writeLn("synch.subscribeFeeds. Begin. Add = " + addOp + " Entries = " + synch.subsTo.length);
-			
+
 		let procOp = 0;
 		let procEntry = 0;
-		
+
 		let subTo;
 		let subOp;
-		let subLogMsg;	
-		
-		let begin = function() {			
+		let subLogMsg;
+
+		let begin = function() {
 			// All operations done. Quit
 			if (procOp >= synch.subsTo.length) {
 				synch.subsTo = [];
 				synch.subsOp = [];
 				synch.writeStatusFile();
-				return;				
-			}				
-			
+				return;
+			}
+
 			synch.process = Components.classes["@mozilla.org/activity-process;1"].
 				createInstance(Components.interfaces.nsIActivityProcess);
-			
-			let folder = getRootFolder();			
-			let procCaption = addOp ? _("beginSubs", getPref("locale")) : _("beginUnsubs", getPref("locale"));			
+
+			let folder = getRootFolder();
+			let procCaption = addOp ? _("beginSubs", getPref("locale")) : _("beginUnsubs", getPref("locale"));
 			synch.process.init(procCaption + ": " + folder.prettiestName, null);
 			synch.process.contextType = "account";
 			synch.process.contextObj = folder.server;
 			synch.activityMng.addActivity(synch.process);
-			
+
 			procEntry = 0;
 			subTo = synch.subsTo[procOp];
 			subOp = synch.subsOp[procOp];
-			
-			log.writeLn("synch.subscribeFeeds. " + 
+
+			log.writeLn("synch.subscribeFeeds. " +
 					"Entries (" + (procEntry + 1) + "/" + subTo.length + ") " +
 					"Ops (" + (procOp + 1) + "/" + synch.subsTo.length + ")");
-			synch.subscribeFeed(subTo[procEntry], subOp, next);				
-		};			
+			synch.subscribeFeed(subTo[procEntry], subOp, next);
+		};
 
 		let next = function() {
 			if (procEntry == subTo.length - 1) {
@@ -337,7 +348,7 @@ var synch = {
 				event.contextObj = synch.process.contextObj;
 				synch.activityMng.addActivity(event);
 				synch.process = null;
-				
+
 				procOp++;
 				begin();
 			}
@@ -348,13 +359,13 @@ var synch = {
 						procEntry + 1, subTo.length);
 
 				procEntry++;
-				log.writeLn("synch.subscribeFeeds. " + 
+				log.writeLn("synch.subscribeFeeds. " +
 						"Entries (" + (procEntry + 1) + "/" + subTo.length + ") " +
-						"Ops (" + (procOp + 1) + "/" + synch.subsTo.length + ")");				
+						"Ops (" + (procOp + 1) + "/" + synch.subsTo.length + ")");
 				synch.subscribeFeed(subTo[procEntry], subOp, next);
 			}
-		};			
-		
+		};
+
 		begin();
 	},
 
@@ -495,7 +506,7 @@ var synch = {
 							let fullUrl = encodeURI(feedId);
 
 							// Just save the Id of the feed I want to unsubscribe. Will be processed later
-							unsubscribe.push( { id : fullUrl, domNode : node } );
+							unsubscribe.push( { id : fullUrl } );
 						}
 					}
 
@@ -504,7 +515,7 @@ var synch = {
 						if (synchDirection.isUpload()) {
 							let fullUrl = encodeURI(feedId);
 							node = synch.findDomNode(feedId);
-							unsubscribe.push( { id : fullUrl, domNode : node } );
+							unsubscribe.push( { id : fullUrl } );
 						}
 						else {
 							// Create category if necessary
