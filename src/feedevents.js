@@ -11,6 +11,7 @@ var feedEvents = {
 				return;
 
 			// Wait until subscriptions window is ready to trap its commands
+			// There must be a better way to do this but...
 			feedEvents.retryCount = 0;
 			let subscriptionsWindow = null;
 			let interval = win.setInterval(function() {
