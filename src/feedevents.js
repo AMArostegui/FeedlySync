@@ -29,10 +29,13 @@ var feedEvents = {
 						feedEvents.onImportOPMLFinished();
 					};
 				}
-				else if (feedEvents.retryCount < 20)
+				else if (feedEvents.retryCount < 20) {
 					feedEvents.retryCount++;
-				else
+				}
+				else {
+					log.writeLn("feedEvents.mainWndCmdListener. Unable to get subscription dialog");
 					win.clearInterval(interval);
+				}
 			}, 300);
 		},
 
