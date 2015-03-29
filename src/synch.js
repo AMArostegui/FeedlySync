@@ -381,6 +381,67 @@ var synch = {
 		synch.subscribeFeeds(unsubscribe, false);
 	},
 
+	// Returns Feed Url from a given folder
+	feedInTbFolder : function(tbFolder) {
+		let tbSubs = FeedUtils.getFeedUrlsInFolder(tbFolder);
+		if (tbSubs === null)
+			return null;
+
+		let tbSub = null;
+
+		// Select the one at the bigger index position, as Thundebird store the older in the last position
+		for (var i = tbSubs.length - 1; i >= 0; i--) {
+			// Sometimes an element is empty
+			if (tbSubs[i] === "")
+				continue;
+
+			// A synchronized entry prevails over the rest.
+			let node = synch.findDomNode(tbSubs[i]);
+			if (node !== null) {
+				tbSub = tbSubs[i];
+				break;
+			}
+			if (tbSub === null)
+				tbSub = tbSubs[i];
+		}
+		return tbSub;
+	},
+
+	feedInFeedly : function(id, category, feedlySubs) {
+		let i, j;
+		let found = false;
+
+	    for (i = 0; i < feedlySubs.length; i++) {
+	        let feed = feedlySubs[i];
+
+	        // Keep in mind "feed/" prefix
+	        if (feed.id.substring(0, 5) != "feed/") {
+	        	log.writeLn("synch.update. Missing 'feed/' in feed identifier");
+	        	continue;
+	        }
+	        let feedId = feed.id.substring(5, feed.id.length);
+	        if (feedId == id) {
+		        for (j = 0; j < feed.categories.length; j++) {
+		        	if (feed.categories[j].label == category) {
+		        		found = true;
+		        		break;
+		        	}
+		        }
+	        }
+	        if (found)
+	        	break;
+	    }
+
+	    // Remove feed from list so it won't be processed in second pass
+	    if (found) {
+			feedlySubs[i].categories.splice(j, 1);
+			if (feedlySubs[i].categories.length === 0)
+				feedlySubs.splice(i, 1);
+	    }
+
+	    return found;
+	},
+
 	// Flag to indicate whether synch.update method is running
 	updateRunning : false,
 
@@ -399,93 +460,57 @@ var synch = {
 			let subscribe = [];
 			for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
 				for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
-					let tbSubs = FeedUtils.getFeedUrlsInFolder(fldName);
-					if (tbSubs === null)
+
+					let tbSub = synch.feedInTbFolder(fldName);
+					if (tbSub === null)
 						continue;
 
-					for (var i = 0; i < tbSubs.length; i++) {
-						// Why is the first element always empty?
-						if (tbSubs[i] === "")
-							continue;
+				    // Feed-category found on both server and client. Won't be processed in second pass
+					let srvFound = synch.feedInFeedly(tbSub, fldCategory.prettiestName, feedlySubs);
+					if (srvFound)
+						continue;
 
-						// Seek pair feed-category in Feedly. So far, TB cannot subscribe to the same feed
-						// in different folders.
-						let found = false;
-						var k = 0;
-					    for (var j = 0; j < feedlySubs.length; j++) {
-					        let feed = feedlySubs[j];
+				    // Subscribed in Thunderbird but not in Feedly
+				    let node = synch.findDomNode(tbSub);
 
-					        // Keep in mind "feed/" prefix
-					        if (feed.id.substring(0, 5) != "feed/") {
-					        	log.writeLn("synch.update. Missing 'feed/' in feed identifier");
-					        	continue;
-					        }
-					        let feedId = feed.id.substring(5, feed.id.length);
-					        if (feedId == tbSubs[i]) {
-						        for (k = 0; k < feed.categories.length; k++) {
-						        	if (feed.categories[k].label == fldCategory.prettiestName) {
-						        		found = true;
-						        		break;
-						        	}
-						        }
-					        }
-					        if (found)
-					        	break;
-					    }
+			    	// Check whether this feed was previously synchronized. If so, delete locally
+					if (node !== null) {
+						if (synchDirection.isUpload()) {
+							subscribe.push( { id : tbSub , name : fldName.prettiestName,
+								category : fldCategory.prettiestName } );
+						}
+						else {
+							let nodeStatus = node.getElementsByTagName("status");
+							if (nodeStatus !== null && nodeStatus.length == 1) {
+								nodeStatus = nodeStatus[0];
+								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
+									fldName.parent.propagateDelete(fldName, true, win.msgWindow);
 
-					    // Feed-category found on both server and client. Won't be processed in second pass
-					    if (found) {
-							feedlySubs[j].categories.splice(k, 1);
-							if (feedlySubs[j].categories.length === 0)
-								feedlySubs.splice(j, 1);
-					    	continue;
-					    }
-
-					    // Subscribed in Thunderbird but not in Feedly
-					    let node = synch.findDomNode(tbSubs[i]);
-
-				    	// Check whether this feed was previously synchronized. If so, delete locally
-						if (node !== null) {
-							if (synchDirection.isUpload()) {
-								subscribe.push( { id : tbSubs[i] , name : fldName.prettiestName,
-									category : fldCategory.prettiestName } );
-							}
-							else {
-								let nodeStatus = node.getElementsByTagName("status");
-								if (nodeStatus !== null && nodeStatus.length == 1) {
-									nodeStatus = nodeStatus[0];
-									if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-										fldName.parent.propagateDelete(fldName, true, win.msgWindow);
-
-										// Remove node from Ctrl file DOM
-										writeDOM = true;
-										node.parentNode.removeChild(node);
-										log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
-									}
-									else
-										log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
-												" Ctrl file may be corrupted 2");
+									// Remove node from Ctrl file DOM
+									writeDOM = true;
+									node.parentNode.removeChild(node);
+									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
 								}
 								else
-									log.writeLn("synch.Update. Svr=0 TB=1. Removing from TB: " + tbSubs[i] +
-											" Ctrl file may be corrupted 1");
+									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub +
+											" Ctrl file may be corrupted 2");
 							}
+							else
+								log.writeLn("synch.Update. Svr=0 TB=1. Removing from TB: " + tbSub +
+										" Ctrl file may be corrupted 1");
 						}
+					}
 
-						// Not synchronized. Add to Feedly
+					// Not synchronized. Add to Feedly
+					else {
+						if (synchDirection.isDownload()) {
+							fldName.parent.propagateDelete(fldName, true, win.msgWindow);
+							log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
+						}
 						else {
-							if (synchDirection.isDownload()) {
-								fldName.parent.propagateDelete(fldName, true, win.msgWindow);
-								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSubs[i]);
-							}
-							else {
-								subscribe.push( { id : tbSubs[i] , name : fldName.prettiestName,
-									category : fldCategory.prettiestName } );
-							}
+							subscribe.push( { id : tbSub , name : fldName.prettiestName,
+								category : fldCategory.prettiestName } );
 						}
-
-						// Several feeds for category, just one feed by folder
-						break;
 					}
 				}
 			}
