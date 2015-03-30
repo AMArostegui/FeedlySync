@@ -381,8 +381,9 @@ var synch = {
 		synch.subscribeFeeds(unsubscribe, false);
 	},
 
-	// Returns Feed Url from a given folder
-	feedInTbFolder : function(tbFolder) {
+	// Returns feed url, given a Thunderbird folder
+	//		tbFolder: nsIMsgFolder
+	getFeedId : function(tbFolder) {
 		let tbSubs = FeedUtils.getFeedUrlsInFolder(tbFolder);
 		if (tbSubs === null)
 			return null;
@@ -406,8 +407,12 @@ var synch = {
 		}
 		return tbSub;
 	},
-
-	feedInFeedly : function(id, category, feedlySubs) {
+	
+	// Returns true if feed id was removed from subscription list
+	// 		id: string containing feed url
+	//		category: string contaning feed category name
+	// 		feedlySubs: JSON retrieved from server
+	removeFeed : function(id, category, feedlySubs) {
 		let i, j;
 		let found = false;
 
@@ -461,13 +466,12 @@ var synch = {
 			for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
 				for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
 
-					let tbSub = synch.feedInTbFolder(fldName);
+					let tbSub = synch.getFeedId(fldName);
 					if (tbSub === null)
 						continue;
 
-				    // Feed-category found on both server and client. Won't be processed in second pass
-					let srvFound = synch.feedInFeedly(tbSub, fldCategory.prettiestName, feedlySubs);
-					if (srvFound)
+				    // Pair feedId-category found on both server and client 					
+					if (synch.removeFeed(tbSub, fldCategory.prettiestName, feedlySubs))
 						continue;
 
 				    // Subscribed in Thunderbird but not in Feedly
