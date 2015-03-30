@@ -237,13 +237,17 @@ var synch = {
 			req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
 			req.setRequestHeader("Content-Type", "application/json");
 			jsonSubscribe = "{\n";
-			jsonSubscribe += "\t\"categories\" : [\n";
-			jsonSubscribe += "\t\t{\n";
-			jsonSubscribe += "\t\t\t\"id\" : \"user/" + auth.userId +
-							"/category/" + feed.category + "\",\n";
-			jsonSubscribe += "\t\t\t\"label\" : \"" + feed.category + "\"\n";
-			jsonSubscribe += "\t\t}\n";
-			jsonSubscribe += "\t],\n";
+			if (!synch.isUncategorized(feed.category)) {
+				jsonSubscribe += "\t\"categories\" : [\n";
+				jsonSubscribe += "\t\t{\n";
+				jsonSubscribe += "\t\t\t\"id\" : \"user/" + auth.userId +
+								"/category/" + feed.category + "\",\n";
+				jsonSubscribe += "\t\t\t\"label\" : \"" + feed.category + "\"\n";
+				jsonSubscribe += "\t\t}\n";
+				jsonSubscribe += "\t],\n";				
+			}
+			else
+				jsonSubscribe += "\t\"categories\" : [],\n";
 			jsonSubscribe += "\t\"id\" : \"feed/" + feed.id + "\",\n";
 			jsonSubscribe += "\t\"title\" : \"" + feed.name + "\"\n";
 			jsonSubscribe += "}";
@@ -426,12 +430,18 @@ var synch = {
 	        }
 	        let feedId = feed.id.substring(5, feed.id.length);
 	        if (feedId == id) {
-		        for (j = 0; j < feed.categories.length; j++) {
-		        	if (feed.categories[j].label == category) {
-		        		found = true;
-		        		break;
-		        	}
-		        }
+	        	if (synch.isUncategorized(category)) {
+	        		found = true;
+	        		break;	        		
+	        	}
+	        	else {
+			        for (j = 0; j < feed.categories.length; j++) {
+			        	if (feed.categories[j].label == category) {
+			        		found = true;
+			        		break;
+			        	}
+			        }
+	        	}	        	
 	        }
 	        if (found)
 	        	break;
@@ -439,12 +449,18 @@ var synch = {
 
 	    // Remove feed from list so it won't be processed in second pass
 	    if (found) {
-			feedlySubs[i].categories.splice(j, 1);
+	    	if (!synch.isUncategorized(category))
+	    		feedlySubs[i].categories.splice(j, 1);
+	    	
 			if (feedlySubs[i].categories.length === 0)
 				feedlySubs.splice(i, 1);
 	    }
 
 	    return found;
+	},
+	
+	isUncategorized : function(category) {
+		return category === "" || category === _("uncategorized", getPref("locale"));
 	},
 
 	// Flag to indicate whether synch.update method is running
@@ -470,8 +486,9 @@ var synch = {
 					if (tbSub === null)
 						continue;
 
-				    // Pair feedId-category found on both server and client 					
-					if (synch.removeFeed(tbSub, fldCategory.prettiestName, feedlySubs))
+				    // Pair feedId-category found on both server and client
+					let tbCategory = fldCategory.prettiestName;
+					if (synch.removeFeed(tbSub, tbCategory, feedlySubs))
 						continue;
 
 				    // Subscribed in Thunderbird but not in Feedly
@@ -481,7 +498,7 @@ var synch = {
 					if (node !== null) {
 						if (synchDirection.isUpload()) {
 							subscribe.push( { id : tbSub , name : fldName.prettiestName,
-								category : fldCategory.prettiestName } );
+								category : tbCategory } );
 						}
 						else {
 							let nodeStatus = node.getElementsByTagName("status");
@@ -513,7 +530,7 @@ var synch = {
 						}
 						else {
 							subscribe.push( { id : tbSub , name : fldName.prettiestName,
-								category : fldCategory.prettiestName } );
+								category : tbCategory } );
 						}
 					}
 				}
@@ -525,8 +542,14 @@ var synch = {
 		    for (var subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 		        let feed = feedlySubs[subIdx];
 		        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
-		        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
-		        	let categoryName = feed.categories[categoryIdx].label;
+		        let runOnce = true;
+		        for (var categoryIdx = 0; categoryIdx < feed.categories.length || runOnce; categoryIdx++) {
+		        	runOnce = false;
+		        	let categoryName;
+		        	if (feed.categories.length > 0)
+		        		categoryName = feed.categories[categoryIdx].label;
+		        	else
+		        		categoryName = _("uncategorized", getPref("locale"));
 
 					// Check whether this feed was locally deleted. If so, delete on server
 				    let node = synch.findDomNode(feedId, FEED_LOCALSTATUS_DEL);
