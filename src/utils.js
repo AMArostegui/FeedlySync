@@ -100,7 +100,9 @@ var guiElements = {
 	toolbarBtn : null,
 
 	saveToolbarInfo : function(aEvt) {
-		let tbId = guiElements.toolbarBtn.parentNode.getAttribute("id") || "";
+		let tbId = "";
+		if (guiElements.toolbarBtn.parentNode !== null)
+			tbId = guiElements.toolbarBtn.parentNode.getAttribute("id");
 		setPref("toolbar", tbId);
 
 		let tbb4Id = (guiElements.toolbarBtn.nextSibling || "")	&&
