@@ -462,6 +462,26 @@ var synch = {
 	isUncategorized : function(category) {
 		return category === "" || category === _("uncategorized", getPref("locale"));
 	},
+	
+	removeFromTB : function(fldName) {
+		// Delete rss folder
+		let fldCategory = fldName.parent; 
+		if (fldCategory === null) {
+			log.writeLn("synch.removeFromTB. Unable to get category folder. Unexpected situation");
+			return;
+		}		
+		fldCategory.propagateDelete(fldName, true, win.msgWindow);
+		
+		// Delete category folder if empty
+		if (!fldCategory.subFolders.hasMoreElements()) {
+			let parent = fldCategory.parent;
+			if (parent === null) {
+				log.writeLn("synch.removeFromTB. Unable to get parent folder. Unexpected situation");
+				return;
+			}
+			parent.propagateDelete(fldCategory, true, win.msgWindow);			
+		}
+	},
 
 	// Flag to indicate whether synch.update method is running
 	updateRunning : false,
@@ -505,7 +525,7 @@ var synch = {
 							if (nodeStatus !== null && nodeStatus.length == 1) {
 								nodeStatus = nodeStatus[0];
 								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-									fldName.parent.propagateDelete(fldName, true, win.msgWindow);
+									synch.removeFromTB(fldName);									
 
 									// Remove node from Ctrl file DOM
 									writeDOM = true;
@@ -525,7 +545,7 @@ var synch = {
 					// Not synchronized. Add to Feedly
 					else {
 						if (synchDirection.isDownload()) {
-							fldName.parent.propagateDelete(fldName, true, win.msgWindow);
+							synch.removeFromTB(fldName);
 							log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
 						}
 						else {
