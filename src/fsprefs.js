@@ -34,7 +34,7 @@ const PREFS = {
 
 	"auth.tokenRefresh" : "",
 	"auth.userId" : "",
-	"auth.expiringMargin" : 90,
+	"auth.expiringMargin" : 80,
 
 	"synch.tokenParam" : "Authorization",
 	"synch.subsOp" : "/v3/subscriptions",
