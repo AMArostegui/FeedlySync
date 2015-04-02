@@ -612,6 +612,7 @@ var synch = {
 							// Create feed folder
 							let feedName = feed.title;
 							let fldFeed;
+							let wasCreated = false;
 							try {
 								fldFeed = fldCategory2.getChildNamed(feedName);
 							}
@@ -622,6 +623,7 @@ var synch = {
 								fldCategory2.QueryInterface(Components.interfaces.nsIMsgLocalMailFolder).
 									createLocalSubfolder(feedName);
 								fldFeed = fldCategory2.getChildNamed(feedName);
+								wasCreated = true;
 							}
 
 							// Subscribe
@@ -634,6 +636,9 @@ var synch = {
 								log.writeLn("synch.update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 							}
 							else {
+								if (wasCreated)
+									fldFeed.parent.propagateDelete(fldFeed, true, win.msgWindow);
+								
 								log.writeLn("synch.update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 								continue;
 							}
