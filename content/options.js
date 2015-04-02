@@ -37,7 +37,7 @@ function loadModules(addon) {
 	onLoadAccounts();
 }
 
-function onLoadAccounts() {
+function onLoadAccounts(onNewAccount) {
 	if (!loadedModules) {
 		AddonManager.getAddonByID(addonId, loadModules);
 		return;
@@ -45,7 +45,7 @@ function onLoadAccounts() {
 	if (instantApply === null)
 		instantApply = services.Services.prefs.getBoolPref("browser.preferences.instantApply");
 
-	// Clean combobox
+	// Remove all elements from combobox
 	log.writeLn("Options.onLoadAccounts");
 	let popup = document.getElementById("accountPopup");
 	if (popup === null)
@@ -55,49 +55,57 @@ function onLoadAccounts() {
 
 	let prefAccount = getPref("synch.account");
 	let prefLocale = getPref("locale");
-
-	// Populate combobox
-	let count = 0;
+	
+	// Get all RSS accounts
+	let accounts = [];
 	let sel = -1;
-	let prettyName0 = null;
-	let key0 = null;
 	for each (var account in fixIterator(MailServices.accounts.accounts,
 			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
-			if ("rss" == server.type) {
+			if ("rss" == server.type) {				
+				accounts.push(account);				
 				if (prefAccount == account.key)
-					sel = count;
-
-				if (prettyName0 == null)
-					prettyName0 = server.prettyName;
-				if (key0 == null)
-					key0 = account.key;
-
-				let menuItem = document.createElement("menuitem");
-				menuItem.setAttribute("label", server.prettyName);
-				menuItem.setAttribute("value", account.key);
-				menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "', '" + account.key + "')");
-				popup.appendChild(menuItem);
-				count++;
+					sel = accounts.length - 1;
 			}
 		}
 	}
-
-	// No RSS accounts or nothing selected yet. Populate combobox with dummy node
-	log.writeLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + count);
-	if (count <= 0) {
+	
+	// No RSS accounts or nothing selected yet. Insert dummy node	
+	if (sel === -1) {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
 		menuItem.setAttribute("value", "");
 		menuItem.setAttribute("oncommand", "onSelected('', '')");
 		popup.appendChild(menuItem);
-		sel = 0;
+		log.writeLn("Options.onLoadAccounts. No RSS accounts or nothing selected yet. Insert dummy node");
+	}	
+	
+	// Populate combobox
+	for (let i = 0; i < accounts.length; i++) {
+		let server = accounts[i].incomingServer;
+		let menuItem = document.createElement("menuitem");
+		menuItem.setAttribute("label", server.prettyName);
+		menuItem.setAttribute("value", accounts[i].key);
+		menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "', '" + accounts[i].key + "')");
+		popup.appendChild(menuItem);		
 	}
-	else if (sel == -1) {
-		sel = 0;
-		onSelected(prettyName0, key0);
-	}
+	
+	// Default server if nothing selected	
+	if (sel === -1) {
+		// New button clicked. New account is supposed to be selected
+		if (onNewAccount != null) {
+			sel = accounts.length;
+			let prettyName = accounts[accounts.length - 1].incomingServer.prettyName;
+			let key = accounts[accounts.length - 1].key;
+			onSelected(prettyName, key);
+			log.writeLn("Options.onLoadAccounts. Newly created account selected");
+		}	
+		else
+			sel = 0;
+	}	
+	
+	log.writeLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + accounts.length);
 
 	let list = document.getElementById("accountList");
 	if (list === null)
@@ -119,7 +127,7 @@ function onNewAccount() {
 	log.writeLn("Options.onNewAccount");
 	window.openDialog("chrome://messenger-newsblog/content/feedAccountWizard.xul",
 			"", "chrome,modal,titlebar,centerscreen");
-	onLoadAccounts();
+	onLoadAccounts(true);
 }
 
 function onDialogAccept() {
