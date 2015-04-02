@@ -73,7 +73,8 @@ var auth = {
 						auth.resume();
 					}, expiresIn);
 
-					log.writeLn("auth.resume: Got access token");
+					log.writeLn("auth.resume: Got access token. Expires in: " +
+							jsonResponse.expires_in + " Calculated (ms): " + expiresIn);
 					auth.fireOnFinished(true);
 				}
 				else {
@@ -181,7 +182,9 @@ var auth = {
 						auth.resume();
 					}, expiresIn);
 
-					log.writeLn("auth.getTokens: Sucessfully authenticated");
+					log.writeLn("auth.getTokens: Sucessfully authenticated. Expires in: " +
+							jsonResponse.expires_in + " Calculated (ms): " + expiresIn);
+					
 					auth.fireOnFinished(true);
 				}
 				else

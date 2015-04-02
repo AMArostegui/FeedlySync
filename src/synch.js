@@ -52,6 +52,8 @@ var synch = {
 					action();
 				else
 					log.writeLn("synch.authAndRun. Unable to authenticate. Action=" + action);
+				
+				auth.onFinished = null;
 			};
 			auth.init();
 		}
