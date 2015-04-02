@@ -584,7 +584,7 @@ var synch = {
 						}
 					}
 
-					// Feed not synchronized. Add to Thunderbird
+					// Feed not found in Thunderbird 
 					else {
 						if (synchDirection.isUpload()) {
 							let fullUrl = encodeURI(feedId);
