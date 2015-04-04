@@ -657,8 +657,9 @@ var synch = {
 		    }
 
 		    if (!synchDirection.isDownload()) {
-			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");
-			    synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
+		    	// In case category name was changed, it's better to unsubscribe first
+		    	synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
+			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");			    
 		    }
 		}
 		finally {
