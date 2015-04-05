@@ -194,25 +194,24 @@ var guiElements = {
 };
 
 function getRootFolder() {
-	let selServer = null;
 	let accountKey = getPref("synch.account");
-	for each (var account in fixIterator(MailServices.accounts.accounts, Components.interfaces.nsIMsgAccount)) {
-		let server = account.incomingServer;
-		if (server) {
-			if ("rss" == server.type &&
-				account.key == accountKey) {
-				selServer = server;
-				break;
-			}
-		}
-	}
-	if (selServer === null) {
-		log.writeLn("getRootFolder. No server found. Account Key = " + accountKey);
+	let account = MailServices.accounts.getAccount(accountKey);
+	if (account === null)
 		return null;
+	
+	let server = account.incomingServer;
+	if (server === null) {
+		log.writeLn("getRootFolder. No incoming server. Unexpected situation. Account Key = " + accountKey);
+		return null;		
 	}
-	let rootFolder = selServer.rootFolder;
+	if (server.type !== "rss") {
+		log.writeLn("getRootFolder. Wrong incoming server type. Unexpected situation. Account Key = " + accountKey);
+		return null;		
+	}
+	
+	let rootFolder = server.rootFolder;
 	if (rootFolder === null) {
-		log.writeLn("getRootFolder. No root folder. Account Key = " + accountKey);
+		log.writeLn("getRootFolder. No root folder. Unexpected situation. Account Key = " + accountKey);
 		return null;
 	}
 	return rootFolder;

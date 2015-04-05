@@ -68,6 +68,7 @@ var synch = {
 		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
 		if (fileFeedStatus.exists())
 			fileFeedStatus.remove(false);
+		synch.readStatusFile();
 	},
 
 	readStatusFile : function() {
@@ -386,6 +387,31 @@ var synch = {
 			log.writeLn("synch.unsubscribe. " + message);
 		synch.subscribeFeeds(unsubscribe, false);
 	},
+	
+	renameCategory : function(oldName, newName) {
+		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.categoryOp") + "/");
+		fullUrl = fullUrl + encodeURIComponent("user/" + auth.userId + "/category/"  + oldName);		
+		
+		req.open("POST", fullUrl, true);
+		req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
+		req.setRequestHeader("Content-Type", "application/json");
+		let jsonRename = "{\n";
+		jsonRename += "\t\"label\" : \"" + newName + "\"\n";
+		jsonRename += "}";		
+		req.onload = function(e) {
+			if (e.currentTarget.readyState == 4) {
+				log.writeLn(formatEventMsg("synch.renameCategory.onLoad ", e));
+			}
+		};
+		req.onerror = function (error) {
+			log.writeLn(formatEventMsg("synch.renameCategory.onerror ", error));
+		};
+
+		log.writeLn("synch.renameCategory. Url: " + fullUrl + " Json: " + jsonRename);
+		req.send(jsonRename);
+	},
 
 	// Returns feed url, given a Thunderbird folder
 	//		tbFolder: nsIMsgFolder
@@ -661,6 +687,9 @@ var synch = {
 		    	synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
 			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");			    
 		    }
+		}
+		catch (err) {
+			log.writeLn("synch.update. Exception thrown: " + err);			
 		}
 		finally {
 			synch.updateRunning = false;

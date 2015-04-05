@@ -38,6 +38,7 @@ const PREFS = {
 
 	"synch.tokenParam" : "Authorization",
 	"synch.subsOp" : "/v3/subscriptions",
+	"synch.categoryOp" : "/v3/categories",
 	"synch.account" : "",
 	"synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
 	"synch.timeout" : 10
