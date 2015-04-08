@@ -52,7 +52,7 @@ var synch = {
 					action();
 				else
 					log.writeLn("synch.authAndRun. Unable to authenticate. Action=" + action);
-				
+
 				auth.onFinished = null;
 			};
 			auth.init();
@@ -247,7 +247,7 @@ var synch = {
 								"/category/" + feed.category + "\",\n";
 				jsonSubscribe += "\t\t\t\"label\" : \"" + feed.category + "\"\n";
 				jsonSubscribe += "\t\t}\n";
-				jsonSubscribe += "\t],\n";				
+				jsonSubscribe += "\t],\n";
 			}
 			else
 				jsonSubscribe += "\t\"categories\" : [],\n";
@@ -387,19 +387,19 @@ var synch = {
 			log.writeLn("synch.unsubscribe. " + message);
 		synch.subscribeFeeds(unsubscribe, false);
 	},
-	
+
 	renameCategory : function(oldName, newName) {
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.categoryOp") + "/");
-		fullUrl = fullUrl + encodeURIComponent("user/" + auth.userId + "/category/"  + oldName);		
-		
+		fullUrl = fullUrl + encodeURIComponent("user/" + auth.userId + "/category/"  + oldName);
+
 		req.open("POST", fullUrl, true);
 		req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
 		req.setRequestHeader("Content-Type", "application/json");
 		let jsonRename = "{\n";
 		jsonRename += "\t\"label\" : \"" + newName + "\"\n";
-		jsonRename += "}";		
+		jsonRename += "}";
 		req.onload = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.renameCategory.onLoad ", e));
@@ -439,7 +439,7 @@ var synch = {
 		}
 		return tbSub;
 	},
-	
+
 	// Returns true if feed id was removed from subscription list
 	// 		id: string containing feed url
 	//		category: string contaning feed category name
@@ -460,7 +460,7 @@ var synch = {
 	        if (feedId == id) {
 	        	if (synch.isUncategorized(category)) {
 	        		found = true;
-	        		break;	        		
+	        		break;
 	        	}
 	        	else {
 			        for (j = 0; j < feed.categories.length; j++) {
@@ -469,7 +469,7 @@ var synch = {
 			        		break;
 			        	}
 			        }
-	        	}	        	
+	        	}
 	        }
 	        if (found)
 	        	break;
@@ -479,27 +479,28 @@ var synch = {
 	    if (found) {
 	    	if (!synch.isUncategorized(category))
 	    		feedlySubs[i].categories.splice(j, 1);
-	    	
+
 			if (feedlySubs[i].categories.length === 0)
 				feedlySubs.splice(i, 1);
 	    }
 
 	    return found;
 	},
-	
+
 	isUncategorized : function(category) {
 		return category === "" || category === _("uncategorized", getPref("locale"));
 	},
-	
+
 	removeFromTB : function(fldName) {
 		// Delete rss folder
-		let fldCategory = fldName.parent; 
+		let fldCategory = fldName.parent;
 		if (fldCategory === null) {
 			log.writeLn("synch.removeFromTB. Unable to get category folder. Unexpected situation");
 			return;
-		}		
-		fldCategory.propagateDelete(fldName, true, win.msgWindow);
-		
+		}
+		let array = toXPCOMArray([fldName], Components.interfaces.nsIMutableArray);
+		fldCategory.deleteSubFolders(array, null);
+
 		// Delete category folder if empty
 		if (!fldCategory.subFolders.hasMoreElements()) {
 			let parent = fldCategory.parent;
@@ -507,7 +508,8 @@ var synch = {
 				log.writeLn("synch.removeFromTB. Unable to get parent folder. Unexpected situation");
 				return;
 			}
-			parent.propagateDelete(fldCategory, true, win.msgWindow);			
+			let array = toXPCOMArray([fldCategory], Components.interfaces.nsIMutableArray);
+			parent.deleteSubFolders(array, null);
 		}
 	},
 
@@ -553,7 +555,7 @@ var synch = {
 							if (nodeStatus !== null && nodeStatus.length == 1) {
 								nodeStatus = nodeStatus[0];
 								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-									synch.removeFromTB(fldName);									
+									synch.removeFromTB(fldName);
 
 									// Remove node from Ctrl file DOM
 									writeDOM = true;
@@ -610,7 +612,7 @@ var synch = {
 						}
 					}
 
-					// Feed not found in Thunderbird 
+					// Feed not found in Thunderbird
 					else {
 						if (synchDirection.isUpload()) {
 							let fullUrl = encodeURI(feedId);
@@ -664,7 +666,7 @@ var synch = {
 							else {
 								if (wasCreated)
 									fldFeed.parent.propagateDelete(fldFeed, true, win.msgWindow);
-								
+
 								log.writeLn("synch.update. Svr=1 TB=0. Feed Already Exists? Url: " + feedId + " Name: " + feedName);
 								continue;
 							}
@@ -685,11 +687,11 @@ var synch = {
 		    if (!synchDirection.isDownload()) {
 		    	// In case category name was changed, it's better to unsubscribe first
 		    	synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
-			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");			    
+			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");
 		    }
 		}
 		catch (err) {
-			log.writeLn("synch.update. Exception thrown: " + err);			
+			log.writeLn("synch.update. Exception thrown: " + err);
 		}
 		finally {
 			synch.updateRunning = false;
