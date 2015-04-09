@@ -275,7 +275,7 @@ var synch = {
 	subsTo : [],
 	subsOp : [],
 
-	subscribeFeeds : function(subs, addOp) {
+	subscribeFeeds : function(subs, addOp, message) {
 		if (synchDirection.isDownload()) {
 			log.writeLn("synch.subscribeFeeds. In download mode. Unexpected situation. Aborted");
 			return;
@@ -294,11 +294,13 @@ var synch = {
 		synch.subsTo.push(subs);
 		synch.subsOp.push(addOp);
 		if (running) {
-			log.writeLn("synch.subscribeFeeds. Queued. Add = " + addOp + " Entries = " + subs.length + " Op. Count = " + synch.subsTo.length);
+			log.writeLn("synch.subscribeFeeds. Queued. Add = " + addOp + " Entries = " + subs.length +
+					" Op. Count = " + synch.subsTo.length + " Caller = " + message);
 			return;
 		}
 		else
-			log.writeLn("synch.subscribeFeeds. Begin. Add = " + addOp + " Entries = " + synch.subsTo.length);
+			log.writeLn("synch.subscribeFeeds. Begin. Add = " + addOp + " Entries = " +
+					synch.subsTo.length + " Caller = " + message);
 
 		let procOp = 0;
 		let procEntry = 0;
@@ -377,15 +379,11 @@ var synch = {
 	},
 
 	subscribe : function(subscribe, message) {
-		if (subscribe.length > 0)
-			log.writeLn("synch.subscribe. " + message);
-		synch.subscribeFeeds(subscribe, true);
+		synch.subscribeFeeds(subscribe, true, message);
 	},
 
 	unsubscribe : function(unsubscribe, message) {
-		if (unsubscribe.length > 0)
-			log.writeLn("synch.unsubscribe. " + message);
-		synch.subscribeFeeds(unsubscribe, false);
+		synch.subscribeFeeds(unsubscribe, false, message);
 	},
 
 	renameCategory : function(oldName, newName) {
@@ -440,11 +438,11 @@ var synch = {
 		return tbSub;
 	},
 
-	// Returns true if feed id was removed from subscription list
+	// Returns the name if feed with the id was removed from subscription list
 	// 		id: string containing feed url
 	//		category: string contaning feed category name
 	// 		feedlySubs: JSON retrieved from server
-	removeFeed : function(id, category, feedlySubs) {
+	getNameAndRemove : function(id, category, feedlySubs) {
 		let i, j;
 		let found = false;
 
@@ -476,15 +474,17 @@ var synch = {
 	    }
 
 	    // Remove feed from list so it won't be processed in second pass
+	    let feedName = null;
 	    if (found) {
+	    	feedName = feedlySubs[i].title;
+	    	
 	    	if (!synch.isUncategorized(category))
 	    		feedlySubs[i].categories.splice(j, 1);
-
 			if (feedlySubs[i].categories.length === 0)
 				feedlySubs.splice(i, 1);
 	    }
 
-	    return found;
+	    return feedName;
 	},
 
 	isUncategorized : function(category) {
@@ -536,10 +536,25 @@ var synch = {
 					if (tbSub === null)
 						continue;
 
-				    // Pair feedId-category found on both server and client
+				    // Find pair (feedId-category) in Thunderbird's selected account
 					let tbCategory = fldCategory.prettiestName;
-					if (synch.removeFeed(tbSub, tbCategory, feedlySubs))
+					let nameInServer = synch.getNameAndRemove(tbSub, tbCategory, feedlySubs);
+					if (nameInServer !== null) {
+						// Feed name might have changed
+						if (nameInServer !== fldName.prettiestName) {
+							if (synchDirection.isDownload()) {
+								let selFlds = win.gFolderTreeView.getSelectedFolders();
+								if (selFlds.length > 0) {
+									if (selFlds[0] === fldName)
+										win.gFolderTreeView.selection.clearSelection();
+								}									
+								fldName.rename(nameInServer, null);
+							}
+						}							
+						
+						// (feedId-category) found both in server and client. Nothing else to do
 						continue;
+					}						
 
 				    // Subscribed in Thunderbird but not in Feedly
 				    let node = synch.findDomNode(tbSub);
@@ -587,7 +602,7 @@ var synch = {
 			}
 
 			// Second pass: Feedly subscriptions.
-			// After first pass, remaining categories are guaranteed not to be present on Thunderbird
+			// After first pass, remaining categories are guaranteed not to be present in Thunderbird
 			let unsubscribe = [];
 		    for (var subIdx = 0; subIdx < feedlySubs.length; subIdx++) {
 		        let feed = feedlySubs[subIdx];

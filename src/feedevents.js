@@ -136,11 +136,12 @@ var feedEvents = {
 
 		isRootFolder : function(item) {
 			if (item === null)
-				return false;			
-			let parentItem = item.parent;
-			if (parentItem !== null)
 				return false;
 			if (!(item instanceof Components.interfaces.nsIMsgFolder))
+				return false;
+
+			let parentItem = item.parent;
+			if (parentItem !== null)
 				return false;
 			if (item.server === null || item.server.type !== "rss")
 				return false;
@@ -148,20 +149,22 @@ var feedEvents = {
 			let accountKey = getPref("synch.account");
 			if (accountKey === "")
 				return false;
-			
+
 			let account = MailServices.accounts.getAccount(accountKey);
 			if (account === null) {
 				log.writeLn("synch.isRootFolder. Account not found: " + accountKey);
-				return false;				
-			}
-				
-			return account.incomingServer === item.server; 
-		},
-		
-		isCategoryFolder : function(item) {
-			if (!(item instanceof Components.interfaces.nsIMsgFolder))
 				return false;
+			}
+
+			return account.incomingServer === item.server;
+		},
+
+		isCategoryFolder : function(item) {
 			return feedEvents.isRootFolder(item.parent);
+		},
+
+		isFeedFolder : function(item) {
+			return feedEvents.isCategoryFolder(item.parent);
 		},
 
 		unsubscribed : [],
@@ -191,13 +194,18 @@ var feedEvents = {
 				feedEvents.unsubscribed = [];
 			};
 			synch.authAndRun(action);
-		},		
-		
+		},
+
 	    folderRenamed : function(aOrigFolder, aNewFolder) {
-	    	if (!feedEvents.isCategoryFolder(aNewFolder))
-	    		return;	    	
-	    	synch.renameCategory(aOrigFolder.prettiestName, aNewFolder.prettiestName);
-	    },		
+	    	if (feedEvents.isFeedFolder(aNewFolder)) {
+		    	// To rename a feed, simply subscribe again
+				let feedId = synch.getFeedId(aNewFolder);
+	    		synch.subscribe( { id : feedId, name : aNewFolder.prettiestName, category : aNewFolder.parent.prettiestName },
+					"FeedEvents.folderRenamed");
+	    	}
+	    	else if (feedEvents.isCategoryFolder(aNewFolder))
+	    		synch.renameCategory(aOrigFolder.prettiestName, aNewFolder.prettiestName);
+	    },
 
 		onDeleteFeed : function(aId, aServer, aParentFolder) {
 			if (synchDirection.isDownload())
@@ -227,15 +235,15 @@ var feedEvents = {
 			else
 				feedEvents.unsubscribed.push( { id : aId.Value } );
 		},
-		
+
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener");
 
 			// Folder events listeners
 			MailServices.mailSession.AddFolderListener(this,
-					Components.interfaces.nsIFolderListener.removed);			
+					Components.interfaces.nsIFolderListener.removed);
 		    MailServices.mfn.addListener(this,
-		    		Components.interfaces.nsIMsgFolderNotificationService.folderRenamed);			
+		    		Components.interfaces.nsIMsgFolderNotificationService.folderRenamed);
 
 			// Main window command listener
 			win.addEventListener("command", feedEvents.mainWndCmdListener, false);
@@ -259,7 +267,7 @@ var feedEvents = {
 
 		removeListener : function() {
 			log.writeLn("FeedEvents.RemoveListener");
-			
+
 			MailServices.mailSession.RemoveFolderListener(this);
 			MailServices.mfn.removeListener(this);
 
