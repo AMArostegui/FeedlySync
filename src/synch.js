@@ -147,6 +147,9 @@ var synch = {
 	},
 
 	addFeed2Dom : function(id) {
+		if (synch.findDomNode(id) !== null)
+			return;
+		
 		let nodeFeed = domFeedStatus.createElement("feed");
 		let nodeStatus = domFeedStatus.createElement("status");
 		nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
