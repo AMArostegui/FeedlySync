@@ -540,6 +540,16 @@ var synch = {
 					let tbCategory = fldCategory.prettiestName;
 					let nameInServer = synch.getNameAndRemove(tbSub, tbCategory, feedlySubs);
 					if (nameInServer !== null) {
+						// If Feed is subscribed in Thunderbird, it should also be present in
+						// status file. Add otherwise
+						let node = synch.findDomNode(tbSub);
+						if (node === null) {
+							writeDOM = true;
+							log.writeLn("synch.update. Not found in status file, but present on both sides. Add. (" +
+									fldName.prettiestName + ")");
+							synch.addFeed2Dom(tbSub);							
+						}
+						
 						// Feed name might have changed
 						if (nameInServer !== fldName.prettiestName) {
 							if (synchDirection.isDownload()) {
