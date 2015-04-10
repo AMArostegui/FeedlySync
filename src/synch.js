@@ -581,18 +581,17 @@ var synch = {
 						else {
 							let nodeStatus = node.getElementsByTagName("status");
 							if (nodeStatus !== null && nodeStatus.length == 1) {
-								nodeStatus = nodeStatus[0];
-								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC) {
-									synch.removeFromTB(fldName);
-
-									// Remove node from Ctrl file DOM
-									writeDOM = true;
-									node.parentNode.removeChild(node);
+								nodeStatus = nodeStatus[0];								
+								synch.removeFromTB(fldName);
+								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC)
 									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
-								}
 								else
 									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub +
-											" Ctrl file may be corrupted 2");
+											" Status deleted in ctrl file. Unexpected situation");								
+
+								// Remove DOM node from Ctrl file
+								writeDOM = true;
+								node.parentNode.removeChild(node);								
 							}
 							else
 								log.writeLn("synch.Update. Svr=0 TB=1. Removing from TB: " + tbSub +
