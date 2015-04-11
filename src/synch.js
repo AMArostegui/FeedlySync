@@ -180,12 +180,13 @@ var synch = {
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadAdd ", e));
-				let domNode = synch.findDomNode(feed.id);
-				if (domNode === null)
-					synch.addFeed2Dom(feed.id);
-				else
-					log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");
-
+				if (e.currentTarget.status == 200) {
+					let domNode = synch.findDomNode(feed.id);
+					if (domNode === null)
+						synch.addFeed2Dom(feed.id);
+					else
+						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");				
+				}
 				next();
 			}
 		};
@@ -193,17 +194,18 @@ var synch = {
 		let onLoadDel = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
-				let domNode = synch.findDomNode(feed.id);
-				if (domNode !== null) {
-					let parentNode = domNode.parentNode;
-					if (parentNode !== null)
-						parentNode.removeChild(domNode);
+				if (e.currentTarget.status == 200) {
+					let domNode = synch.findDomNode(feed.id);
+					if (domNode !== null) {
+						let parentNode = domNode.parentNode;
+						if (parentNode !== null)
+							parentNode.removeChild(domNode);
+						else
+							log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");
+					}
 					else
-						log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");
+						log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");					
 				}
-				else
-					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");
-
 				next();
 			}
 		};
