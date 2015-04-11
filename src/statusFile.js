@@ -124,7 +124,7 @@ var statusFile = {
 		
 		let nodeStatus = domNode.getElementsByTagName("status");
 		if (nodeStatus !== null && nodeStatus.length == 1)
-			return nodeStatus[0].firstChild.nodeValue;
+			return Number(nodeStatus[0].firstChild.nodeValue);
 		else
 			return -1;		
 	},
