@@ -176,7 +176,7 @@ var synch = {
 	    return xpathResult.iterateNext();
 	},
 
-	subscribeFeed : function(feed, op, next) {
+	subscribeFeed : function(feed, op, next) {		
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadAdd ", e));
@@ -190,22 +190,35 @@ var synch = {
 				next();
 			}
 		};
+		
+		let markAsDeleted = function(domNode) {
+			let statusNodes = domNode.getElementsByTagName("status");
+			if (statusNodes.length > 0) {
+				let statusNode = statusNodes[0];
+				statusNode.textContent = FEED_LOCALSTATUS_DEL;
+			}
+			else
+				log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");			
+		};
 
-		let onLoadDel = function(e) {
+		let onLoadDel = function(e) {			
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
-				if (e.currentTarget.status == 200) {
-					let domNode = synch.findDomNode(feed.id);
-					if (domNode !== null) {
+				let domNode = synch.findDomNode(feed.id);
+				if (domNode !== null) {
+					if (e.currentTarget.status == 200) {
 						let parentNode = domNode.parentNode;
 						if (parentNode !== null)
 							parentNode.removeChild(domNode);
 						else
-							log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");
+							log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");						
 					}
 					else
-						log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");					
+						markAsDeleted(domNode);					
 				}
+				else
+					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");					
+
 				next();
 			}
 		};
@@ -220,15 +233,8 @@ var synch = {
 
 			// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
 			let domNode = synch.findDomNode(feed.id);
-			if (domNode !== null) {
-				let statusNodes = domNode.getElementsByTagName("status");
-				if (statusNodes.length > 0) {
-					let statusNode = statusNodes[0];
-					statusNode.textContent = FEED_LOCALSTATUS_DEL;
-				}
-				else
-					log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");
-			}
+			if (domNode !== null)
+				markAsDeleted(domNode);
 			else
 				log.writeLn("synch.subscribeFeed.onErrorDel. Not in status file. Unexpected situation");
 
