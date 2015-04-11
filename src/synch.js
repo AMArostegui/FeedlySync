@@ -1,9 +1,6 @@
 Components.utils.import("resource://gre/modules/AddonManager.jsm");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
 
-const FEED_LOCALSTATUS_SYNC = 1;
-const FEED_LOCALSTATUS_DEL = 2;
-
 var synch = {
 	activityMng : null,
 	process : null,
@@ -14,7 +11,7 @@ var synch = {
 			synch.activityMng = Components.classes["@mozilla.org/activity-manager;1"].
 				getService(Components.interfaces.nsIActivityManager);
 		}
-		synch.readStatusFile();
+		statusFile.read();
 	},
 
 	// Begin synchronization process
@@ -61,65 +58,6 @@ var synch = {
 			action();
 	},
 
-	domFeedStatus : null,
-
-	deleteStatusFile : function () {
-		let id = addonId;
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
-		if (fileFeedStatus.exists())
-			fileFeedStatus.remove(false);
-		synch.readStatusFile();
-	},
-
-	readStatusFile : function() {
-		domFeedStatus = null;
-		let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-			.createInstance(Components.interfaces.nsIDOMParser);
-		let id = addonId;
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
-		if (!fileFeedStatus.exists()) {
-			log.writeLn("synch.readStatusFile. File not found. Creating");
-			fileFeedStatus.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
-			let strDom = "<?xml version=\"1.0\"?>";
-			strDom += "<feeds>";
-			strDom += "</feeds>";
-			let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-			let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-			                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-			converter.charset = "UTF-8";
-			let inStream = converter.convertToInputStream(strDom);
-			NetUtil.asyncCopy(inStream, outStream);
-			domFeedStatus = parser.parseFromString(strDom, "text/xml");
-		}
-		else {
-			NetUtil.asyncFetch(fileFeedStatus, function(inputStream, status) {
-				if (!Components.isSuccessCode(status)) {
-					log.writeLn("synch.readStatusFile. Error reading file");
-					return;
-				}
-				let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-				log.writeLn("synch.readStatusFile. Readed XML = " + xmlFeedStatus);
-				domFeedStatus = parser.parseFromString(xmlFeedStatus, "text/xml");
-			});
-		}
-	},
-
-	writeStatusFile : function() {
-	    let id = addonId;
-	    let domSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
-        					.createInstance(Components.interfaces.nsIDOMSerializer);
-		let strDom = domSerializer.serializeToString(domFeedStatus);
-		log.writeLn("synch.writeStatusFile. Status XML = " + strDom);
-		let fileFeedStatus = FileUtils.getFile("ProfD",
-				["extensions", id, "data", "feeds.xml"], false);
-		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
-		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-		converter.charset = "UTF-8";
-		let inStream = converter.convertToInputStream(strDom);
-		NetUtil.asyncCopy(inStream, outStream);
-	},
-
 	getFeedlySubs : function() {
 		log.writeLn("synch.getFeedlySubs");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
@@ -146,75 +84,28 @@ var synch = {
 		req.send(null);
 	},
 
-	addFeed2Dom : function(id) {
-		if (synch.findDomNode(id) !== null)
-			return;
-		
-		let nodeFeed = domFeedStatus.createElement("feed");
-		let nodeStatus = domFeedStatus.createElement("status");
-		nodeStatus.textContent = FEED_LOCALSTATUS_SYNC;
-		let nodeId = domFeedStatus.createElement("id");
-		nodeId.textContent = id;
-		let nodeParent = domFeedStatus.getElementsByTagName("feeds")[0];
-		nodeFeed.appendChild(nodeStatus);
-		nodeFeed.appendChild(nodeId);
-		nodeParent.appendChild(nodeFeed);
-	},
-
-	findDomNode : function(id, status) {
-		let xpathExpression;
-		if (status === undefined || status === null)
-			xpathExpression = "/feeds/feed[id='" + id + "']";
-		else
-		    xpathExpression = "/feeds/feed[id='" + id +
-    			"' and status=" + status + "]";
-
-	    let xpathResult = domFeedStatus.evaluate(xpathExpression, domFeedStatus,
-	    		null, Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-	    if (xpathResult === null)
-	    	return null;
-	    return xpathResult.iterateNext();
-	},
-
 	subscribeFeed : function(feed, op, next) {		
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadAdd ", e));
 				if (e.currentTarget.status == 200) {
-					let domNode = synch.findDomNode(feed.id);
-					if (domNode === null)
-						synch.addFeed2Dom(feed.id);
+					if (statusFile.find(feed.id) === null)
+						statusFile.add(feed.id);
 					else
 						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");				
 				}
 				next();
 			}
-		};
-		
-		let markAsDeleted = function(domNode) {
-			let statusNodes = domNode.getElementsByTagName("status");
-			if (statusNodes.length > 0) {
-				let statusNode = statusNodes[0];
-				statusNode.textContent = FEED_LOCALSTATUS_DEL;
-			}
-			else
-				log.writeLn("synch.subscribeFeed.onErrorDel. No status node. Unexpected situation");			
-		};
+		};		
 
 		let onLoadDel = function(e) {			
 			if (e.currentTarget.readyState == 4) {
-				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
-				let domNode = synch.findDomNode(feed.id);
-				if (domNode !== null) {
-					if (e.currentTarget.status == 200) {
-						let parentNode = domNode.parentNode;
-						if (parentNode !== null)
-							parentNode.removeChild(domNode);
-						else
-							log.writeLn("synch.subscribeFeed.onLoadDel. No parent node. Unexpected situation");						
-					}
+				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));				
+				if (statusFile.find(feed.id) !== null) {
+					if (e.currentTarget.status == 200)
+						statusFile.remove(feed.id);
 					else
-						markAsDeleted(domNode);					
+						statusFile.markAsDeleted(feed.id);					
 				}
 				else
 					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");					
@@ -232,9 +123,8 @@ var synch = {
 			log.writeLn(formatEventMsg("synch.subscribeFeed.onErrorDel ", error));
 
 			// Unable to unsubscribe. Mark feed as deleted. It will be removed in the future.
-			let domNode = synch.findDomNode(feed.id);
-			if (domNode !== null)
-				markAsDeleted(domNode);
+			if (statusFile.find(feed.id) !== null)
+				statusFile.markAsDeleted(feed.id);
 			else
 				log.writeLn("synch.subscribeFeed.onErrorDel. Not in status file. Unexpected situation");
 
@@ -325,7 +215,7 @@ var synch = {
 			if (procOp >= synch.subsTo.length) {
 				synch.subsTo = [];
 				synch.subsOp = [];
-				synch.writeStatusFile();
+				statusFile.write();
 				return;
 			}
 
@@ -424,7 +314,7 @@ var synch = {
 
 	// Returns feed url, given a Thunderbird folder
 	//		tbFolder: nsIMsgFolder
-	getFeedId : function(tbFolder) {
+	getFeedFromFolder : function(tbFolder) {
 		let tbSubs = FeedUtils.getFeedUrlsInFolder(tbFolder);
 		if (tbSubs === null)
 			return null;
@@ -438,8 +328,7 @@ var synch = {
 				continue;
 
 			// A synchronized entry prevails over the rest.
-			let node = synch.findDomNode(tbSubs[i]);
-			if (node !== null) {
+			if (statusFile.find(tbSubs[i]) !== null) {
 				tbSub = tbSubs[i];
 				break;
 			}
@@ -543,7 +432,7 @@ var synch = {
 			for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
 				for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
 
-					let tbSub = synch.getFeedId(fldName);
+					let tbSub = synch.getFeedFromFolder(fldName);
 					if (tbSub === null)
 						continue;
 
@@ -552,13 +441,12 @@ var synch = {
 					let nameInServer = synch.getNameAndRemove(tbSub, tbCategory, feedlySubs);
 					if (nameInServer !== null) {
 						// If Feed is subscribed in Thunderbird, it should also be present in
-						// status file. Add otherwise
-						let node = synch.findDomNode(tbSub);
-						if (node === null) {
+						// status file. Add otherwise						
+						if (statusFile.find(tbSub) === null) {
 							writeDOM = true;
 							log.writeLn("synch.update. Not found in status file, but present on both sides. Add. (" +
 									fldName.prettiestName + ")");
-							synch.addFeed2Dom(tbSub);							
+							statusFile.add(tbSub);							
 						}
 						
 						// Feed name might have changed
@@ -578,32 +466,31 @@ var synch = {
 					}						
 
 				    // Subscribed in Thunderbird but not in Feedly
-				    let node = synch.findDomNode(tbSub);
-
 			    	// Check whether this feed was previously synchronized. If so, delete locally
-					if (node !== null) {
+					if (statusFile.find(tbSub) !== null) {
 						if (synchDirection.isUpload()) {
 							subscribe.push( { id : tbSub , name : fldName.prettiestName,
 								category : tbCategory } );
 						}
 						else {
-							let nodeStatus = node.getElementsByTagName("status");
-							if (nodeStatus !== null && nodeStatus.length == 1) {
-								nodeStatus = nodeStatus[0];								
-								synch.removeFromTB(fldName);
-								if (nodeStatus.firstChild.nodeValue == FEED_LOCALSTATUS_SYNC)
-									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
-								else
-									log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub +
-											" Status deleted in ctrl file. Unexpected situation");								
-
-								// Remove DOM node from Ctrl file
-								writeDOM = true;
-								node.parentNode.removeChild(node);								
-							}
-							else
+							synch.removeFromTB(fldName);
+							
+							switch (statusFile.getStatus(tbSub)) {
+							case FEED_LOCALSTATUS_SYNC:
+								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);								
+								break;
+							case FEED_LOCALSTATUS_DEL:
+								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub +
+									" Status deleted in ctrl file. Unexpected situation");								
+								break;
+							default:
 								log.writeLn("synch.Update. Svr=0 TB=1. Removing from TB: " + tbSub +
-										" Ctrl file may be corrupted 1");
+									" Ctrl file may be corrupted 1");							
+							};							
+							
+							// Remove DOM node from Ctrl file
+							writeDOM = true;
+							statusFile.remove(tbSub);
 						}
 					}
 
@@ -636,9 +523,8 @@ var synch = {
 		        	else
 		        		categoryName = _("uncategorized", getPref("locale"));
 
-					// Check whether this feed was locally deleted. If so, delete on server
-				    let node = synch.findDomNode(feedId, FEED_LOCALSTATUS_DEL);
-					if (node !== null) {
+					// Check whether this feed was locally deleted. If so, delete on server				    
+					if (statusFile.find(feedId, FEED_LOCALSTATUS_DEL) !== null) {
 						if (!synchDirection.isDownload()) {
 							let fullUrl = encodeURI(feedId);
 
@@ -651,7 +537,6 @@ var synch = {
 					else {
 						if (synchDirection.isUpload()) {
 							let fullUrl = encodeURI(feedId);
-							node = synch.findDomNode(feedId);
 							unsubscribe.push( { id : fullUrl } );
 						}
 						else {
@@ -707,7 +592,7 @@ var synch = {
 							}
 
 							writeDOM = true;
-							synch.addFeed2Dom(feedId);
+							statusFile.add(feedId);
 						}
 					}
 		        }
@@ -716,7 +601,7 @@ var synch = {
 		    // Save Ctrl File for synchronous operations
 		    if (subscribe.length <= 0 && unsubscribe.length <= 0) {
 		    	if (writeDOM)
-		    		synch.writeStatusFile();
+		    		statusFile.write();
 		    }
 
 		    if (!synchDirection.isDownload()) {

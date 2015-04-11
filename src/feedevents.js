@@ -1,4 +1,5 @@
 Components.utils.import("resource:///modules/FeedUtils.jsm");
+include("src/statusFile.js");
 include("src/synch.js");
 
 var feedEvents = {
@@ -177,7 +178,7 @@ var feedEvents = {
 			if (accountKey !== "" && rootFolder === null) {
 				log.writeLn("FeedEvents.OnItemRemoved. Removing synchronized account");
 				setPref("synch.account", "");
-				synch.deleteStatusFile();
+				statusFile.reset();
 				return;
 			}
 
@@ -199,7 +200,7 @@ var feedEvents = {
 	    folderRenamed : function(aOrigFolder, aNewFolder) {
 	    	if (feedEvents.isFeedFolder(aNewFolder)) {
 		    	// To rename a feed, simply subscribe again
-				let feedId = synch.getFeedId(aNewFolder);
+				let feedId = synch.getFeedFromFolder(aNewFolder);
 	    		synch.subscribe( { id : feedId, name : aNewFolder.prettiestName, category : aNewFolder.parent.prettiestName },
 					"FeedEvents.folderRenamed");
 	    	}
@@ -220,8 +221,7 @@ var feedEvents = {
 				return;
 			if (aParentFolder.rootFolder !== rootFolder)
 				return;
-			let node = synch.findDomNode(aId.Value);
-			if (node === null)
+			if (statusFile.find(aId.Value) === null)
 				return;
 
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
