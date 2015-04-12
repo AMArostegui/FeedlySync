@@ -391,13 +391,28 @@ var synch = {
 		return category === "" || category === _("uncategorized", getPref("locale"));
 	},
 
-	removeFromTB : function(fldName) {
-		// Delete rss folder
+	removeFromTB : function(fldName, fldTreeViewOp) {
 		let fldCategory = fldName.parent;
 		if (fldCategory === null) {
 			log.writeLn("synch.removeFromTB. Unable to get category folder. Unexpected situation");
 			return;
 		}
+		
+		// If the folder we're about to delete is collapsed, refreshing the tree will be neccesary
+		if (fldTreeViewOp !== undefined) {
+			if (!fldTreeViewOp.refresh) {
+				let index = win.gFolderTreeView.getIndexOfFolder(fldName);
+				if (index === null || !win.gFolderTreeView.isContainerOpen(index))
+					fldTreeViewOp.refresh = true;
+				else {
+					index = win.gFolderTreeView.getIndexOfFolder(fldCategory);
+					if (index !== null && !win.gFolderTreeView.isContainerOpen(index))
+						fldTreeViewOp.refresh = true;					
+				}				
+			}			
+		}
+		
+		// Delete rss folder		
 		let array = toXPCOMArray([fldName], Components.interfaces.nsIMutableArray);
 		fldCategory.deleteSubFolders(array, null);
 
@@ -421,7 +436,8 @@ var synch = {
 		let rootFolder = getRootFolder();
 		if (rootFolder === null)
 			return;
-
+		
+		let fldTreeViewOp = { refresh : false };
 		let writeDOM = false;
 		synch.updateRunning = true;
 
@@ -472,8 +488,8 @@ var synch = {
 							subscribe.push( { id : tbSub , name : fldName.prettiestName,
 								category : tbCategory } );
 						}
-						else {
-							synch.removeFromTB(fldName);
+						else {							
+							synch.removeFromTB(fldName, fldTreeViewOp);
 							
 							switch (statusFile.getStatus(tbSub)) {
 							case FEED_LOCALSTATUS_SYNC:
@@ -490,14 +506,14 @@ var synch = {
 							
 							// Remove DOM node from Ctrl file
 							writeDOM = true;
-							statusFile.remove(tbSub);
+							statusFile.remove(tbSub);							
 						}
 					}
 
 					// Not synchronized. Add to Feedly
 					else {
 						if (synchDirection.isDownload()) {
-							synch.removeFromTB(fldName);
+							synch.removeFromTB(fldName, fldTreeViewOp);
 							log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
 						}
 						else {
@@ -609,6 +625,14 @@ var synch = {
 		    	synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
 			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");
 		    }
+		    
+			// After a folder in a collapsed branch is deleted, FolderPane is left in
+			// an unstable state. The folder is shown, despite being deleted, and exceptions
+			// are thrown. Refresh folder pane		    
+		    if (fldTreeViewOp.refresh) {
+		    	log.writeLn("synch.update. Rebuild Folder Pane");
+		    	win.gFolderTreeView._rebuild();		    	
+		    }		    	
 		}
 		catch (err) {
 			log.writeLn("synch.update. Exception thrown: " + err);
