@@ -92,7 +92,7 @@ var synch = {
 					if (statusFile.find(feed.id) === null)
 						statusFile.add(feed.id);
 					else
-						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file. Unexpected situation");				
+						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file");				
 				}
 				next();
 			}
