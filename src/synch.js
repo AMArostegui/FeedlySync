@@ -396,19 +396,22 @@ var synch = {
 		if (fldCategory === null) {
 			log.writeLn("synch.removeFromTB. Unable to get category folder. Unexpected situation");
 			return;
-		}
+		}		
+		let fldAccount = fldCategory.parent;
+		if (fldAccount === null) {
+			log.writeLn("synch.removeFromTB. Unable to get account folder. Unexpected situation");
+			return;
+		}		
 		
-		// If the folder we're about to delete is collapsed, refreshing the tree will be neccesary
+		// If the folder we're about to delete is collapsed, refreshing the tree will be necessary
 		if (fldTreeViewOp !== undefined) {
 			if (!fldTreeViewOp.refresh) {
-				let index = win.gFolderTreeView.getIndexOfFolder(fldName);
-				if (index === null || !win.gFolderTreeView.isContainerOpen(index))
+				let index = win.gFolderTreeView.getIndexOfFolder(fldCategory);
+				if (index === null || !win.gFolderTreeView.isContainerOpen(index)) {
 					fldTreeViewOp.refresh = true;
-				else {
-					index = win.gFolderTreeView.getIndexOfFolder(fldCategory);
-					if (index !== null && !win.gFolderTreeView.isContainerOpen(index))
-						fldTreeViewOp.refresh = true;					
-				}				
+					log.writeLn("synch.removeFromTB. Category folder collapsed (" +
+							fldCategory.prettiestName + ")");					
+				}					
 			}			
 		}
 		
@@ -418,13 +421,8 @@ var synch = {
 
 		// Delete category folder if empty
 		if (!fldCategory.subFolders.hasMoreElements()) {
-			let parent = fldCategory.parent;
-			if (parent === null) {
-				log.writeLn("synch.removeFromTB. Unable to get parent folder. Unexpected situation");
-				return;
-			}
 			let array = toXPCOMArray([fldCategory], Components.interfaces.nsIMutableArray);
-			parent.deleteSubFolders(array, null);
+			fldAccount.deleteSubFolders(array, null);
 		}
 	},
 
