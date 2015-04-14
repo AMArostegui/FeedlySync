@@ -113,10 +113,16 @@ function onLoadAccounts(onNewAccount) {
 	list.selectedIndex = sel;
 }
 
+function writeAccount(account) {
+	let oldKey = getPref("synch.account");
+	if (oldKey !== account)
+		setPref("synch.account", account);
+}
+
 function onSelected(selPrettyName, selKey) {
 	log.writeLn("Options.onSelected. Selected = " + selPrettyName + " (" + selKey + ") " + "InstantApply = " + instantApply);
 	if (instantApply)
-		setPref("synch.account", selKey);
+		writeAccount(selKey);
 	else {
 		selectedName = selPrettyName;
 		selectedKey = selKey;
@@ -134,7 +140,7 @@ function onDialogAccept() {
 	if (!instantApply) {
 		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
 		if (selectedKey !== null)
-			setPref("synch.account", selectedKey);
+			writeAccount(selectedKey);
 	}	
 }
 

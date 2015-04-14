@@ -262,6 +262,7 @@ var feedEvents = {
 
 			// Update timer and preference listener
 			Services.prefs.addObserver("extensions.FeedlySync.synch.timeout", synch, false);
+			Services.prefs.addObserver("extensions.FeedlySync.synch.account", synch, false);
 			synch.setTimer();
 		},
 
@@ -279,6 +280,7 @@ var feedEvents = {
 			FeedUtils.deleteFeedPrimary = null;
 
 			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);
+			Services.prefs.removeObserver("extensions.FeedlySync.synch.account", synch);
 			synch.delTimer();
 		}
 	};

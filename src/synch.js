@@ -672,11 +672,16 @@ var synch = {
 	},
 
 	observe : function (aSubject, aTopic, aData) {
-		if (aData !== "extensions.FeedlySync.synch.timeout")
-			return;
-		log.writeLn("synch.observe. Timeout preference changed");
-
-		synch.delTimer();
-		synch.setTimer();
+		switch (aData) {
+		case "extensions.FeedlySync.synch.timeout":
+			log.writeLn("synch.observe. Timeout preference changed");
+			synch.delTimer();
+			synch.setTimer();			
+			break;
+		case "extensions.FeedlySync.synch.account":
+			log.writeLn("synch.observe. Account changed");
+			statusFile.reset();
+			break;
+		}
    },
 };
