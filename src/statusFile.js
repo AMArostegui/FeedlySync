@@ -5,6 +5,8 @@ var statusFile = {
 	dom : null,
 	
 	reset : function () {
+		log.writeLn("statusFile.reset.");
+		
 		let id = addonId;
 		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
 		if (fileFeedStatus.exists())
@@ -41,6 +43,12 @@ var statusFile = {
 				let xmlFeedStatus = NetUtil.readInputStreamToString(inputStream, inputStream.available());
 				log.writeLn("statusFile.read. Readed XML = " + xmlFeedStatus);
 				statusFile.dom = parser.parseFromString(xmlFeedStatus, "text/xml");
+				
+				let chkCollection = statusFile.dom.getElementsByTagName("parsererror");				
+				if (chkCollection.length > 0) {
+					log.writeLn("statusFile.read. Error parsing file.");
+					statusFile.reset();
+				}
 			});
 		}
 	},
