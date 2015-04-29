@@ -18,8 +18,12 @@ function loadModules(addon) {
 	services = {};
 	Components.utils.import("resource://gre/modules/Services.jsm", services);
 
+	// Check slash at the end of URI. Absent when AddON packed in XPI
 	let resourceUri = addon.getResourceURI();
-	let addonUriSpec = resourceUri.spec + "bootstrap.js";
+	let addonUriSpec = resourceUri.spec;
+	if (addonUriSpec[addonUriSpec.length - 1] !== "/")
+		addonUriSpec += "/";
+	addonUriSpec += "bootstrap.js";
 
 	include("src/fsprefs.js", addonUriSpec);
 	include("packages/prefs.js", addonUriSpec);
@@ -55,7 +59,7 @@ function onLoadAccounts(onNewAccount) {
 
 	let prefAccount = getPref("synch.account");
 	let prefLocale = getPref("locale");
-	
+
 	// Get all RSS accounts
 	let accounts = [];
 	let sel = -1;
@@ -63,15 +67,15 @@ function onLoadAccounts(onNewAccount) {
 			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {
-			if ("rss" == server.type) {				
-				accounts.push(account);				
+			if ("rss" == server.type) {
+				accounts.push(account);
 				if (prefAccount == account.key)
 					sel = accounts.length - 1;
 			}
 		}
 	}
-	
-	// No RSS accounts or nothing selected yet. Insert dummy node	
+
+	// No RSS accounts or nothing selected yet. Insert dummy node
 	if (sel === -1) {
 		let menuItem = document.createElement("menuitem");
 		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
@@ -79,8 +83,8 @@ function onLoadAccounts(onNewAccount) {
 		menuItem.setAttribute("oncommand", "onSelected('', '')");
 		popup.appendChild(menuItem);
 		log.writeLn("Options.onLoadAccounts. No RSS accounts or nothing selected yet. Insert dummy node");
-	}	
-	
+	}
+
 	// Populate combobox
 	for (let i = 0; i < accounts.length; i++) {
 		let server = accounts[i].incomingServer;
@@ -88,10 +92,10 @@ function onLoadAccounts(onNewAccount) {
 		menuItem.setAttribute("label", server.prettyName);
 		menuItem.setAttribute("value", accounts[i].key);
 		menuItem.setAttribute("oncommand", "onSelected('" + server.prettyName + "', '" + accounts[i].key + "')");
-		popup.appendChild(menuItem);		
+		popup.appendChild(menuItem);
 	}
-	
-	// Default server if nothing selected	
+
+	// Default server if nothing selected
 	if (sel === -1) {
 		// New button clicked. New account is supposed to be selected
 		if (onNewAccount != null) {
@@ -100,11 +104,11 @@ function onLoadAccounts(onNewAccount) {
 			let key = accounts[accounts.length - 1].key;
 			onSelected(prettyName, key);
 			log.writeLn("Options.onLoadAccounts. Newly created account selected");
-		}	
+		}
 		else
 			sel = 0;
-	}	
-	
+	}
+
 	log.writeLn("Options.onLoadAccounts. Selected Folder = " + sel + " Folder Count = " + accounts.length);
 
 	let list = document.getElementById("accountList");
@@ -141,9 +145,9 @@ function onDialogAccept() {
 		log.writeLn("Options.onDialogAccept. Selected = " + selectedName + " Key = " + selectedKey);
 		if (selectedKey !== null)
 			writeAccount(selectedKey);
-	}	
+	}
 }
 
 function onUnload() {
-	l10n.unload();	
+	l10n.unload();
 }
