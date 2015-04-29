@@ -18,12 +18,12 @@ function loadModules(addon) {
 	services = {};
 	Components.utils.import("resource://gre/modules/Services.jsm", services);
 
-	// Check slash at the end of URI. Absent when AddON packed in XPI
-	let resourceUri = addon.getResourceURI();
-	let addonUriSpec = resourceUri.spec;
-	if (addonUriSpec[addonUriSpec.length - 1] !== "/")
-		addonUriSpec += "/";
-	addonUriSpec += "bootstrap.js";
+	// As __SCRIPT_URI_SPEC__ is not available within this scope, it needs to be calculated.
+	// addon.getResourceURI() won't give the right URI when the addon is packed on a XPI
+	// so I rely on the URI of the ICON file. I can't think of a better way to do this.
+	let index = addon.iconURL.lastIndexOf("/");
+	let resourceUri = addon.iconURL.substring(0, index + 1);
+	let addonUriSpec = resourceUri + "bootstrap.js";
 
 	include("src/fsprefs.js", addonUriSpec);
 	include("packages/prefs.js", addonUriSpec);
