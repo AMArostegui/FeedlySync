@@ -21,7 +21,7 @@ const PREFS = {
 	"auth.cliIdPar" : "client_id",
 	"auth.cliIdVal" : "sandbox",
 	"auth.cliSecPar" : "client_secret",
-	"auth.cliSecVal" : "TODO",
+	"auth.cliSecVal" : "4205DQXBAP99S8SUHXI3", 	// TODO: Replace with production key
 	"auth.redirPar" : "redirect_uri",
 	"auth.redirVal" : "http://localhost:8080",
 	"auth.scopePar" : "scope",
