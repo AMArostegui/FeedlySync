@@ -237,7 +237,7 @@ var feedEvents = {
 		},
 
 		addListener : function() {
-			log.writeLn("FeedEvents.AddListener");
+			log.writeLn("FeedEvents.AddListener. Locale = " + retrieveLocale());
 
 			// Folder events listeners
 			MailServices.mailSession.AddFolderListener(this,
