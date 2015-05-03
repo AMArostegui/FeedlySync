@@ -194,7 +194,9 @@ var guiElements = {
 };
 
 function retrieveLocale() {
-	return Services.locale.getLocaleComponentForUserAgent();
+	// Looks like this function wouldn't be necessary if l10n.js was initialized later
+	return Components.classes["@mozilla.org/chrome/chrome-registry;1"]
+		.getService(Components.interfaces.nsIXULChromeRegistry).getSelectedLocale("global");
 }
 
 function getRootFolder() {
