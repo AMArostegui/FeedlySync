@@ -133,7 +133,7 @@ var auth = {
 	getCode : function () {
 		let userGuid = sessionId();
 		auth.userRequest.stateVal = encodeURI(userGuid);
-		auth.userRequest.promptText = _("authWndCaption", getPref("locale"));
+		auth.userRequest.promptText = _("authWndCaption", retrieveLocale());
 		auth.userRequest.browseUrl = getPref("baseSslUrl") + getPref("auth.getCodeOp") + "?" +
 						getPref("auth.resTypePar") + "=" + getPref("auth.resTypeVal") + "&" +
 						getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
@@ -184,7 +184,7 @@ var auth = {
 
 					log.writeLn("auth.getTokens: Sucessfully authenticated. Expires in: " +
 							jsonResponse.expires_in + " Calculated (ms): " + expiresIn);
-					
+
 					auth.fireOnFinished(true);
 				}
 				else

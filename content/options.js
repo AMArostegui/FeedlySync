@@ -58,7 +58,6 @@ function onLoadAccounts(onNewAccount) {
 	    popup.removeChild(popup.firstChild);
 
 	let prefAccount = getPref("synch.account");
-	let prefLocale = getPref("locale");
 
 	// Get all RSS accounts
 	let accounts = [];
@@ -78,7 +77,7 @@ function onLoadAccounts(onNewAccount) {
 	// No RSS accounts or nothing selected yet. Insert dummy node
 	if (sel === -1) {
 		let menuItem = document.createElement("menuitem");
-		menuItem.setAttribute("label", _("syncAccountNone", prefLocale));
+		menuItem.setAttribute("label", _("syncAccountNone", retrieveLocale()));
 		menuItem.setAttribute("value", "");
 		menuItem.setAttribute("oncommand", "onSelected('', '')");
 		popup.appendChild(menuItem);

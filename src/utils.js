@@ -122,7 +122,7 @@ var guiElements = {
 		guiElements.toolbarBtn.setAttribute("id", guiElements.toolbarBtnID);
 		guiElements.toolbarBtn.setAttribute("type", "button");
 		guiElements.toolbarBtn.setAttribute("image", guiElements.uriResolver.getResourceURI("icon24BW.png").spec);
-		guiElements.toolbarBtn.setAttribute("label", _("synchShort", getPref("locale")));
+		guiElements.toolbarBtn.setAttribute("label", _("synchShort", retrieveLocale()));
 		guiElements.toolbarBtn.addEventListener("command", guiElements.synchCallback, true);
 
 		let tbox = doc.getElementById("navigator-toolbox") || doc.getElementById("mail-toolbox");
@@ -174,7 +174,7 @@ var guiElements = {
 
 		let menuItemSync = doc.createElementNS(NS_XUL, "menuitem");
 		menuItemSync.setAttribute("id", guiElements.fileMenuitemID);
-		menuItemSync.setAttribute("label", _("synchronize", getPref("locale")));
+		menuItemSync.setAttribute("label", _("synchronize", retrieveLocale()));
 		menuItemSync.addEventListener("command", guiElements.synchCallback, true);
 
 		let menuItemRef = doc.getElementById(strMenuItemRef);
@@ -193,22 +193,26 @@ var guiElements = {
 	},
 };
 
+function retrieveLocale() {
+	return Services.locale.getLocaleComponentForUserAgent();
+}
+
 function getRootFolder() {
 	let accountKey = getPref("synch.account");
 	let account = MailServices.accounts.getAccount(accountKey);
 	if (account === null)
 		return null;
-	
+
 	let server = account.incomingServer;
 	if (server === null) {
 		log.writeLn("getRootFolder. No incoming server. Unexpected situation. Account Key = " + accountKey);
-		return null;		
+		return null;
 	}
 	if (server.type !== "rss") {
 		log.writeLn("getRootFolder. Wrong incoming server type. Unexpected situation. Account Key = " + accountKey);
-		return null;		
+		return null;
 	}
-	
+
 	let rootFolder = server.rootFolder;
 	if (rootFolder === null) {
 		log.writeLn("getRootFolder. No root folder. Unexpected situation. Account Key = " + accountKey);

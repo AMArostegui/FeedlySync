@@ -77,7 +77,7 @@ function uninstall() {
 }
 
 function startup(data, reason) {
-	log.writeLn("Startup. Reason = " + reason);
+	log.writeLn("Startup. Reason = " + reason + " Locale = " + retrieveLocale());
 
 	l10n(uriResolver, "FeedlySync.properties");
 	unload(l10n.unload);

@@ -84,7 +84,7 @@ var synch = {
 		req.send(null);
 	},
 
-	subscribeFeed : function(feed, op, next) {		
+	subscribeFeed : function(feed, op, next) {
 		let onLoadAdd = function(e) {
 			if (e.currentTarget.readyState == 4) {
 				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadAdd ", e));
@@ -92,23 +92,23 @@ var synch = {
 					if (statusFile.find(feed.id) === null)
 						statusFile.add(feed.id);
 					else
-						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file");				
+						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file");
 				}
 				next();
 			}
-		};		
+		};
 
-		let onLoadDel = function(e) {			
+		let onLoadDel = function(e) {
 			if (e.currentTarget.readyState == 4) {
-				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));				
+				log.writeLn(formatEventMsg("synch.subscribeFeed.onLoadDel ", e));
 				if (statusFile.find(feed.id) !== null) {
 					if (e.currentTarget.status == 200)
 						statusFile.remove(feed.id);
 					else
-						statusFile.markAsDeleted(feed.id);					
+						statusFile.markAsDeleted(feed.id);
 				}
 				else
-					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");					
+					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");
 
 				next();
 			}
@@ -223,7 +223,7 @@ var synch = {
 				createInstance(Components.interfaces.nsIActivityProcess);
 
 			let folder = getRootFolder();
-			let procCaption = addOp ? _("beginSubs", getPref("locale")) : _("beginUnsubs", getPref("locale"));
+			let procCaption = addOp ? _("beginSubs", retrieveLocale()) : _("beginUnsubs", retrieveLocale());
 			synch.process.init(procCaption + ": " + folder.prettiestName, null);
 			synch.process.contextType = "account";
 			synch.process.contextObj = folder.server;
@@ -248,7 +248,7 @@ var synch = {
 					createInstance(Components.interfaces.nsIActivityEvent);
 				let folder = getRootFolder();
 
-				let evntCaption = addOp ? _("endSubs", getPref("locale")) : _("endUnsubs", getPref("locale"));
+				let evntCaption = addOp ? _("endSubs", retrieveLocale()) : _("endUnsubs", retrieveLocale());
 				event.init(evntCaption + ": " + folder.prettiestName,
 				           null,
 				           "",
@@ -263,7 +263,7 @@ var synch = {
 				begin();
 			}
 			else {
-				let procCaption = addOp ? _("runSubs", getPref("locale")) : _("runUnsubs", getPref("locale"));
+				let procCaption = addOp ? _("runSubs", retrieveLocale()) : _("runUnsubs", retrieveLocale());
 				let msg = procCaption + ": (" + (procEntry + 1) + "/" + subTo.length +")";
 				synch.process.setProgress(msg,
 						procEntry + 1, subTo.length);
@@ -377,7 +377,7 @@ var synch = {
 	    let feedName = null;
 	    if (found) {
 	    	feedName = feedlySubs[i].title;
-	    	
+
 	    	if (!synch.isUncategorized(category))
 	    		feedlySubs[i].categories.splice(j, 1);
 			if (feedlySubs[i].categories.length === 0)
@@ -388,7 +388,7 @@ var synch = {
 	},
 
 	isUncategorized : function(category) {
-		return category === "" || category === _("uncategorized", getPref("locale"));
+		return category === "" || category === _("uncategorized", retrieveLocale());
 	},
 
 	removeFromTB : function(fldName, fldTreeViewOp) {
@@ -396,13 +396,13 @@ var synch = {
 		if (fldCategory === null) {
 			log.writeLn("synch.removeFromTB. Unable to get category folder. Unexpected situation");
 			return;
-		}		
+		}
 		let fldAccount = fldCategory.parent;
 		if (fldAccount === null) {
 			log.writeLn("synch.removeFromTB. Unable to get account folder. Unexpected situation");
 			return;
-		}		
-		
+		}
+
 		// If the folder we're about to delete is collapsed, refreshing the tree will be necessary
 		if (fldTreeViewOp !== undefined) {
 			if (!fldTreeViewOp.refresh) {
@@ -410,12 +410,12 @@ var synch = {
 				if (index === null || !win.gFolderTreeView.isContainerOpen(index)) {
 					fldTreeViewOp.refresh = true;
 					log.writeLn("synch.removeFromTB. Category folder collapsed (" +
-							fldCategory.prettiestName + ")");					
-				}					
-			}			
+							fldCategory.prettiestName + ")");
+				}
+			}
 		}
-		
-		// Delete rss folder		
+
+		// Delete rss folder
 		let array = toXPCOMArray([fldName], Components.interfaces.nsIMutableArray);
 		fldCategory.deleteSubFolders(array, null);
 
@@ -434,7 +434,7 @@ var synch = {
 		let rootFolder = getRootFolder();
 		if (rootFolder === null)
 			return;
-		
+
 		let fldTreeViewOp = { refresh : false };
 		let writeDOM = false;
 		synch.updateRunning = true;
@@ -455,14 +455,14 @@ var synch = {
 					let nameInServer = synch.getNameAndRemove(tbSub, tbCategory, feedlySubs);
 					if (nameInServer !== null) {
 						// If Feed is subscribed in Thunderbird, it should also be present in
-						// status file. Add otherwise						
+						// status file. Add otherwise
 						if (statusFile.find(tbSub) === null) {
 							writeDOM = true;
 							log.writeLn("synch.update. Not found in status file, but present on both sides. Add. (" +
 									fldName.prettiestName + ")");
-							statusFile.add(tbSub);							
+							statusFile.add(tbSub);
 						}
-						
+
 						// Feed name might have changed
 						if (nameInServer !== fldName.prettiestName) {
 							if (synchDirection.isDownload()) {
@@ -470,14 +470,14 @@ var synch = {
 								if (selFlds.length > 0) {
 									if (selFlds[0] === fldName)
 										win.gFolderTreeView.selection.clearSelection();
-								}									
+								}
 								fldName.rename(nameInServer, null);
 							}
-						}							
-						
+						}
+
 						// (feedId-category) found both in server and client. Nothing else to do
 						continue;
-					}						
+					}
 
 				    // Subscribed in Thunderbird but not in Feedly
 			    	// Check whether this feed was previously synchronized. If so, delete locally
@@ -486,25 +486,25 @@ var synch = {
 							subscribe.push( { id : tbSub , name : fldName.prettiestName,
 								category : tbCategory } );
 						}
-						else {							
+						else {
 							synch.removeFromTB(fldName, fldTreeViewOp);
-							
+
 							switch (statusFile.getStatus(tbSub)) {
 							case FEED_LOCALSTATUS_SYNC:
-								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);								
+								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
 								break;
 							case FEED_LOCALSTATUS_DEL:
 								log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub +
-									" Status deleted in ctrl file. Unexpected situation");								
+									" Status deleted in ctrl file. Unexpected situation");
 								break;
 							default:
 								log.writeLn("synch.Update. Svr=0 TB=1. Removing from TB: " + tbSub +
-									" Ctrl file may be corrupted 1");							
-							};							
-							
+									" Ctrl file may be corrupted 1");
+							};
+
 							// Remove DOM node from Ctrl file
 							writeDOM = true;
-							statusFile.remove(tbSub);							
+							statusFile.remove(tbSub);
 						}
 					}
 
@@ -535,9 +535,9 @@ var synch = {
 		        	if (feed.categories.length > 0)
 		        		categoryName = feed.categories[categoryIdx].label;
 		        	else
-		        		categoryName = _("uncategorized", getPref("locale"));
+		        		categoryName = _("uncategorized", retrieveLocale());
 
-					// Check whether this feed was locally deleted. If so, delete on server				    
+					// Check whether this feed was locally deleted. If so, delete on server
 					if (statusFile.find(feedId, FEED_LOCALSTATUS_DEL) !== null) {
 						if (!synchDirection.isDownload()) {
 							let fullUrl = encodeURI(feedId);
@@ -623,14 +623,14 @@ var synch = {
 		    	synch.unsubscribe(unsubscribe, "synch.update. Svr=0 TB=1");
 			    synch.subscribe(subscribe, "synch.update. Svr=0 TB=1");
 		    }
-		    
+
 			// After a folder in a collapsed branch is deleted, FolderPane is left in
 			// an unstable state. The folder is shown, despite being deleted, and exceptions
-			// are thrown. Refresh folder pane		    
+			// are thrown. Refresh folder pane
 		    if (fldTreeViewOp.refresh) {
 		    	log.writeLn("synch.update. Rebuild Folder Pane");
-		    	win.gFolderTreeView._rebuild();		    	
-		    }		    	
+		    	win.gFolderTreeView._rebuild();
+		    }
 		}
 		catch (err) {
 			log.writeLn("synch.update. Exception thrown: " + err);
@@ -676,7 +676,7 @@ var synch = {
 		case "extensions.FeedlySync.synch.timeout":
 			log.writeLn("synch.observe. Timeout preference changed");
 			synch.delTimer();
-			synch.setTimer();			
+			synch.setTimer();
 			break;
 		case "extensions.FeedlySync.synch.account":
 			log.writeLn("synch.observe. Account changed");

@@ -3,7 +3,6 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
 	// Global preferences
-	locale : Services.locale.getLocaleComponentForUserAgent(),
 	baseUrl : "http://sandbox.feedly.com",
 	baseSslUrl : "https://sandbox.feedly.com",
 
