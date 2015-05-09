@@ -66,7 +66,7 @@ var log = {
 						let logFile = now.getFullYear() + MM + dd + ".log";
 						let id = addonId;
 						log.file =
-							FileUtils.getFile("ProfD", ["extensions", id, "data", "logs", logFile], false);
+							FileUtils.getFile("ProfD", [id, "data", "logs", logFile], false);
 						if (!log.file.exists())
 							log.file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
 					}

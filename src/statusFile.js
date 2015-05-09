@@ -8,7 +8,7 @@ var statusFile = {
 		log.writeLn("statusFile.reset.");
 		
 		let id = addonId;
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
+		let fileFeedStatus = FileUtils.getFile("ProfD", [id, "data", "feeds.xml"], false);
 		if (fileFeedStatus.exists())
 			fileFeedStatus.remove(false);
 		statusFile.read();
@@ -19,7 +19,7 @@ var statusFile = {
 		let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
 			.createInstance(Components.interfaces.nsIDOMParser);
 		let id = addonId;
-		let fileFeedStatus = FileUtils.getFile("ProfD", ["extensions", id, "data", "feeds.xml"], false);
+		let fileFeedStatus = FileUtils.getFile("ProfD", [id, "data", "feeds.xml"], false);
 		if (!fileFeedStatus.exists()) {
 			log.writeLn("statusFile.read. File not found. Creating");
 			fileFeedStatus.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
@@ -60,7 +60,7 @@ var statusFile = {
 		let strDom = domSerializer.serializeToString(statusFile.dom);
 		log.writeLn("statusFile.write. Status XML = " + strDom);
 		let fileFeedStatus = FileUtils.getFile("ProfD",
-				["extensions", id, "data", "feeds.xml"], false);
+				[id, "data", "feeds.xml"], false);
 		let outStream = FileUtils.openSafeFileOutputStream(fileFeedStatus);
 		let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
 		                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
