@@ -3,8 +3,8 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
 	// Global preferences
-	baseUrl : "http://sandbox.feedly.com",
-	baseSslUrl : "https://sandbox.feedly.com",
+	baseUrl : "http://www.feedly.com",
+	baseSslUrl : "https://www.feedly.com",
 
 	"log.active" : false,
 	"log.toFile" : false,
