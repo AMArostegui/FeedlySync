@@ -18,9 +18,9 @@ const PREFS = {
 	"auth.resTypePar" : "response_type",
 	"auth.resTypeVal" : "code",
 	"auth.cliIdPar" : "client_id",
-	"auth.cliIdVal" : "sandbox",
+	"auth.cliIdVal" : "synchronizer",
 	"auth.cliSecPar" : "client_secret",
-	"auth.cliSecVal" : "4205DQXBAP99S8SUHXI3", 	// TODO: Replace with production key
+	"auth.cliSecVal" : "FE01WKCQJDMUIH99SX6Q3P6IQIGC",
 	"auth.redirPar" : "redirect_uri",
 	"auth.redirVal" : "http://localhost:8080",
 	"auth.scopePar" : "scope",
