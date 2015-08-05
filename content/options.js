@@ -1,3 +1,7 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
 Components.utils.import("resource://gre/modules/AddonManager.jsm");

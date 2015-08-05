@@ -1,3 +1,7 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 function onPageLoad(aEvent) {
     let doc = aEvent.originalTarget;
     let wnd = doc.defaultView;	        

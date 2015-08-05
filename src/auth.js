@@ -1,3 +1,7 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 function s4() {
 	return Math.floor((1 + Math.random()) * 0x10000)
 	.toString(16)
@@ -25,9 +29,20 @@ var auth = {
 	tokenRefresh : "",
 	userId : "",
 	running : false,
+	testing : false,
 
 	ready : function() {
 		return auth.tokenAccess !== "";
+	},
+
+	getBaseUrl : function() {
+		let baseUrl = auth.testing == false ? getPref("baseSslUrl") : getPref("debug.baseSslUrl");
+		return baseUrl;
+	},
+
+	getClientSecret : function() {
+		let clientSecret = auth.testing == false ? getPref("auth.cliSecVal") : getPref("debug.auth.cliSecVal");
+		return clientSecret;
 	},
 
 	// Notify authentication process is over
@@ -49,10 +64,10 @@ var auth = {
 		log.writeLn("auth.resume");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		let fullUrl = getPref("baseSslUrl") + getPref("auth.getTokenOp") + "?" +
+		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 			getPref("auth.refreshTokenPar") + "=" + auth.tokenRefresh + "&" +
 			getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
-			getPref("auth.cliSecPar") + "=" + getPref("auth.cliSecVal") + "&" +
+			getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
 			getPref("auth.grantTypePar") + "=" + getPref("auth.refreshTokenPar");
 		fullUrl = encodeURI(fullUrl);
 		req.open("POST", fullUrl, true);
@@ -130,11 +145,12 @@ var auth = {
 			log.writeLn(str);
 		}
 	},
+
 	getCode : function () {
 		let userGuid = sessionId();
 		auth.userRequest.stateVal = encodeURI(userGuid);
 		auth.userRequest.promptText = _("authWndCaption", retrieveLocale());
-		auth.userRequest.browseUrl = getPref("baseSslUrl") + getPref("auth.getCodeOp") + "?" +
+		auth.userRequest.browseUrl = auth.getBaseUrl() + getPref("auth.getCodeOp") + "?" +
 						getPref("auth.resTypePar") + "=" + getPref("auth.resTypeVal") + "&" +
 						getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
 						getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
@@ -154,10 +170,10 @@ var auth = {
 
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		let fullUrl = getPref("baseSslUrl") + getPref("auth.getTokenOp") + "?" +
+		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 			getPref("auth.codePar") + "=" + code + "&" +
 			getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
-			getPref("auth.cliSecPar") + "=" + getPref("auth.cliSecVal") + "&" +
+			getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
 			getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
 			getPref("auth.statePar") + "=" + auth.userRequest.stateVal + "&" +
 			getPref("auth.grantTypePar") + "=" + getPref("auth.grantTypeVal");

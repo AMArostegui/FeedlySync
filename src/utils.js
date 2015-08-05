@@ -1,3 +1,7 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource://gre/modules/FileUtils.jsm");
 Components.utils.import("resource://gre/modules/NetUtil.jsm");
@@ -86,10 +90,12 @@ var log = {
 // Main parts of this object taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 var guiElements = {
 	synchCallback : null,
+	testsCallback : null,
 	uriResolver : null,
 
-	startup : function(synchCallback, uriResolver) {
+	startup : function(synchCallback, testsCallback, uriResolver) {
 		guiElements.synchCallback = synchCallback;
+		guiElements.testsCallback = testsCallback;
 		guiElements.uriResolver = uriResolver;
 
 		guiElements.addMenuItem("taskPopup", "sanitizeHistory");
@@ -159,12 +165,18 @@ var guiElements = {
 	},
 
 	fileMenuitemID : "menu_SyncItem",
+	fileMenuitemTestID : "menu_SyncTestItem",
 
 	delMenuItem : function() {
 		let doc = win.document;
+
 		let menuitem = doc.getElementById(guiElements.fileMenuitemID);
 		if (menuitem !== null)
 			menuitem.parentNode.removeChild(menuitem);
+
+		let menuitemTests = doc.getElementById(guiElements.fileMenuitemTestID);
+		if (menuitemTests !== null)
+			menuitemTests.parentNode.removeChild(menuitemTests);
 	},
 
 	addMenuItem : function(strMenuPopup, strMenuItemRef) {
@@ -188,6 +200,15 @@ var guiElements = {
 			return;
 		}
 		menuPopup.insertBefore(menuItemSync, menuItemRef);
+
+		// Debug menu item. Run tests
+		if (getPref("debug.active") === true) {
+			let menuItemTests = doc.createElementNS(NS_XUL, "menuitem");
+			menuItemTests.setAttribute("id", guiElements.fileMenuitemTestID);
+			menuItemTests.setAttribute("label", _("runTests", retrieveLocale()));
+			menuItemTests.addEventListener("command", guiElements.testsCallback, true);
+			menuPopup.insertBefore(menuItemTests, menuItemSync);
+		}
 
 		unload(guiElements.delMenuItem, win);
 	},

@@ -1,25 +1,10 @@
-/*
- *	Feedly Synchronizer Add-on for Mozilla Thunderbird.
- *	Copyright (C) 2015  Antonio Miras
- *
- *	This program is free software: you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation, either version 3 of the License, or
- *	(at your option) any later version.
- *
- *	This program is distributed in the hope that it will be useful,
- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *	GNU General Public License for more details.
- *
- *	Original Author: Antonio Miras <amarostegui@outlook.es>
- *
- */
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
 
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 // BEGIN: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
-
 (function(global) {
 	var modules = {};
 	global.require = function require(src) {
@@ -50,7 +35,6 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 var { unload } = require("unload");
 var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
-
 // END: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
 var win = null;
@@ -67,6 +51,7 @@ include("src/utils.js");
 include("src/feedevents.js");
 include("packages/l10n.js");
 include("src/auth.js");
+include("src/tests.js");
 
 function install(data) {
 	log.writeLn("Install");
@@ -95,7 +80,7 @@ function shutdown(data, reason) {
 function main(window) {
 	win = window;
 
-	guiElements.startup(syncTBFeedly, uriResolver);
+	guiElements.startup(syncTBFeedly, runTests, uriResolver);
 	synch.startup();
 	feedEvents.addListener();
 	syncTBFeedly();
@@ -106,4 +91,8 @@ function syncTBFeedly() {
 		synch.begin();
 	};
 	synch.authAndRun(action);
+}
+
+function runTests() {
+	tests.begin();
 }

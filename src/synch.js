@@ -1,3 +1,7 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 Components.utils.import("resource://gre/modules/AddonManager.jsm");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
 
@@ -62,7 +66,7 @@ var synch = {
 		log.writeLn("synch.getFeedlySubs");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		let fullUrl = getPref("baseSslUrl") + getPref("synch.subsOp");
+		let fullUrl = auth.getBaseUrl() + getPref("synch.subsOp");
 		fullUrl = encodeURI(fullUrl);
 		req.open("GET", fullUrl, true);
 		req.setRequestHeader(getPref("synch.tokenParam"), auth.tokenAccess);
@@ -134,7 +138,7 @@ var synch = {
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let jsonSubscribe = null;
-		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.subsOp") + "/");
+		let fullUrl = encodeURI(auth.getBaseUrl() + getPref("synch.subsOp") + "/");
 
 		if (op) {
 			req.open("POST", fullUrl, true);
@@ -290,7 +294,7 @@ var synch = {
 	renameCategory : function(oldName, newName) {
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		let fullUrl = encodeURI(getPref("baseSslUrl") + getPref("synch.categoryOp") + "/");
+		let fullUrl = encodeURI(auth.getBaseUrl() + getPref("synch.categoryOp") + "/");
 		fullUrl = fullUrl + encodeURIComponent("user/" + auth.userId + "/category/"  + oldName);
 
 		req.open("POST", fullUrl, true);

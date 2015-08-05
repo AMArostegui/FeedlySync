@@ -1,8 +1,11 @@
+// Feedly Synchronizer AddOn for Mozilla Thunderbird
+// Developed by Antonio Miras Aróstegui
+// Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
+
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 const PREF_BRANCH = "extensions.FeedlySync.";
 const PREFS = {
-	// Global preferences
 	baseUrl : "http://www.feedly.com",
 	baseSslUrl : "https://www.feedly.com",
 
@@ -40,5 +43,10 @@ const PREFS = {
 	"synch.categoryOp" : "/v3/categories",
 	"synch.account" : "",
 	"synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
-	"synch.timeout" : 10
+	"synch.timeout" : 10,
+	
+	"debug.active" :  false,
+	"debug.baseUrl" : "http://sandbox.feedly.com",
+	"debug.baseSslUrl" : "https://sandbox.feedly.com",
+	"debug.auth.cliSecVal" : "YNXZHOH3GPYO6DF7B43K"
 };
