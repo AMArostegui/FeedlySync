@@ -45,6 +45,11 @@ var auth = {
 		return clientSecret;
 	},
 
+	getClientId : function() {
+		let clientId = auth.testing == false ? getPref("auth.cliIdVal") : getPref("debug.auth.cliIdVal");
+		return clientId;
+	},
+
 	// Notify authentication process is over
 	onFinished : null,
 	fireOnFinished : function(success) {
@@ -66,7 +71,7 @@ var auth = {
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 			getPref("auth.refreshTokenPar") + "=" + auth.tokenRefresh + "&" +
-			getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
+			getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
 			getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
 			getPref("auth.grantTypePar") + "=" + getPref("auth.refreshTokenPar");
 		fullUrl = encodeURI(fullUrl);
@@ -152,7 +157,7 @@ var auth = {
 		auth.userRequest.promptText = _("authWndCaption", retrieveLocale());
 		auth.userRequest.browseUrl = auth.getBaseUrl() + getPref("auth.getCodeOp") + "?" +
 						getPref("auth.resTypePar") + "=" + getPref("auth.resTypeVal") + "&" +
-						getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
+						getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
 						getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
 						getPref("auth.scopePar") + "=" + getPref("auth.scopeVal") + "&" +
 						getPref("auth.statePar") + "=" + auth.userRequest.stateVal;
@@ -172,7 +177,7 @@ var auth = {
         		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 			getPref("auth.codePar") + "=" + code + "&" +
-			getPref("auth.cliIdPar") + "=" + getPref("auth.cliIdVal") + "&" +
+			getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
 			getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
 			getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
 			getPref("auth.statePar") + "=" + auth.userRequest.stateVal + "&" +

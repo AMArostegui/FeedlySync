@@ -2,12 +2,13 @@
 // Developed by Antonio Miras Aróstegui
 // Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
 
+Components.utils.import("chrome://messenger-newsblog/content/feed-subscriptions.js");
+
 var tests = {
 	savedAccountKey : "",
 
 	begin : function() {
 		auth.testing = true;
-		tests.createAccount();
 		statusFile.reset();
 
 		// Create new account to perform tests in
@@ -15,7 +16,7 @@ var tests = {
 		let account = FeedUtils.createRssAccount("Tests Account");
 		setPref("synch.account", account.key);
 
-		tests.login();
+		tests.importOpml();
 	},
 
 	login : function() {
@@ -25,7 +26,6 @@ var tests = {
 
 		let action = function() {
 			log.writeLn("Test 1: Full Authenticaton");
-			auth.tokenAccess = "";
 			tests.resumeLogin();
 		};
 		synch.authAndRun(action);
@@ -42,6 +42,8 @@ var tests = {
 	},
 
 	importOpml : function() {
+		FeedSubscriptions.importOPML();
+		tests.end();
 	},
 
 	end : function() {

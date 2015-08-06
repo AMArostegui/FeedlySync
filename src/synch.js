@@ -49,12 +49,14 @@ var synch = {
 
 		if (!ready) {
 			auth.onFinished = function(success) {
+				// I'd better null the handler before running the action, in case another authentication
+				// operation is called
+				auth.onFinished = null;
+
 				if (success)
 					action();
 				else
 					log.writeLn("synch.authAndRun. Unable to authenticate. Action=" + action);
-
-				auth.onFinished = null;
 			};
 			auth.init();
 		}

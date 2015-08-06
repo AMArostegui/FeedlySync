@@ -44,9 +44,10 @@ const PREFS = {
 	"synch.account" : "",
 	"synch.direction" : 0,						// 0: Synchronization, 1: Upward, 2: Downward
 	"synch.timeout" : 10,
-	
+
 	"debug.active" :  false,
 	"debug.baseUrl" : "http://sandbox.feedly.com",
 	"debug.baseSslUrl" : "https://sandbox.feedly.com",
-	"debug.auth.cliSecVal" : "YNXZHOH3GPYO6DF7B43K"
+	"debug.auth.cliSecVal" : "YNXZHOH3GPYO6DF7B43K",
+	"debug.auth.cliIdVal" : "sandbox"
 };
