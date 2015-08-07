@@ -36,7 +36,7 @@ var synch = {
 	},
 
 	// Ensure account and authentication before running action
-	authAndRun : function(action) {
+	authAndRun : function(action, error) {
 		let account = getPref("synch.account");
 		let ready = auth.ready();
 		log.writeLn("synch.authAndRun. Account = " + account + " Ready = " + ready);
@@ -55,8 +55,11 @@ var synch = {
 
 				if (success)
 					action();
-				else
+				else {
 					log.writeLn("synch.authAndRun. Unable to authenticate. Action=" + action);
+					if (error !== undefined)
+						error();
+				}
 			};
 			auth.init();
 		}
@@ -64,7 +67,7 @@ var synch = {
 			action();
 	},
 
-	getFeedlySubs : function() {
+	getFeedlySubs : function(callback) {
 		log.writeLn("synch.getFeedlySubs");
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		.createInstance(Components.interfaces.nsIXMLHttpRequest);
@@ -77,7 +80,10 @@ var synch = {
 				log.writeLn(formatEventMsg("synch.getFeedlySubs", e));
 				if (e.currentTarget.status == 200) {
 					let jsonResponse = JSON.parse(e.currentTarget.responseText);
-					synch.update(jsonResponse);
+					if (callback === undefined)
+						synch.update(jsonResponse);
+					else
+						callback(jsonResponse);
 				}
 				else
 					return;

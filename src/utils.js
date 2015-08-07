@@ -220,13 +220,19 @@ function retrieveLocale() {
 		.getService(Components.interfaces.nsIXULChromeRegistry).getSelectedLocale("global");
 }
 
-function getRootFolder() {
+function getIncomingServer() {
 	let accountKey = getPref("synch.account");
 	let account = MailServices.accounts.getAccount(accountKey);
 	if (account === null)
 		return null;
 
-	let server = account.incomingServer;
+	return account.incomingServer;
+}
+
+function getRootFolder() {
+	let server = getIncomingServer();
+	let accountKey = getPref("synch.account");
+
 	if (server === null) {
 		log.writeLn("getRootFolder. No incoming server. Unexpected situation. Account Key = " + accountKey);
 		return null;
