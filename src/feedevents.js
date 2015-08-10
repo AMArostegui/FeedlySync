@@ -91,10 +91,8 @@ var feedEvents = {
 
 			if (synch.updateRunning)
 				return;
-			let subscriptionsWindow =
-			    Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
-			if (subscriptionsWindow === null) {
-				log.writeLn("FeedEvents.onAddFeed. Subscribing not using dialog. Unexpected situation");
+			if (FeedSubscriptions === undefined || FeedSubscriptions === null) {
+				log.writeLn("FeedEvents.onAddFeed. No FeedSubscriptions object within scope. Unexpected situation");
 				return;
 			}
 			if (!feedEvents.checkFolderLevel(aFeed.folder))
@@ -104,8 +102,7 @@ var feedEvents = {
 				return;
 			}
 
-			let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-			if (feedSubscriptions.mActionMode !== feedSubscriptions.kImportingOPML) {
+			if (FeedSubscriptions.mActionMode !== FeedSubscriptions.kImportingOPML) {
 				let feedUrlArray = FeedUtils.getFeedUrlsInFolder(aFeed.mFolder);
 				if (feedUrlArray !== null && feedUrlArray.length > 1) {
 					log.writeLn("FeedEvents.onAddFeed. Only first feed of folder will be synchronized. Ignored: " + aFeed.url);

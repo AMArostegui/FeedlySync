@@ -21,7 +21,7 @@ var tests = {
 		let account = FeedUtils.createRssAccount("Tests Account");
 		setPref("synch.account", account.key);
 
-		tests.importOpml();
+		tests.login();
 	},
 
 	login : function() {
@@ -36,7 +36,7 @@ var tests = {
 		let error = function() {
 			log.writeLn("MISSED 1");
 			tests.end();
-		}
+		};
 		synch.authAndRun(action, error);
 	},
 
@@ -50,31 +50,55 @@ var tests = {
 		let error = function() {
 			log.writeLn("MISSED 2");
 			tests.end();
-		}
+		};
 		synch.authAndRun(action);
 	},
 
+	savedDOMParser : null,
+
 	importOpml : function() {
+		function onDownloadSubsFinished(jsonResponse) {
+			if (compareOpmlJson(tests.opmlFile, jsonResponse)) {
+				log.writeLn("PASSED 3/" + tests.count + " : Import OPML");
+				tests.end();
+			}
+			else {
+				log.writeLn("MISSED 3: Opml and subscriptions differ");
+				tests.end();
+			}
+		}
+
+		function onImportedOpmlFinished() {
+			// Undo HACK. Explained below. Clean Scope
+			DOMParser = tests.savedDOMParser;
+			setTimeout = undefined;
+		}
+
+		function onSubscribeFeedsFinished() {
+			// I believe it's safe to assume  local import will be done before subscriptions
+			synch.getFeedlySubs(onDownloadSubsFinished);
+		}
+
 		let server = getIncomingServer();
-		if (tests.opmlFile.exists() && server !== null)
-			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, tests.importOpmlFinished);
+		if (tests.opmlFile.exists() && server !== null) {
+
+			// feed-subscriptions.js is not designed to work as an stand alone module
+			// This is a HACK to make the functions necessary for importOPMLFile
+			// to work available within the scope
+			tests.savedDOMParser = DOMParser;
+			DOMParser = function() {
+				return Components.classes["@mozilla.org/xmlextras/domparser;1"]
+					.createInstance(Components.interfaces.nsIDOMParser);
+			};
+			setTimeout = function(callback) {
+				win.setTimeout(callback);
+			};
+
+			synch.onSubscribeFeedsFinished = onSubscribeFeedsFinished;
+			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, onImportedOpmlFinished);
+		}
 		else {
 			log.writeLn("MISSED 3: No OPML file in directory or unable to retrieve server");
-			tests.end();
-		}
-	},
-
-	importOpmlFinished : function() {
-		synch.getFeedlySubs(tests.downloadSubsFinished);
-	},
-
-	downloadSubsFinished : function(jsonResponse) {
-		if (compareOpmlJson(tests.opmlFile, jsonResponse)) {
-			log.writeLn("PASSED 3/" + tests.count + " : Import OPML");
-			tests.end();
-		}
-		else {
-			log.writeLn("MISSED 3: Opml and subscriptions differ");
 			tests.end();
 		}
 	},

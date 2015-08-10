@@ -185,6 +185,7 @@ var synch = {
 		req.send(jsonSubscribe);
 	},
 
+	onSubscribeFeedsFinished : null,
 	subsTo : [],
 	subsOp : [],
 
@@ -228,6 +229,11 @@ var synch = {
 				synch.subsTo = [];
 				synch.subsOp = [];
 				statusFile.write();
+				if (synch.onSubscribeFeedsFinished !== null) {
+					synch.onSubscribeFeedsFinished();
+					synch.onSubscribeFeedsFinished = null;
+				}
+
 				return;
 			}
 
