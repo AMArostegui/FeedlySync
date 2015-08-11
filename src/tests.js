@@ -67,8 +67,8 @@ var tests = {
 	scopeDOMParser : null,
 
 	importOpml : function() {
-		function onDownloadSubsFinished(jsonResponse) {
-			if (compareOpmlJson(tests.opmlFile, jsonResponse)) {
+		function onCompareOmplJsonFinished(result) {
+			if (result) {
 				log.writeLn("PASSED 3/" + tests.count + " : Import OPML");
 				tests.end();
 			}
@@ -76,17 +76,6 @@ var tests = {
 				log.writeLn("MISSED 3: Opml and subscriptions differ");
 				tests.end();
 			}
-		}
-
-		function onImportedOpmlFinished() {
-			// Undo HACK. Explained below. Clean Scope
-			DOMParser = tests.scopeDOMParser;
-			setTimeout = undefined;
-		}
-
-		function onSubscribeFeedsFinished() {
-			// I believe it's safe to assume  local import will be done before subscriptions
-			synch.getFeedlySubs(onDownloadSubsFinished);
 		}
 
 		let server = getIncomingServer();
@@ -104,8 +93,17 @@ var tests = {
 				win.setTimeout(callback);
 			};
 
-			synch.onSubscribeFeedsFinished = onSubscribeFeedsFinished;
-			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, onImportedOpmlFinished);
+			synch.onSubscribeFeedsFinished = function() {
+				// I believe it's safe to assume  local import will be done before subscriptions
+				synch.getFeedlySubs(function(jsonResponse) {
+					compareOpmlJson(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
+				});
+			};
+			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, function() {
+				// Undo HACK. Clean Scope
+				DOMParser = tests.scopeDOMParser;
+				setTimeout = undefined;
+			});
 		}
 		else {
 			log.writeLn("MISSED 3: No OPML file in directory or unable to retrieve server");
@@ -133,6 +131,72 @@ var tests = {
 	},
 };
 
-function compareOpmlJson(opmlFile, json) {
-	return true;
+function compareOpmlJson(opmlFile, jsonStr, callback) {
+	NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
+		if (!Components.isSuccessCode(status)) {
+			log.writeLn("MISSED 3: Error reading file");
+			callback(false);
+			return;
+		}
+		let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+
+		let theDom = parser.parseFromString(theXml, "text/xml");
+		let chkCollection = theDom.getElementsByTagName("parsererror");
+		if (chkCollection.length > 0) {
+			log.writeLn("MISSED 3: Error parsing opml");
+			callback(false);
+			return;
+		}
+
+		let theJson = null;
+		try {
+			theJson = JSON.parse(jsonStr);
+			compareParsed(theDom, theJson, callback);
+		}
+		catch (err) {
+			callback(false);
+			return;
+		}
+	});
+
+	function compareParsed(dom, json, callback) {
+		let feedsByCat = {};
+
+	    let bodyNode = document.getElementsByTagName("body")[0];
+	    let category = bodyNode.firstChild;
+	    while (category !== null) {
+	    	let feed = category.firstChild;
+	    	while (feed !== null) {
+	    		let id = feed.getAttribute("xmlUrl");
+	    		feedsByCat[id] = category.getAttribute("title");
+	    		feed = feed.nextSibling;
+	    	}
+	    	category = category.nextSibling;
+	    }
+
+	    for (var subIdx = 0; subIdx < json.length; subIdx++) {
+	        let feed = json[subIdx];
+	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
+	        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
+	        	let categoryName;
+	        	if (feed.categories.length > 0)
+	        		categoryName = feed.categories[categoryIdx].label;
+	        	else
+	        		categoryName = _("uncategorized", retrieveLocale());
+	        }
+
+	        if (feedsByCat[feedId] === undefined) {
+	        	callback(false);
+	        	return;
+	        }
+	        else if (feedsByCat[feedId] !== feedId) {
+	        	callback(false);
+	        	return;
+	        }
+	        else
+	        	feedsByCat[feedId] = undefined;
+	    }
+
+	    callback(Object.keys(feedsByCat).length == 0);
+	}
 }
