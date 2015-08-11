@@ -5,7 +5,13 @@
 Services.scriptloader.loadSubScript("chrome://messenger-newsblog/content/feed-subscriptions.js");
 
 var tests = {
-	savedAccountKey : "",
+
+	saved : {
+		accountKey : "",
+		tokenAccess : "",
+		tokenRefresh : "",
+	},
+
 	opmlFile : null,
 	count : 3,
 
@@ -16,8 +22,12 @@ var tests = {
 		let id = addonId;
 		tests.opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
 
+		// Save current state
+		tests.saved.accountKey = getPref("synch.account");
+		tests.saved.tokenAccess = auth.tokenAccess;
+		tests.saved.tokenRefresh = auth.tokenRefresh;
+
 		// Create new account to perform tests in
-		tests.savedAccountKey = getPref("synch.account");
 		let account = FeedUtils.createRssAccount("Tests Account");
 		setPref("synch.account", account.key);
 
@@ -54,7 +64,7 @@ var tests = {
 		synch.authAndRun(action);
 	},
 
-	savedDOMParser : null,
+	scopeDOMParser : null,
 
 	importOpml : function() {
 		function onDownloadSubsFinished(jsonResponse) {
@@ -70,7 +80,7 @@ var tests = {
 
 		function onImportedOpmlFinished() {
 			// Undo HACK. Explained below. Clean Scope
-			DOMParser = tests.savedDOMParser;
+			DOMParser = tests.scopeDOMParser;
 			setTimeout = undefined;
 		}
 
@@ -85,7 +95,7 @@ var tests = {
 			// feed-subscriptions.js is not designed to work as an stand alone module
 			// This is a HACK to make the functions necessary for importOPMLFile
 			// to work available within the scope
-			tests.savedDOMParser = DOMParser;
+			tests.scopeDOMParser = DOMParser;
 			DOMParser = function() {
 				return Components.classes["@mozilla.org/xmlextras/domparser;1"]
 					.createInstance(Components.interfaces.nsIDOMParser);
@@ -104,14 +114,22 @@ var tests = {
 	},
 
 	end : function() {
+		function onSynchAccountRemoved() {
+			setPref("synch.account", tests.saved.accountKey);
+			auth.tokenAccess = tests.saved.tokenAccess;
+			auth.tokenRefresh = tests.saved.tokenRefresh;
+			setPref("auth.tokenRefresh", auth.tokenRefresh);
+
+			auth.testing = false;
+			tests.opmlFile = null;
+		}
+
+		feedEvents.onSynchAccountRemoved = onSynchAccountRemoved;
+
 		// Remove tests account
 		let accountKey = getPref("synch.account");
 		let account = MailServices.accounts.getAccount(accountKey);
 		MailServices.accounts.removeAccount(account);
-		setPref("synch.account", tests.savedAccountKey);
-
-		auth.testing = false;
-		tests.opmlFile = null;
 	},
 };
 

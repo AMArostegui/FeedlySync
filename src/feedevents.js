@@ -167,6 +167,8 @@ var feedEvents = {
 
 		unsubscribed : [],
 
+		onSynchAccountRemoved : null,
+
 		OnItemRemoved : function(parentItem, item) {
 			// If an account was selected but root folder cannot be retrieved
 			// it is safe to assume it was deleted
@@ -176,6 +178,11 @@ var feedEvents = {
 				log.writeLn("FeedEvents.OnItemRemoved. Removing synchronized account");
 				setPref("synch.account", "");
 				statusFile.reset();
+
+				if (feedEvents.onSynchAccountRemoved !== null) {
+					feedEvents.onSynchAccountRemoved();
+					feedEvents.onSynchAccountRemoved = null;
+				}
 				return;
 			}
 
