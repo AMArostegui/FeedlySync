@@ -96,7 +96,7 @@ var tests = {
 			synch.onSubscribeFeedsFinished = function() {
 				// I believe it's safe to assume  local import will be done before subscriptions
 				synch.getFeedlySubs(function(jsonResponse) {
-					compareOpmlJson(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
+					comparer.opmlFileJsonStr(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
 				});
 			};
 			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, function() {
@@ -131,72 +131,106 @@ var tests = {
 	},
 };
 
-function compareOpmlJson(opmlFile, jsonStr, callback) {
-	NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
-		if (!Components.isSuccessCode(status)) {
-			log.writeLn("MISSED 3: Error reading file");
-			callback(false);
-			return;
-		}
-		let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+var comparer = {
+	debug : function(callback) {
+		let id = addonId;
 
-		let theDom = parser.parseFromString(theXml, "text/xml");
-		let chkCollection = theDom.getElementsByTagName("parsererror");
-		if (chkCollection.length > 0) {
-			log.writeLn("MISSED 3: Error parsing opml");
+		let opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
+		if (!opmlFile.exists()) {
 			callback(false);
 			return;
 		}
 
-		let theJson = null;
-		try {
-			theJson = JSON.parse(jsonStr);
-			compareParsed(theDom, theJson, callback);
-		}
-		catch (err) {
+		let jsonFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.json"], false);
+		if (!jsonFile.exists()) {
 			callback(false);
 			return;
 		}
-	});
 
-	function compareParsed(dom, json, callback) {
-		let feedsByCat = {};
+		comparer.opmlFileJsonFile(opmlFile, jsonFile, callback);
+	},
 
-	    let bodyNode = document.getElementsByTagName("body")[0];
-	    let category = bodyNode.firstChild;
-	    while (category !== null) {
-	    	let feed = category.firstChild;
-	    	while (feed !== null) {
-	    		let id = feed.getAttribute("xmlUrl");
-	    		feedsByCat[id] = category.getAttribute("title");
-	    		feed = feed.nextSibling;
-	    	}
-	    	category = category.nextSibling;
-	    }
+	opmlFileJsonFile : function(opmlFile, jsonFile, callback) {
+		NetUtil.asyncFetch(jsonFile, function(inputStream, status) {
+			if (!Components.isSuccessCode(status)) {
+				callback(false);
+				return;
+			}
+			let jsonStr = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+			comparer.opmlFileJsonStr(opmlFile, jsonStr, callback);
+		});
+	},
 
-	    for (var subIdx = 0; subIdx < json.length; subIdx++) {
-	        let feed = json[subIdx];
-	        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
-	        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
-	        	let categoryName;
-	        	if (feed.categories.length > 0)
-	        		categoryName = feed.categories[categoryIdx].label;
-	        	else
-	        		categoryName = _("uncategorized", retrieveLocale());
-	        }
+	opmlFileJsonStr : function(opmlFile, jsonStr, callback) {
+		NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
+			if (!Components.isSuccessCode(status)) {
+				log.writeLn("MISSED 3: Error reading file");
+				callback(false);
+				return;
+			}
+			let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available(), { charset: "UTF-8" });
 
-	        if (feedsByCat[feedId] === undefined) {
-	        	callback(false);
-	        	return;
-	        }
-	        else if (feedsByCat[feedId] !== feedId) {
-	        	callback(false);
-	        	return;
-	        }
-	        else
-	        	feedsByCat[feedId] = undefined;
-	    }
+			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+				.createInstance(Components.interfaces.nsIDOMParser);
+			let theDom = parser.parseFromString(theXml, "text/xml");
+			let chkCollection = theDom.getElementsByTagName("parsererror");
+			if (chkCollection.length > 0) {
+				log.writeLn("MISSED 3: Error parsing opml");
+				callback(false);
+				return;
+			}
 
-	    callback(Object.keys(feedsByCat).length == 0);
-	}
-}
+			let theJson = null;
+			try {
+				theJson = JSON.parse(jsonStr);
+				compareParsed(theDom, theJson, callback);
+			}
+			catch (err) {
+				callback(false);
+				return;
+			}
+		});
+
+		function compareParsed(dom, json, callback) {
+			let feedsByCat = {};
+
+		    let bodyNode = dom.getElementsByTagName("body")[0];
+		    let category = bodyNode.firstElementChild;
+		    while (category !== null) {
+		    	let feedTitle = category.firstElementChild;
+		    	while (feedTitle !== null) {
+		    		let feed = feedTitle.firstElementChild;
+		    		let id = feed.getAttribute("xmlUrl");
+		    		feedsByCat[id] = category.getAttribute("title");
+		    		feedTitle = feedTitle.nextElementSibling;
+		    	}
+		    	category = category.nextElementSibling;
+		    }
+
+		    for (var subIdx = 0; subIdx < json.length; subIdx++) {
+		        let feed = json[subIdx];
+		        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
+		        let categoryName = "";
+		        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
+		        	if (feed.categories.length > 0)
+		        		categoryName = feed.categories[categoryIdx].label;
+		        	else
+		        		categoryName = _("uncategorized", retrieveLocale());
+		        }
+
+		        if (feedsByCat[feedId] === undefined) {
+		        	callback(false);
+		        	return;
+		        }
+		        else if (feedsByCat[feedId] !== categoryName) {
+		        	callback(false);
+		        	return;
+		        }
+		        else
+		        	delete feedsByCat[feedId];
+		    }
+
+		    callback(Object.keys(feedsByCat).length === 0);
+		}
+	},
+};
