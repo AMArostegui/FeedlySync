@@ -70,7 +70,7 @@ var tests = {
 		function onCompareOmplJsonFinished(result) {
 			if (result) {
 				log.writeLn("PASSED 3/" + tests.count + " : Import OPML", true);
-				tests.end();
+				tests.deleteAllLocal();
 			}
 			else {
 				log.writeLn("MISSED 3: Opml and subscriptions differ", true);
@@ -109,6 +109,33 @@ var tests = {
 			log.writeLn("MISSED 3: No OPML file in directory or unable to retrieve server", true);
 			tests.end();
 		}
+	},
+
+	deleteAllLocal : function() {
+		synch.onSubscribeFeedsFinished = function() {
+			synch.getFeedlySubs(function(jsonResponse) {
+				if (jsonResponse.length === 0) {
+					log.writeLn("PASSED 4/" + tests.count + " : Delete all local", true);
+					tests.end();
+				}
+				else {
+					log.writeLn("MISSED 4: Some subscriptions remain after everything was deleted", true);
+					tests.end();
+				}
+			});
+		};
+
+		let fldTreeViewOp = { refresh : false };
+		for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
+			for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
+				let tbSub = synch.getFeedFromFolder(fldName);
+				if (tbSub === null)
+					continue;
+
+				synch.removeFromTB(fldName, fldTreeViewOp);
+			}
+		}
+		win.gFolderTreeView._rebuild();
 	},
 
 	end : function() {
