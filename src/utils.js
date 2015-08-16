@@ -27,62 +27,65 @@ var log = {
 	eol : null,
 	file : null,
 
-	writeLn : function(str) {
-		if (getPref("log.active")) {
-			let now = new Date();
+	writeLn : function(str, force) {
+		if (!getPref("log.active")) {
+			if (force === undefined || force === false)
+				return;
+		}
 
-			let hh = now.getHours();
-			if (hh < 10)
-				hh = "0" + hh;
-			let mm = now.getMinutes();
-			if (mm < 10)
-				mm = "0" + mm;
-			let ss = now.getSeconds();
-			if (ss < 10)
-				ss = "0" + ss;
+		let now = new Date();
 
-			let dd = now.getDate();
-			if (dd < 10)
-			    dd = "0" + dd;
-			let MM = now.getMonth() + 1;
-			if (MM < 10)
-			    MM = "0" + MM;
+		let hh = now.getHours();
+		if (hh < 10)
+			hh = "0" + hh;
+		let mm = now.getMinutes();
+		if (mm < 10)
+			mm = "0" + mm;
+		let ss = now.getSeconds();
+		if (ss < 10)
+			ss = "0" + ss;
 
-			let logStr = "(" + now.getFullYear() + "/" + MM + "/" + dd + " " + hh + ":" + mm + ":" + ss + ") " + str;
+		let dd = now.getDate();
+		if (dd < 10)
+		    dd = "0" + dd;
+		let MM = now.getMonth() + 1;
+		if (MM < 10)
+		    MM = "0" + MM;
 
-			if (log.app === null) {
-				log.app = Components.classes["@mozilla.org/steel/application;1"].
-					getService(Components.interfaces.steelIApplication);
-				if (log.app.platformIsWindows)
-					log.eol = '\r\n';
-				else if (log.app.platformIsMac)
-					log.eol = '\r';
-				else
-					log.eol = '\n';
-			}
+		let logStr = "(" + now.getFullYear() + "/" + MM + "/" + dd + " " + hh + ":" + mm + ":" + ss + ") " + str;
 
-			switch (getPref("log.toFile")) {
-				case false:
-					log.app.console.log("FeedlySync: " + logStr);
-					break;
-				case true:
-					if (log.file === null) {
-						let logFile = now.getFullYear() + MM + dd + ".log";
-						let id = addonId;
-						log.file =
-							FileUtils.getFile("ProfD", [id, "data", "logs", logFile], false);
-						if (!log.file.exists())
-							log.file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
-					}
+		if (log.app === null) {
+			log.app = Components.classes["@mozilla.org/steel/application;1"].
+				getService(Components.interfaces.steelIApplication);
+			if (log.app.platformIsWindows)
+				log.eol = '\r\n';
+			else if (log.app.platformIsMac)
+				log.eol = '\r';
+			else
+				log.eol = '\n';
+		}
 
-					let outStream = FileUtils.openFileOutputStream(log.file, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
-					let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-					                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-					converter.charset = "UTF-8";
-					let inStream = converter.convertToInputStream(logStr + log.eol + log.eol);
-					NetUtil.asyncCopy(inStream, outStream);
-					break;
-			}
+		switch (getPref("log.toFile")) {
+			case false:
+				log.app.console.log("FeedlySync: " + logStr);
+				break;
+			case true:
+				if (log.file === null) {
+					let logFile = now.getFullYear() + MM + dd + ".log";
+					let id = addonId;
+					log.file =
+						FileUtils.getFile("ProfD", [id, "data", "logs", logFile], false);
+					if (!log.file.exists())
+						log.file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, FileUtils.PERMS_FILE);
+				}
+
+				let outStream = FileUtils.openFileOutputStream(log.file, FileUtils.MODE_WRONLY | FileUtils.MODE_APPEND);
+				let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+				                createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+				converter.charset = "UTF-8";
+				let inStream = converter.convertToInputStream(logStr + log.eol + log.eol);
+				NetUtil.asyncCopy(inStream, outStream);
+				break;
 		}
 	}
 };

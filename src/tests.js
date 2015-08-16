@@ -40,11 +40,11 @@ var tests = {
 		setPref("auth.tokenRefresh", "");
 
 		let action = function() {
-			log.writeLn("PASSED 1/" + tests.count + " : Full Authenticaton");
+			log.writeLn("PASSED 1/" + tests.count + " : Full Authenticaton", true);
 			tests.resumeLogin();
 		};
 		let error = function() {
-			log.writeLn("MISSED 1");
+			log.writeLn("MISSED 1", true);
 			tests.end();
 		};
 		synch.authAndRun(action, error);
@@ -54,11 +54,11 @@ var tests = {
 		auth.tokenAccess = "";
 
 		let action = function() {
-			log.writeLn("PASSED 2/" + tests.count + " : Partial Authentication");
+			log.writeLn("PASSED 2/" + tests.count + " : Partial Authentication", true);
 			tests.importOpml();
 		};
 		let error = function() {
-			log.writeLn("MISSED 2");
+			log.writeLn("MISSED 2", true);
 			tests.end();
 		};
 		synch.authAndRun(action);
@@ -69,11 +69,11 @@ var tests = {
 	importOpml : function() {
 		function onCompareOmplJsonFinished(result) {
 			if (result) {
-				log.writeLn("PASSED 3/" + tests.count + " : Import OPML");
+				log.writeLn("PASSED 3/" + tests.count + " : Import OPML", true);
 				tests.end();
 			}
 			else {
-				log.writeLn("MISSED 3: Opml and subscriptions differ");
+				log.writeLn("MISSED 3: Opml and subscriptions differ", true);
 				tests.end();
 			}
 		}
@@ -96,7 +96,7 @@ var tests = {
 			synch.onSubscribeFeedsFinished = function() {
 				// I believe it's safe to assume  local import will be done before subscriptions
 				synch.getFeedlySubs(function(jsonResponse) {
-					comparer.opmlFileJsonStr(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
+					comparer.opmlFileJsonObj(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
 				});
 			};
 			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, function() {
@@ -106,7 +106,7 @@ var tests = {
 			});
 		}
 		else {
-			log.writeLn("MISSED 3: No OPML file in directory or unable to retrieve server");
+			log.writeLn("MISSED 3: No OPML file in directory or unable to retrieve server", true);
 			tests.end();
 		}
 	},
@@ -156,39 +156,40 @@ var comparer = {
 				callback(false);
 				return;
 			}
+
 			let jsonStr = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-			comparer.opmlFileJsonStr(opmlFile, jsonStr, callback);
-		});
-	},
-
-	opmlFileJsonStr : function(opmlFile, jsonStr, callback) {
-		NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
-			if (!Components.isSuccessCode(status)) {
-				log.writeLn("MISSED 3: Error reading file");
-				callback(false);
-				return;
-			}
-			let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available(), { charset: "UTF-8" });
-
-			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-				.createInstance(Components.interfaces.nsIDOMParser);
-			let theDom = parser.parseFromString(theXml, "text/xml");
-			let chkCollection = theDom.getElementsByTagName("parsererror");
-			if (chkCollection.length > 0) {
-				log.writeLn("MISSED 3: Error parsing opml");
-				callback(false);
-				return;
-			}
-
-			let theJson = null;
+			let jsonObj = null;
 			try {
-				theJson = JSON.parse(jsonStr);
-				compareParsed(theDom, theJson, callback);
+				jsonObj = JSON.parse(jsonStr);
+				comparer.opmlFileJsonObj(opmlFile, jsonObj, callback);
 			}
 			catch (err) {
 				callback(false);
 				return;
 			}
+		});
+	},
+
+	opmlFileJsonObj : function(opmlFile, jsonObj, callback) {
+		NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
+			if (!Components.isSuccessCode(status)) {
+				log.writeLn("MISSED 3: Error reading file", true);
+				callback(false);
+				return;
+			}
+
+			let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available(), { charset: "UTF-8" });
+			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+				.createInstance(Components.interfaces.nsIDOMParser);
+			let theDom = parser.parseFromString(theXml, "text/xml");
+			let chkCollection = theDom.getElementsByTagName("parsererror");
+			if (chkCollection.length > 0) {
+				log.writeLn("MISSED 3: Error parsing opml", true);
+				callback(false);
+				return;
+			}
+
+			compareParsed(theDom, jsonObj, callback);
 		});
 
 		function compareParsed(dom, json, callback) {
