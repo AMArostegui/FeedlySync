@@ -13,7 +13,7 @@ var tests = {
 	},
 
 	opmlFile : null,
-	count : 3,
+	count : 4,
 
 	begin : function() {
 		auth.testing = true;
@@ -124,6 +124,13 @@ var tests = {
 				}
 			});
 		};
+
+		let rootFolder = getRootFolder();
+		if (rootFolder === null) {
+			log.writeLn("MISSED 4: Unable to retrieve root folder", true);
+			tests.end();
+			return;
+		}
 
 		let fldTreeViewOp = { refresh : false };
 		for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
