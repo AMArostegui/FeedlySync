@@ -13,7 +13,7 @@ var tests = {
 	},
 
 	opmlFile : null,
-	count : 4,
+	count : 5,
 
 	begin : function() {
 		auth.testing = true;
@@ -116,7 +116,7 @@ var tests = {
 			synch.getFeedlySubs(function(jsonResponse) {
 				if (jsonResponse.length === 0) {
 					log.writeLn("PASSED 4/" + tests.count + " : Delete all local", true);
-					tests.end();
+					tests.subscribeRemote();
 				}
 				else {
 					log.writeLn("MISSED 4: Some subscriptions remain after everything was deleted", true);
@@ -143,6 +143,39 @@ var tests = {
 			}
 		}
 		win.gFolderTreeView._rebuild();
+	},
+
+	subscribeRemote : function() {
+		let opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
+		if (!opmlFile.exists()) {
+			log.writeLn("MISSED 5: Unable to open OPML file", true);
+			tests.end();
+			return;
+		}
+
+		opml.file = opmlFile;
+		opml.parse(function(success) {
+			if (sucess === false) {
+				log.writeLn("MISSED 5: Error while parsing file", true);
+				tests.end();
+				return;
+			}
+
+			let feedsByCat = {};
+			opml.toDictionary(feedsByCat);
+			let subscribe = [];
+			for (var key in feedsByCat) {
+				subscribe.push( { id : key, name : feedsByCat[key].title, category : feedsByCat[key].category } );
+			}
+			synch.subscribe(subscribe, "Testing");
+			synch.onSubscribeFeedsFinished = function() {
+				synch.onSubscribeFeedsFinished = function() {
+					synch.getFeedlySubs(function(jsonResponse) {
+					});
+				};
+				synch.begin();
+			};
+		});
 	},
 
 	end : function() {
@@ -205,42 +238,19 @@ var comparer = {
 	},
 
 	opmlFileJsonObj : function(opmlFile, jsonObj, callback) {
-		NetUtil.asyncFetch(opmlFile, function(inputStream, status) {
-			if (!Components.isSuccessCode(status)) {
-				log.writeLn("MISSED 3: Error reading file", true);
+		opml.file = opmlFile;
+		opml.parse(function(success) {
+			if (success === false) {
+				log.writeLn("MISSED 3: Error while parsing file", true);
 				callback(false);
 				return;
 			}
-
-			let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available(), { charset: "UTF-8" });
-			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-				.createInstance(Components.interfaces.nsIDOMParser);
-			let theDom = parser.parseFromString(theXml, "text/xml");
-			let chkCollection = theDom.getElementsByTagName("parsererror");
-			if (chkCollection.length > 0) {
-				log.writeLn("MISSED 3: Error parsing opml", true);
-				callback(false);
-				return;
-			}
-
-			compareParsed(theDom, jsonObj, callback);
+			compareParsed(jsonObj, callback);
 		});
 
-		function compareParsed(dom, json, callback) {
+		function compareParsed(json, callback) {
 			let feedsByCat = {};
-
-		    let bodyNode = dom.getElementsByTagName("body")[0];
-		    let category = bodyNode.firstElementChild;
-		    while (category !== null) {
-		    	let feedTitle = category.firstElementChild;
-		    	while (feedTitle !== null) {
-		    		let feed = feedTitle.firstElementChild;
-		    		let id = feed.getAttribute("xmlUrl");
-		    		feedsByCat[id] = category.getAttribute("title");
-		    		feedTitle = feedTitle.nextElementSibling;
-		    	}
-		    	category = category.nextElementSibling;
-		    }
+			opml.toDictionary(feedsByCat);
 
 		    for (var subIdx = 0; subIdx < json.length; subIdx++) {
 		        let feed = json[subIdx];
@@ -257,7 +267,7 @@ var comparer = {
 		        	callback(false);
 		        	return;
 		        }
-		        else if (feedsByCat[feedId] !== categoryName) {
+		        else if (feedsByCat[feedId].category !== categoryName) {
 		        	callback(false);
 		        	return;
 		        }

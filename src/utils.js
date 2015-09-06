@@ -217,6 +217,48 @@ var guiElements = {
 	},
 };
 
+var opml = {
+	file : null,
+	dom : null,
+
+	parse : function (callback) {
+		NetUtil.asyncFetch(opml.file, function(inputStream, status) {
+			if (!Components.isSuccessCode(status)) {
+				callback(false);
+				return;
+			}
+
+			let theXml = NetUtil.readInputStreamToString(inputStream, inputStream.available(), { charset : "UTF-8" });
+			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+				.createInstance(Components.interfaces.nsIDOMParser);
+			opml.dom = parser.parseFromString(theXml, "text/xml");
+			let chkCollection = opml.dom.getElementsByTagName("parsererror");
+			if (chkCollection.length > 0) {
+				log.writeLn("MISSED 3: Error parsing opml", true);
+				callback(false);
+				return;
+			}
+
+			callback(true);
+		});
+	},
+
+	toDictionary : function(dictionary) {
+	    let bodyNode = opml.dom.getElementsByTagName("body")[0];
+	    let category = bodyNode.firstElementChild;
+	    while (category !== null) {
+	    	let feedTitle = category.firstElementChild;
+	    	while (feedTitle !== null) {
+	    		let feed = feedTitle.firstElementChild;
+	    		let id = feed.getAttribute("xmlUrl");
+	    		dictionary[id] = { category : category.getAttribute("title"), title : feed.getAttribute("title") };
+	    		feedTitle = feedTitle.nextElementSibling;
+	    	}
+	    	category = category.nextElementSibling;
+	    }
+	},
+};
+
 function retrieveLocale() {
 	// Looks like this function wouldn't be necessary if l10n.js was initialized later
 	return Components.classes["@mozilla.org/chrome/chrome-registry;1"]
