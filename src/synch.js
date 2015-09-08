@@ -446,6 +446,7 @@ var synch = {
 
 	// Flag to indicate whether synch.update method is running
 	updateRunning : false,
+	onUpdateFinished : null,
 
 	// Synchronize Thunderbird and Feedly
 	update : function (feedlySubs) {
@@ -655,6 +656,11 @@ var synch = {
 		}
 		finally {
 			synch.updateRunning = false;
+
+			if (synch.onUpdateFinished !== null) {
+				synch.onUpdateFinished();
+				synch.onUpdateFinished = null;
+			}
 		}
 	},
 

@@ -48,6 +48,7 @@ var uriResolver = {
 include("src/fsprefs.js");
 include("packages/prefs.js");
 include("src/utils.js");
+include("src/guiElements.js");
 include("src/feedevents.js");
 include("packages/l10n.js");
 include("src/auth.js");

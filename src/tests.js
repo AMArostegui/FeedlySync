@@ -2,6 +2,7 @@
 // Developed by Antonio Miras Aróstegui
 // Published under Mozilla Public License, version 2.0 (https://www.mozilla.org/MPL/2.0/)
 
+include("src/opml.js");
 Services.scriptloader.loadSubScript("chrome://messenger-newsblog/content/feed-subscriptions.js");
 
 var tests = {
@@ -12,7 +13,6 @@ var tests = {
 		tokenRefresh : "",
 	},
 
-	opmlFile : null,
 	count : 5,
 
 	begin : function() {
@@ -20,7 +20,7 @@ var tests = {
 		statusFile.reset();
 
 		let id = addonId;
-		tests.opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
+		opml.file = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
 
 		// Save current state
 		tests.saved.accountKey = getPref("synch.account");
@@ -79,7 +79,7 @@ var tests = {
 		}
 
 		let server = getIncomingServer();
-		if (tests.opmlFile.exists() && server !== null) {
+		if (opml.file.exists() && server !== null) {
 
 			// feed-subscriptions.js is not designed to work as an stand alone module
 			// This is a HACK to make the functions necessary for importOPMLFile
@@ -96,10 +96,10 @@ var tests = {
 			synch.onSubscribeFeedsFinished = function() {
 				// I believe it's safe to assume  local import will be done before subscriptions
 				synch.getFeedlySubs(function(jsonResponse) {
-					comparer.opmlFileJsonObj(tests.opmlFile, jsonResponse, onCompareOmplJsonFinished);
+					opml.compare2JsonObj(jsonResponse, onCompareOmplJsonFinished);
 				});
 			};
-			FeedSubscriptions.importOPMLFile(tests.opmlFile, server, function() {
+			FeedSubscriptions.importOPMLFile(opml.file, server, function() {
 				// Undo HACK. Clean Scope
 				DOMParser = tests.scopeDOMParser;
 				setTimeout = undefined;
@@ -146,36 +146,38 @@ var tests = {
 	},
 
 	subscribeRemote : function() {
-		let opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
-		if (!opmlFile.exists()) {
-			log.writeLn("MISSED 5: Unable to open OPML file", true);
+		function onCompareOmplJsonFinished(result) {
+			if (result) {
+				log.writeLn("PASSED 5/" + tests.count + " : Import OPML", true);
+				tests.end();
+			}
+			else {
+				log.writeLn("MISSED 5: Opml and subscriptions differ", true);
+				tests.end();
+			}
+		}
+
+		// By now, OPML file should've already been parsed
+		if (opml.dom === null || opml.dictionary === null) {
+			log.writeLn("MISSED 5: Error while parsing file", true);
 			tests.end();
 			return;
 		}
 
-		opml.file = opmlFile;
-		opml.parse(function(success) {
-			if (sucess === false) {
-				log.writeLn("MISSED 5: Error while parsing file", true);
-				tests.end();
-				return;
-			}
-
-			let feedsByCat = {};
-			opml.toDictionary(feedsByCat);
-			let subscribe = [];
-			for (var key in feedsByCat) {
-				subscribe.push( { id : key, name : feedsByCat[key].title, category : feedsByCat[key].category } );
-			}
-			synch.subscribe(subscribe, "Testing");
-			synch.onSubscribeFeedsFinished = function() {
-				synch.onSubscribeFeedsFinished = function() {
-					synch.getFeedlySubs(function(jsonResponse) {
-					});
-				};
-				synch.begin();
+		let subscribe = [];
+		for (var key in opml.dictionary) {
+			subscribe.push( { id : key, name : opml.dictionary[key].title, category : opml.dictionary[key].category } );
+		}
+		synch.subscribe(subscribe, "Testing");
+		synch.onSubscribeFeedsFinished = function() {
+			synch.onUpdateFinished = function() {
+				synch.getFeedlySubs(function(jsonResponse) {
+					opml.compare2JsonObj(jsonResponse, onCompareOmplJsonFinished);
+				});
 			};
-		});
+			synch.begin();
+		};
+
 	},
 
 	end : function() {
@@ -186,7 +188,7 @@ var tests = {
 			setPref("auth.tokenRefresh", auth.tokenRefresh);
 
 			auth.testing = false;
-			tests.opmlFile = null;
+			opml.file = null;
 		}
 
 		feedEvents.onSynchAccountRemoved = onSynchAccountRemoved;
@@ -195,87 +197,5 @@ var tests = {
 		let accountKey = getPref("synch.account");
 		let account = MailServices.accounts.getAccount(accountKey);
 		MailServices.accounts.removeAccount(account);
-	},
-};
-
-var comparer = {
-	debug : function(callback) {
-		let id = addonId;
-
-		let opmlFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.opml"], false);
-		if (!opmlFile.exists()) {
-			callback(false);
-			return;
-		}
-
-		let jsonFile = FileUtils.getFile("ProfD", [id, "data", "testSubs.json"], false);
-		if (!jsonFile.exists()) {
-			callback(false);
-			return;
-		}
-
-		comparer.opmlFileJsonFile(opmlFile, jsonFile, callback);
-	},
-
-	opmlFileJsonFile : function(opmlFile, jsonFile, callback) {
-		NetUtil.asyncFetch(jsonFile, function(inputStream, status) {
-			if (!Components.isSuccessCode(status)) {
-				callback(false);
-				return;
-			}
-
-			let jsonStr = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-			let jsonObj = null;
-			try {
-				jsonObj = JSON.parse(jsonStr);
-				comparer.opmlFileJsonObj(opmlFile, jsonObj, callback);
-			}
-			catch (err) {
-				callback(false);
-				return;
-			}
-		});
-	},
-
-	opmlFileJsonObj : function(opmlFile, jsonObj, callback) {
-		opml.file = opmlFile;
-		opml.parse(function(success) {
-			if (success === false) {
-				log.writeLn("MISSED 3: Error while parsing file", true);
-				callback(false);
-				return;
-			}
-			compareParsed(jsonObj, callback);
-		});
-
-		function compareParsed(json, callback) {
-			let feedsByCat = {};
-			opml.toDictionary(feedsByCat);
-
-		    for (var subIdx = 0; subIdx < json.length; subIdx++) {
-		        let feed = json[subIdx];
-		        let feedId = feed.id.substring(5, feed.id.length); // Get rid of "feed/" prefix
-		        let categoryName = "";
-		        for (var categoryIdx = 0; categoryIdx < feed.categories.length; categoryIdx++) {
-		        	if (feed.categories.length > 0)
-		        		categoryName = feed.categories[categoryIdx].label;
-		        	else
-		        		categoryName = _("uncategorized", retrieveLocale());
-		        }
-
-		        if (feedsByCat[feedId] === undefined) {
-		        	callback(false);
-		        	return;
-		        }
-		        else if (feedsByCat[feedId].category !== categoryName) {
-		        	callback(false);
-		        	return;
-		        }
-		        else
-		        	delete feedsByCat[feedId];
-		    }
-
-		    callback(Object.keys(feedsByCat).length === 0);
-		}
 	},
 };
