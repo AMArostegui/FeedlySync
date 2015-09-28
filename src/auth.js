@@ -171,20 +171,13 @@ var auth = {
 
 	// Use authentication code to get access and refresh tokens
 	getTokens : function(code) {
-		log.writeLn("auth.getTokens. Code: " + code);
+		let tries = 0;
+		let interval = null;
 
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-        		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
-		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
-			getPref("auth.codePar") + "=" + code + "&" +
-			getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
-			getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
-			getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
-			getPref("auth.statePar") + "=" + auth.userRequest.stateVal + "&" +
-			getPref("auth.grantTypePar") + "=" + getPref("auth.grantTypeVal");
-		fullUrl = encodeURI(fullUrl);
-		req.open("POST", fullUrl, true);
-		req.onload = function (e) {
+		log.writeLn("auth.getTokens. Code: " + code);
+		getDelayed();
+
+		function onLoad(e) {
 			if (e.currentTarget.readyState ===  4) {
 				log.writeLn(formatEventMsg("auth.getTokens. e=", e));
 				if (e.currentTarget.status === 200) {
@@ -209,14 +202,45 @@ var auth = {
 					auth.fireOnFinished(true);
 				}
 				else
-					auth.fireOnFinished(false);
+					onError(null);
 			}
-		};
-		req.onerror = function(error) {
-			log.writeLn(formatEventMsg("auth.getTokens. Error", error));
-			auth.fireOnFinished(false);
-		};
-		log.writeLn("auth.getTokens. Url: " + fullUrl);
-		req.send(null);
+		}
+
+		function onError(error) {
+			if (tries < 3) {
+				log.writeLn(formatEventMsg("auth.getTokens. Error. Try=" + tries, error));
+				getDelayed();
+			}
+			else {
+				log.writeLn(formatEventMsg("auth.getTokens. Error. No more tries", error));
+				auth.fireOnFinished(false);
+			}
+		}
+
+		function getNow() {
+			win.clearInterval(interval);
+			interval = null;
+			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
+				.createInstance(Components.interfaces.nsIXMLHttpRequest);
+			let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
+				getPref("auth.codePar") + "=" + code + "&" +
+				getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
+				getPref("auth.cliSecPar") + "=" + auth.getClientSecret() + "&" +
+				getPref("auth.redirPar") + "=" + getPref("auth.redirVal") + "&" +
+				getPref("auth.statePar") + "=" + auth.userRequest.stateVal + "&" +
+				getPref("auth.grantTypePar") + "=" + getPref("auth.grantTypeVal");
+			fullUrl = encodeURI(fullUrl);
+			req.open("POST", fullUrl, true);
+			req.onload = onLoad;
+			req.onerror = onError;
+			log.writeLn("auth.getTokens. Try=" + tries + " Url: " + fullUrl);
+			req.send(null);
+			tries++;
+		}
+
+		function getDelayed() {
+			// Give Feedly time to process the request
+			interval = win.setInterval(getNow, 1500);
+		}
 	},
 };
