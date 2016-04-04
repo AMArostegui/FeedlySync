@@ -50,12 +50,12 @@ var l10n = (function(global) {
 
         let defaultBundle = Services.strings.createBundle(filepath(locale));
 		let defaultBasicBundle;
-		let (locale_base = locale.match(splitter)) {
-			if (locale_base) {
-				defaultBasicBundle = Services.strings.createBundle(
-					filepath(locale_base[1]));
-			}
+		let locale_base = locale.match(splitter);
+		if (locale_base) {
+			defaultBasicBundle = Services.strings.createBundle(
+				filepath(locale_base[1]));
 		}
+
 	    let addonsDefaultBundle =
 	    	Services.strings.createBundle(filepath(defaultLocale));
 
