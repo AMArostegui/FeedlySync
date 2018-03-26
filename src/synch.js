@@ -39,6 +39,7 @@ var synch = {
 	authAndRun : function(action, error) {
 		let account = getPref("synch.account");
 		let ready = auth.ready();
+
 		log.writeLn("synch.authAndRun. Account = " + account + " Ready = " + ready);
 
 		if (account === "") {
@@ -69,6 +70,7 @@ var synch = {
 
 	getFeedlySubs : function(callback) {
 		log.writeLn("synch.getFeedlySubs");
+
 		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
 		.createInstance(Components.interfaces.nsIXMLHttpRequest);
 		let fullUrl = auth.getBaseUrl() + getPref("synch.subsOp");
@@ -85,15 +87,20 @@ var synch = {
 					else
 						callback(jsonResponse);
 				}
-				else
+				else {
+					synch.updateTout429(e);
 					return;
+				}
 			}
 		};
 		req.onerror = function (error) {
 			log.writeLn(formatEventMsg("synch.getFeedlySubs. Error", error));
 		};
-		log.writeLn("synch.getFeedlySubs. Url: " + fullUrl);
-		req.send(null);
+
+		if (synch.isOkTout429()) {
+			log.writeLn("synch.getFeedlySubs. Url: " + fullUrl);
+			req.send(null);
+		}
 	},
 
 	subscribeFeed : function(feed, op, next) {
@@ -106,6 +113,9 @@ var synch = {
 					else
 						log.writeLn("synch.subscribeFeed.onLoadAdd. Already in status file");
 				}
+				else
+					synch.updateTout429(e);
+
 				next();
 			}
 		};
@@ -116,8 +126,10 @@ var synch = {
 				if (statusFile.find(feed.id) !== null) {
 					if (e.currentTarget.status == 200)
 						statusFile.remove(feed.id);
-					else
+					else {
+						synch.updateTout429(e);
 						statusFile.markAsDeleted(feed.id);
+					}
 				}
 				else
 					log.writeLn("synch.subscribeFeed.onLoadDel. Not in status file. Unexpected situation");
@@ -181,8 +193,10 @@ var synch = {
 			req.onerror = onErrorDel;
 		}
 
-		log.writeLn("synch.subscribeFeed. Add: " + op + " Url: " + fullUrl + " Json: " + jsonSubscribe);
-		req.send(jsonSubscribe);
+		if (synch.isOkTout429()) {
+			log.writeLn("synch.subscribeFeed. Add: " + op + " Url: " + fullUrl + " Json: " + jsonSubscribe);
+			req.send(jsonSubscribe);
+		}
 	},
 
 	onSubscribeFeedsFinished : null,
@@ -326,8 +340,10 @@ var synch = {
 			log.writeLn(formatEventMsg("synch.renameCategory.onerror ", error));
 		};
 
-		log.writeLn("synch.renameCategory. Url: " + fullUrl + " Json: " + jsonRename);
-		req.send(jsonRename);
+		if (synch.isOkTout429()) {
+			log.writeLn("synch.renameCategory. Url: " + fullUrl + " Json: " + jsonRename);
+			req.send(jsonRename);
+		}
 	},
 
 	// Returns feed url, given a Thunderbird folder
@@ -667,7 +683,13 @@ var synch = {
 	synchTimerId : null,
 
 	setTimer : function () {
-		let timeout = getPref("synch.timeout") * 60 * 1000;
+		let timeoutMin = getPref("synch.timeout");
+		if (timeoutMin < 1) {
+			log.writeLn("synch.setTimer. The user interval of choice is too short: " + timeoutMin + " . Revert to 1 minutes");
+			timeoutMin = 1;
+		}
+
+		let timeout = timeoutMin * 60 * 1000;
 		log.writeLn("synch.setTimer. Timeout = " + timeout);
 
 		// Synchronization timeout
@@ -678,7 +700,7 @@ var synch = {
 		synch.synchTimerId = win.setInterval(function synchTimeout() {
 			let account = getPref("synch.account");
 			let ready = auth.ready();
-			log.writeLn("feedEvents.synchTimeout Account = " + account + " Ready = " + ready);
+			log.writeLn("synch.synchTimeout Account = " + account + " Ready = " + ready);
 
 			// Doesn't look like a good idea to automatically show a window without user interaction
 			if (account !== "" && ready)
@@ -707,5 +729,38 @@ var synch = {
 			statusFile.reset();
 			break;
 		}
-   },
+    },
+
+	tout429 : -1,
+	updateTout429 : function (e) {
+		if (e.currentTarget.status == 429) {
+			let newTimeout = e.currentTarget.getResponseHeader("Retry-After");
+			if (newTimeout !== null) {
+				log.writeLn("synch.updateTout429: Time limit excedeed. Retry-After=" + newTimeout);
+
+				// Timeout in seconds. See https://developer.feedly.com/cloud/ (Rate Limiting)
+				let newTimeoutMsec = newTimeout * 1000;
+				newTimeoutMsec += 5000; // Plus 5 secs to avoid mismatches between server and client clocks
+				let tout429 = Date.now() + newTimeoutMsec;
+				if (tout429 > synch.tout429) {
+					synch.tout429 = tout429;
+					log.writeLn("synch.updateTout429: New timeout=" + newTimeoutMsec);
+				}
+			}
+		}
+	},
+
+	isOkTout429 : function() {
+		if (synch.tout429 === -1)
+			return true;
+
+		let now = Date.now();
+		if (now >= synch.tout429) {
+			synch.tout429 = -1;
+			log.writeLn("synch.isOkTout429: Time limit disabled");
+			return true;
+		}
+		else
+			return false;
+	},
 };

@@ -46,8 +46,8 @@ const PREFS = {
 	"synch.timeout" : 10,
 
 	"debug.active" :  false,
-	"debug.baseUrl" : "http://sandbox.feedly.com",
-	"debug.baseSslUrl" : "https://sandbox.feedly.com",
-	"debug.auth.cliSecVal" : "YNXZHOH3GPYO6DF7B43K",
+	"debug.baseUrl" : "http://sandbox7.feedly.com",
+	"debug.baseSslUrl" : "https://sandbox7.feedly.com",
+	"debug.auth.cliSecVal" : "e4RK9ybUMPAa5PgV",
 	"debug.auth.cliIdVal" : "sandbox"
 };
