@@ -88,6 +88,8 @@ function main(window) {
 }
 
 function syncTBFeedly() {
+	// Uncomment this line to try against the sandbox
+	// auth.testing = true;
 	let action = function() {
 		synch.begin();
 	};
