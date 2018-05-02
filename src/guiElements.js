@@ -38,7 +38,7 @@ var guiElements = {
 		guiElements.toolbarBtn = doc.createElementNS(NS_XUL, "toolbarbutton");
 		guiElements.toolbarBtn.setAttribute("id", guiElements.toolbarBtnID);
 		guiElements.toolbarBtn.setAttribute("type", "button");
-		guiElements.toolbarBtn.setAttribute("image", guiElements.uriResolver.getResourceURI("icon24BW.png").spec);
+		guiElements.toolbarBtn.setAttribute("image", guiElements.uriResolver.getResourceURI("icon24BW.png"));
 		guiElements.toolbarBtn.setAttribute("label", _("synchShort", retrieveLocale()));
 		guiElements.toolbarBtn.addEventListener("command", guiElements.synchCallback, true);
 
@@ -67,6 +67,7 @@ var guiElements = {
 						}
 					}
 				}
+
 				tb.insertItem(guiElements.toolbarBtnID, tbb4, null, false);
 			}
 		}
