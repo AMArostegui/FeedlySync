@@ -46,7 +46,7 @@ var l10n = (function(global) {
 		defaultLocale = defaultLocale || "en";
 
 		function filepath(locale) {
-			addonFS.getResourceURI("locale/" + locale + "/" + filename);
+			return addonFS.getResourceURI("locale/" + locale + "/" + filename);
 		}
 
         let defaultBundle = Services.strings.createBundle(filepath(locale));

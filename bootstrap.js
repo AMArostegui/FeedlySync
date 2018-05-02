@@ -74,9 +74,8 @@ function startup(data, reason) {
 		}
 	};
 
-//	// TODO: This first line makes Thunderbird crash
-//	//l10n(uriResolver, "FeedlySync.properties");
-//	//unload(l10n.unload);
+	l10n(uriResolver, "FeedlySync.properties");
+	//unload(l10n.unload);
 
 	setDefaultPrefs();
 	watchWindows(main, "mail:3pane");
