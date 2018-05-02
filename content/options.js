@@ -35,9 +35,9 @@ function loadModules(addon) {
 	include("packages/l10n.js", addonUriSpec);
 
 	let uriResolver = {
-		getResourceURI: function(filePath) ({
-			spec: addonUriSpec + "/../" + filePath
-		})
+		getResourceURI: function(filePath) {
+			return addonUriSpec + "/../" + filePath;
+		}
 	};
 	l10n(uriResolver, "FeedlySync.properties");
 
@@ -66,7 +66,7 @@ function onLoadAccounts(onNewAccount) {
 	// Get all RSS accounts
 	let accounts = [];
 	let sel = -1;
-	for each (var account in fixIterator(MailServices.accounts.accounts,
+	for (var account of fixIterator(MailServices.accounts.accounts,
 			Components.interfaces.nsIMsgAccount)) {
 		let server = account.incomingServer;
 		if (server) {

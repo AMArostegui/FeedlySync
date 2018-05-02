@@ -91,18 +91,18 @@ function main(window) {
 	win = window;
 
 	guiElements.startup(syncTBFeedly, runTests, uriResolver);
-//	synch.startup();
-//	feedEvents.addListener();
-//	syncTBFeedly();
+	synch.startup();
+	feedEvents.addListener();
+	syncTBFeedly();
 }
 
 function syncTBFeedly() {
-//	// Uncomment this line to try against the sandbox
-//	// auth.testing = true;
-//	let action = function() {
-//		synch.begin();
-//	};
-//	synch.authAndRun(action);
+	// Uncomment this line to try against the sandbox
+	// auth.testing = true;
+	let action = function() {
+		synch.begin();
+	};
+	synch.authAndRun(action);
 }
 
 function runTests() {
