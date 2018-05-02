@@ -46,6 +46,8 @@ Cu.import("resource://gre/modules/Services.jsm", this);
  * @param [function] callback: 1-parameter function that gets a browser window.
  * @param [function] winType: a parameter that defines what kind of window is "browser window".
  */
+this.exports = {};
+
 exports.runOnLoad = function runOnLoad(window, callback, winType) {
   // Listen for one load event before checking the window type
   window.addEventListener("load", function() {
@@ -92,7 +94,7 @@ exports.runOnWindows = function runOnWindows(callback, winType) {
  *
  * @usage watchWindows(callback): Apply a callback to each browser window.
  * @param [function] callback: 1-parameter function that gets a browser window.
- * @param [function] winType: a parameter that defines what kind of window is "browser window". 
+ * @param [function] winType: a parameter that defines what kind of window is "browser window".
  */
 exports.watchWindows = function watchWindows(callback, winType) {
   // Wrap the callback in a function that ignores failures
@@ -114,5 +116,8 @@ exports.watchWindows = function watchWindows(callback, winType) {
   Services.ww.registerNotification(windowWatcher);
 
   // Make sure to stop watching for windows if we're unloading
-  unload(function() Services.ww.unregisterNotification(windowWatcher));
+  unload(function() {
+	  	return Services.ww.unregisterNotification(windowWatcher);
+  	  }
+  );
 };

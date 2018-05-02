@@ -52,6 +52,9 @@
  * @param [node] container: Remove the callback when this container unloads.
  * @return [function]: A 0-parameter function that undoes adding the callback.
  */
+
+this.exports = {};
+
 exports.unload = function unload(callback, container) {
   // Initialize the array of unloaders on the first usage
   let unloaders = unload.unloaders;
@@ -60,7 +63,7 @@ exports.unload = function unload(callback, container) {
 
   // Calling with no arguments runs all the unloader callbacks
   if (callback == null) {
-    unloaders.slice().forEach(function(unloader) unloader());
+    unloaders.slice().forEach(function(unloader) { return unloader(); } );
     unloaders.length = 0;
     return;
   }

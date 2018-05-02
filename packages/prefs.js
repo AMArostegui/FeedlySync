@@ -56,7 +56,7 @@ function getPref(key, aDefault) {
     case "boolean":
       return getPref.branch.getBoolPref(key);
     case "number":
-    	return getPref.branch.getIntPref(key);      
+    	return getPref.branch.getIntPref(key);
     case "string":
       return getPref.branch.getCharPref(key);
   }
@@ -68,14 +68,15 @@ function getPref(key, aDefault) {
  */
 function setDefaultPrefs() {
   let branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
-  for (let [key, val] in Iterator(PREFS)) {
+  for (let key in PREFS) {
+	let val = PREFS[key];
     switch (typeof val) {
       case "boolean":
         branch.setBoolPref(key, val);
         break;
       case "number":
     	branch.setIntPref(key, val);
-    	break;        
+    	break;
       case "string":
         branch.setCharPref(key, val);
         break;

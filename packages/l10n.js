@@ -42,11 +42,12 @@ var l10n = (function(global) {
 		return "";
 	}
 
-	function l10n(addon, filename, defaultLocale) {
+	function l10n(addonFS, filename, defaultLocale) {
 		defaultLocale = defaultLocale || "en";
 
-		function filepath(locale)
-			addon.getResourceURI("locale/" + locale + "/" + filename).spec
+		function filepath(locale) {
+			addonFS.getResourceURI("locale/" + locale + "/" + filename);
+		}
 
         let defaultBundle = Services.strings.createBundle(filepath(locale));
 		let defaultBasicBundle;

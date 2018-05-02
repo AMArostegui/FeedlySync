@@ -5,6 +5,7 @@
 Components.utils.import("resource:///modules/mailServices.js");
 Components.utils.import("resource://gre/modules/FileUtils.jsm");
 Components.utils.import("resource://gre/modules/NetUtil.jsm");
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 
 var synchDirection = {
 	both : 0,
@@ -23,7 +24,6 @@ var synchDirection = {
 };
 
 var log = {
-	app : null,
 	eol : null,
 	file : null,
 
@@ -54,12 +54,10 @@ var log = {
 
 		let logStr = "(" + now.getFullYear() + "/" + MM + "/" + dd + " " + hh + ":" + mm + ":" + ss + ") " + str;
 
-		if (log.app === null) {
-			log.app = Components.classes["@mozilla.org/steel/application;1"].
-				getService(Components.interfaces.steelIApplication);
-			if (log.app.platformIsWindows)
+		if (log.eol === null) {
+			if (AppConstants.platform === "win")
 				log.eol = '\r\n';
-			else if (log.app.platformIsMac)
+			else if (AppConstants.platform === "macosx")
 				log.eol = '\r';
 			else
 				log.eol = '\n';
@@ -67,7 +65,7 @@ var log = {
 
 		switch (getPref("log.toFile")) {
 			case false:
-				log.app.console.log("FeedlySync: " + logStr);
+				Services.console.logStringMessage("FeedlySync: " + logStr);
 				break;
 			case true:
 				if (log.file === null) {

@@ -26,76 +26,86 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 	};
 })(this);
 
-(function(global) global.include = function include(src) {
-	let o = {};
-	Components.utils.import("resource://gre/modules/Services.jsm", o);
-	let uri = o.Services.io.newURI(src, null, o.Services.io.newURI(__SCRIPT_URI_SPEC__, null, null));
-	o.Services.scriptloader.loadSubScript(uri.spec, global);
+(function(global) {
+	global.include = function include(src) {
+		let o = {};
+		Components.utils.import("resource://gre/modules/Services.jsm", o);
+		let uri = o.Services.io.newURI(src, null, o.Services.io.newURI(__SCRIPT_URI_SPEC__, null, null));
+		o.Services.scriptloader.loadSubScript(uri.spec, global);
+	};
 })(this);
 
-var { unload } = require("unload");
-var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
+//var { unload } = require("unload");
+
 // END: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
 var win = null;
 var addonId = "FeedlySync@AMArostegui";
-var uriResolver = {
-	getResourceURI: function(filePath) ({
-		spec: __SCRIPT_URI_SPEC__ + "/../" + filePath
-	})
-};
-
-include("src/fsprefs.js");
-include("packages/prefs.js");
-include("src/utils.js");
-include("src/guiElements.js");
-include("src/feedevents.js");
-include("packages/l10n.js");
-include("src/auth.js");
-include("src/tests.js");
+var uriResolver;
 
 function install(data) {
+	// Order of includes matter
+	include("src/fsprefs.js");
+	include("packages/prefs.js");
+	include("src/utils.js");
+	include("src/guiElements.js");
+	include("src/feedevents.js");
+	include("packages/l10n.js");
+	include("packages/unload.js");
+	include("packages/window-utils.js");
+	include("src/auth.js");
+	include("src/tests.js");
+
 	log.writeLn("Install");
 }
 
 function uninstall() {
-	log.writeLn("Uninstall");
+	//log.writeLn("Uninstall");
 }
+
+var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
 
 function startup(data, reason) {
 	log.writeLn("Startup. Reason = " + reason);
 
-	l10n(uriResolver, "FeedlySync.properties");
-	unload(l10n.unload);
+	uriResolver = {
+		getResourceURI: function(filePath) {
+			return __SCRIPT_URI_SPEC__ + "/../" + filePath;
+		}
+	};
+
+//	// TODO: This first line makes Thunderbird crash
+//	//l10n(uriResolver, "FeedlySync.properties");
+//	//unload(l10n.unload);
 
 	setDefaultPrefs();
 	watchWindows(main, "mail:3pane");
 }
 
 function shutdown(data, reason) {
-	log.writeLn("Shutdown. Reason = " + reason);
-	feedEvents.removeListener();
-	unload();
+//	log.writeLn("Shutdown. Reason = " + reason);
+//	feedEvents.removeListener();
+//	unload();
 }
 
 function main(window) {
 	win = window;
 
 	guiElements.startup(syncTBFeedly, runTests, uriResolver);
-	synch.startup();
-	feedEvents.addListener();
-	syncTBFeedly();
+//	synch.startup();
+//	feedEvents.addListener();
+//	syncTBFeedly();
 }
 
 function syncTBFeedly() {
-	// Uncomment this line to try against the sandbox
-	// auth.testing = true;
-	let action = function() {
-		synch.begin();
-	};
-	synch.authAndRun(action);
+//	// Uncomment this line to try against the sandbox
+//	// auth.testing = true;
+//	let action = function() {
+//		synch.begin();
+//	};
+//	synch.authAndRun(action);
 }
 
 function runTests() {
-	tests.begin();
+//	tests.begin();
 }

@@ -133,8 +133,8 @@ var tests = {
 		}
 
 		let fldTreeViewOp = { refresh : false };
-		for each (var fldCategory in fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
-			for each (var fldName in fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
+		for (var fldCategory of fixIterator(rootFolder.subFolders, Components.interfaces.nsIMsgFolder)) {
+			for (var fldName of fixIterator(fldCategory.subFolders, Components.interfaces.nsIMsgFolder)) {
 				let tbSub = synch.getFeedFromFolder(fldName);
 				if (tbSub === null)
 					continue;
