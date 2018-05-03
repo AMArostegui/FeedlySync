@@ -5,6 +5,20 @@
 const FEED_LOCALSTATUS_SYNC = 1;
 const FEED_LOCALSTATUS_DEL = 2;
 
+const XPR = {
+	// XPathResultType
+	ANY_TYPE: 0,
+	NUMBER_TYPE: 1,
+	STRING_TYPE: 2,
+	BOOLEAN_TYPE: 3,
+	UNORDERED_NODE_ITERATOR_TYPE: 4,
+	ORDERED_NODE_ITERATOR_TYPE: 5,
+	UNORDERED_NODE_SNAPSHOT_TYPE: 6,
+	ORDERED_NODE_SNAPSHOT_TYPE: 7,
+	ANY_UNORDERED_NODE_TYPE: 8,
+	FIRST_ORDERED_NODE_TYPE: 9
+};
+
 var statusFile = {
 	dom : null,
 
@@ -84,7 +98,7 @@ var statusFile = {
     			"' and status=" + status + "]";
 
 	    let xpathResult = statusFile.dom.evaluate(xpathExpression, statusFile.dom,
-	    		null, Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+	    		null, XPR.UNORDERED_NODE_ITERATOR_TYPE, null);
 	    if (xpathResult === null)
 	    	return null;
 	    return xpathResult.iterateNext();
