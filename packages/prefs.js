@@ -88,11 +88,8 @@ function setDefaultPrefs() {
 function setPref(aKey, aVal) {
   switch (typeof(aVal)) {
     case "string":
-      var ss = Components.classes["@mozilla.org/supports-string;1"]
-          .createInstance(Components.interfaces.nsISupportsString);
-      ss.data = aVal;
-      Services.prefs.getBranch(PREF_BRANCH)
-          .setComplexValue(aKey, Components.interfaces.nsISupportsString, ss);
+      let branch = Services.prefs.getBranch(PREF_BRANCH);
+      branch.setStringPref(aKey, aVal);
       break;
   }
 }
