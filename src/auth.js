@@ -67,8 +67,7 @@ var auth = {
 			return false;
 
 		log.writeLn("auth.resume");
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-        		  			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let req = new XMLHttpRequest();
 		let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 			getPref("auth.refreshTokenPar") + "=" + auth.tokenRefresh + "&" +
 			getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +
@@ -220,8 +219,7 @@ var auth = {
 		function getNow() {
 			win.clearInterval(interval);
 			interval = null;
-			let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-				.createInstance(Components.interfaces.nsIXMLHttpRequest);
+			let req = new XMLHttpRequest();
 			let fullUrl = auth.getBaseUrl() + getPref("auth.getTokenOp") + "?" +
 				getPref("auth.codePar") + "=" + code + "&" +
 				getPref("auth.cliIdPar") + "=" + auth.getClientId() + "&" +

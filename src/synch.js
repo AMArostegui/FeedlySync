@@ -4,6 +4,7 @@
 
 Components.utils.import("resource://gre/modules/AddonManager.jsm");
 Components.utils.import("resource:///modules/iteratorUtils.jsm");
+Components.utils.importGlobalProperties(["XMLHttpRequest"]);
 
 var synch = {
 	activityMng : null,
@@ -71,8 +72,7 @@ var synch = {
 	getFeedlySubs : function(callback) {
 		log.writeLn("synch.getFeedlySubs");
 
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-		.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let req = new XMLHttpRequest();
 		let fullUrl = auth.getBaseUrl() + getPref("synch.subsOp");
 		fullUrl = encodeURI(fullUrl);
 		req.open("GET", fullUrl, true);
@@ -155,8 +155,7 @@ var synch = {
 			next();
 		};
 
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let req = new XMLHttpRequest();
 		let jsonSubscribe = null;
 		let fullUrl = encodeURI(auth.getBaseUrl() + getPref("synch.subsOp") + "/");
 
@@ -320,8 +319,7 @@ var synch = {
 	},
 
 	renameCategory : function(oldName, newName) {
-		let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-			.createInstance(Components.interfaces.nsIXMLHttpRequest);
+		let req = new XMLHttpRequest();
 		let fullUrl = encodeURI(auth.getBaseUrl() + getPref("synch.categoryOp") + "/");
 		fullUrl = fullUrl + encodeURIComponent("user/" + auth.userId + "/category/"  + oldName);
 
