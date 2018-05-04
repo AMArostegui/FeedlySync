@@ -5,7 +5,7 @@ include("src/synch.js");
 var feedEvents = {
 		retryCount : 0,
 
-		importOPMLFinishedPrimary : null,
+		importOPMLFinishedBak : null,
 
 		mainWndCmdListener : function(event) {
 			if (event === null || event.target === null)
@@ -26,9 +26,11 @@ var feedEvents = {
 
 					// Trap OPML import ending
 					let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-					feedEvents.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinished;
+					feedEvents.importOPMLFinishedBak = feedSubscriptions.importOPMLFinished;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
-						feedEvents.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
+						feedSubscriptions.importOPMLFinished = feedEvents.importOPMLFinishedBak;
+						feedSubscriptions.importOPMLFinished(aStatusReport, aLastFolder, aWin);
+						feedEvents.importOPMLFinishedBak = null;
 						feedEvents.onImportOPMLFinished();
 					};
 				}
@@ -242,8 +244,22 @@ var feedEvents = {
 				feedEvents.unsubscribed.push( { id : aId.Value } );
 		},
 
-		addFeedPrimary : null,
-		deleteFeedPrimary : null,
+		addFeedBak : null,
+		deleteFeedBak : null,
+
+		addFeed : function(aFeed) {
+			FeedUtils.addFeed = feedEvents.addFeedBak;
+			FeedUtils.addFeed(aFeed);
+			FeedUtils.addFeed = feedEvents.addFeed;
+			feedEvents.onAddFeed(aFeed);
+		},
+
+		deleteFeed : function(aId, aServer, aParentFolder) {
+			feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
+			FeedUtils.deleteFeed = feedEvents.deleteFeedBak;
+			FeedUtils.deleteFeed(aId, aServer, aParentFolder);
+			FeedUtils.deleteFeed = feedEvents.deleteFeed;
+		},
 
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener. Locale = " + retrieveLocale());
@@ -258,16 +274,10 @@ var feedEvents = {
 			win.addEventListener("command", feedEvents.mainWndCmdListener, false);
 
 			// We need to know when user's subscribed/unsuscbrided to a Feed
-			feedEvents.addFeedPrimary = FeedUtils.addFeed;
-			FeedUtils.addFeed = function(aFeed) {
-				feedEvents.addFeedPrimary(aFeed);
-				feedEvents.onAddFeed(aFeed);
-			};
-			FeedUtils.deleteFeedPrimary = FeedUtils.deleteFeed;
-			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {
-				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
-				feedEvents.deleteFeedPrimary(aId, aServer, aParentFolder);
-			};
+			feedEvents.addFeedBak = FeedUtils.addFeed;
+			FeedUtils.addFeed = feedEvents.addFeed;
+			feedEvents.deleteFeedBak = FeedUtils.deleteFeed;
+			FeedUtils.deleteFeed = feedEvents.deleteFeed;
 
 			// Update timer and preference listener
 			Services.prefs.addObserver("extensions.FeedlySync.synch.timeout", synch, false);
@@ -283,10 +293,10 @@ var feedEvents = {
 
 			win.removeEventListener("command", feedEvents.mainWndCmdListener);
 
-			FeedUtils.addFeed = feedEvents.addFeedPrimary;
-			feedEvents.addFeedPrimary = null;
-			FeedUtils.deleteFeed = feedEvents.deleteFeedPrimary;
-			feedEvents.deleteFeedPrimary = null;
+			FeedUtils.addFeed = feedEvents.addFeedBak;
+			feedEvents.addFeedBak = null;
+			FeedUtils.deleteFeed = feedEvents.deleteFeedBak;
+			feedEvents.deleteFeedBak = null;
 
 			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);
 			Services.prefs.removeObserver("extensions.FeedlySync.synch.account", synch);
