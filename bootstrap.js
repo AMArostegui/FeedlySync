@@ -35,7 +35,7 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 	};
 })(this);
 
-//var { unload } = require("unload");
+var { unload } = require("unload");
 
 // END: Code taken from Bitcoin Venezuela Add-On. (c) Alexander Salas
 
@@ -60,7 +60,7 @@ function install(data) {
 }
 
 function uninstall() {
-	//log.writeLn("Uninstall");
+	log.writeLn("Uninstall");
 }
 
 var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
@@ -75,16 +75,16 @@ function startup(data, reason) {
 	};
 
 	l10n(uriResolver, "FeedlySync.properties");
-	//unload(l10n.unload);
+	unload(l10n.unload);
 
 	setDefaultPrefs();
 	watchWindows(main, "mail:3pane");
 }
 
 function shutdown(data, reason) {
-//	log.writeLn("Shutdown. Reason = " + reason);
-//	feedEvents.removeListener();
-//	unload();
+	log.writeLn("Shutdown. Reason = " + reason);
+	feedEvents.removeListener();
+	unload();
 }
 
 function main(window) {
