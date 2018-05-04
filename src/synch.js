@@ -624,8 +624,7 @@ var synch = {
 							// Subscribe
 							if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
 								let id = FeedUtils.rdf.GetResource(feedId);
-								let feedAux = new Feed(id, fldFeed.server);
-								feedAux.folder = fldFeed;
+								let feedAux = new Feed(id, fldFeed);
 
 								// Title property seems to have been deprecated
 								//feedAux.title = feedName;
