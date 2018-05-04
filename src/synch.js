@@ -626,7 +626,10 @@ var synch = {
 								let id = FeedUtils.rdf.GetResource(feedId);
 								let feedAux = new Feed(id, fldFeed.server);
 								feedAux.folder = fldFeed;
-								feedAux.title = feedName;
+
+								// Title property seems to have been deprecated
+								//feedAux.title = feedName;
+
 								FeedUtils.addFeed(feedAux);
 								log.writeLn("synch.update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 							}

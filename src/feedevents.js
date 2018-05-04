@@ -5,6 +5,8 @@ include("src/synch.js");
 var feedEvents = {
 		retryCount : 0,
 
+		importOPMLFinishedPrimary : null,
+
 		mainWndCmdListener : function(event) {
 			if (event === null || event.target === null)
 				return;
@@ -24,9 +26,9 @@ var feedEvents = {
 
 					// Trap OPML import ending
 					let feedSubscriptions = subscriptionsWindow.FeedSubscriptions;
-					feedSubscriptions.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinished;
+					feedEvents.importOPMLFinishedPrimary = feedSubscriptions.importOPMLFinished;
 					feedSubscriptions.importOPMLFinished = function (aStatusReport, aLastFolder, aWin) {
-						feedSubscriptions.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
+						feedEvents.importOPMLFinishedPrimary(aStatusReport, aLastFolder, aWin);
 						feedEvents.onImportOPMLFinished();
 					};
 				}
@@ -240,6 +242,9 @@ var feedEvents = {
 				feedEvents.unsubscribed.push( { id : aId.Value } );
 		},
 
+		addFeedPrimary : null,
+		deleteFeedPrimary : null,
+
 		addListener : function() {
 			log.writeLn("FeedEvents.AddListener. Locale = " + retrieveLocale());
 
@@ -253,15 +258,15 @@ var feedEvents = {
 			win.addEventListener("command", feedEvents.mainWndCmdListener, false);
 
 			// We need to know when user's subscribed/unsuscbrided to a Feed
-			FeedUtils.addFeedPrimary = FeedUtils.addFeed;
+			feedEvents.addFeedPrimary = FeedUtils.addFeed;
 			FeedUtils.addFeed = function(aFeed) {
-				FeedUtils.addFeedPrimary(aFeed);
+				feedEvents.addFeedPrimary(aFeed);
 				feedEvents.onAddFeed(aFeed);
 			};
 			FeedUtils.deleteFeedPrimary = FeedUtils.deleteFeed;
 			FeedUtils.deleteFeed = function(aId, aServer, aParentFolder) {
 				feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
-				FeedUtils.deleteFeedPrimary(aId, aServer, aParentFolder);
+				feedEvents.deleteFeedPrimary(aId, aServer, aParentFolder);
 			};
 
 			// Update timer and preference listener
@@ -278,10 +283,10 @@ var feedEvents = {
 
 			win.removeEventListener("command", feedEvents.mainWndCmdListener);
 
-			FeedUtils.addFeed = FeedUtils.addFeedPrimary;
-			FeedUtils.addFeedPrimary = null;
-			FeedUtils.deleteFeed = FeedUtils.deleteFeedPrimary;
-			FeedUtils.deleteFeedPrimary = null;
+			FeedUtils.addFeed = feedEvents.addFeedPrimary;
+			feedEvents.addFeedPrimary = null;
+			FeedUtils.deleteFeed = feedEvents.deleteFeedPrimary;
+			feedEvents.deleteFeedPrimary = null;
 
 			Services.prefs.removeObserver("extensions.FeedlySync.synch.timeout", synch);
 			Services.prefs.removeObserver("extensions.FeedlySync.synch.account", synch);
