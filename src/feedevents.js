@@ -209,11 +209,11 @@ var feedEvents = {
 	    	if (feedEvents.isFeedFolder(aNewFolder)) {
 		    	// To rename a feed, simply subscribe again
 				let feedId = synch.getFeedFromFolder(aNewFolder);
-	    		synch.subscribe( { id : feedId, name : aNewFolder.prettiestName, category : aNewFolder.parent.prettiestName },
+	    		synch.subscribe( { id : feedId, name : aNewFolder.prettyName, category : aNewFolder.parent.prettyName },
 					"FeedEvents.folderRenamed");
 	    	}
 	    	else if (feedEvents.isCategoryFolder(aNewFolder))
-	    		synch.renameCategory(aOrigFolder.prettiestName, aNewFolder.prettiestName);
+	    		synch.renameCategory(aOrigFolder.prettyName, aNewFolder.prettyName);
 	    },
 
 		onDeleteFeed : function(aId, aServer, aParentFolder) {

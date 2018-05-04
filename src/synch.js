@@ -255,7 +255,7 @@ var synch = {
 
 			let folder = getRootFolder();
 			let procCaption = addOp ? _("beginSubs", retrieveLocale()) : _("beginUnsubs", retrieveLocale());
-			synch.process.init(procCaption + ": " + folder.prettiestName, null);
+			synch.process.init(procCaption + ": " + folder.prettyName, null);
 			synch.process.contextType = "account";
 			synch.process.contextObj = folder.server;
 			synch.activityMng.addActivity(synch.process);
@@ -280,7 +280,7 @@ var synch = {
 				let folder = getRootFolder();
 
 				let evntCaption = addOp ? _("endSubs", retrieveLocale()) : _("endUnsubs", retrieveLocale());
-				event.init(evntCaption + ": " + folder.prettiestName,
+				event.init(evntCaption + ": " + folder.prettyName,
 				           null,
 				           "",
 				           synch.process.startTime,
@@ -442,7 +442,7 @@ var synch = {
 				if (index === null || !win.gFolderTreeView.isContainerOpen(index)) {
 					fldTreeViewOp.refresh = true;
 					log.writeLn("synch.removeFromTB. Category folder collapsed (" +
-							fldCategory.prettiestName + ")");
+							fldCategory.prettyName + ")");
 				}
 			}
 		}
@@ -484,7 +484,7 @@ var synch = {
 						continue;
 
 				    // Find pair (feedId-category) in Thunderbird's selected account
-					let tbCategory = fldCategory.prettiestName;
+					let tbCategory = fldCategory.prettyName;
 					let nameInServer = synch.getNameAndRemove(tbSub, tbCategory, feedlySubs);
 					if (nameInServer !== null) {
 						// If Feed is subscribed in Thunderbird, it should also be present in
@@ -492,12 +492,12 @@ var synch = {
 						if (statusFile.find(tbSub) === null) {
 							writeDOM = true;
 							log.writeLn("synch.update. Not found in status file, but present on both sides. Add. (" +
-									fldName.prettiestName + ")");
+									fldName.prettyName + ")");
 							statusFile.add(tbSub);
 						}
 
 						// Feed name might have changed
-						if (nameInServer !== fldName.prettiestName) {
+						if (nameInServer !== fldName.prettyName) {
 							if (synchDirection.isDownload()) {
 								let selFlds = win.gFolderTreeView.getSelectedFolders();
 								if (selFlds.length > 0) {
@@ -516,7 +516,7 @@ var synch = {
 			    	// Check whether this feed was previously synchronized. If so, delete locally
 					if (statusFile.find(tbSub) !== null) {
 						if (synchDirection.isUpload()) {
-							subscribe.push( { id : tbSub , name : fldName.prettiestName,
+							subscribe.push( { id : tbSub , name : fldName.prettyName,
 								category : tbCategory } );
 						}
 						else {
@@ -548,7 +548,7 @@ var synch = {
 							log.writeLn("synch.update. Svr=0 TB=1. Removing from TB: " + tbSub);
 						}
 						else {
-							subscribe.push( { id : tbSub , name : fldName.prettiestName,
+							subscribe.push( { id : tbSub , name : fldName.prettyName,
 								category : tbCategory } );
 						}
 					}
