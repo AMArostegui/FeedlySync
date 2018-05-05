@@ -216,7 +216,7 @@ var feedEvents = {
 	    		synch.renameCategory(aOrigFolder.prettyName, aNewFolder.prettyName);
 	    },
 
-		onDeleteFeed : function(aId, aServer, aParentFolder) {
+		onDeleteFeed : function(aFeed) {
 			if (synchDirection.isDownload())
 				return;
 
@@ -227,21 +227,21 @@ var feedEvents = {
 			let rootFolder = getRootFolder();
 			if (rootFolder === null)
 				return;
-			if (aParentFolder.rootFolder !== rootFolder)
+			if (aFeed.folder.rootFolder !== rootFolder)
 				return;
-			if (statusFile.find(aId.Value) === null)
+			if (statusFile.find(aFeed.resource.Value) === null)
 				return;
 
 			let subsWnd = Services.wm.getMostRecentWindow("Mail:News-BlogSubscriptions");
 			if (subsWnd !== null) {
 				let action = function() {
-					synch.unsubscribe( { id : aId.Value },
+					synch.unsubscribe( { id : aFeed.resource.Value },
 						"FeedEvents.onDeleteFeed");
 				};
 				synch.authAndRun(action);
 			}
 			else
-				feedEvents.unsubscribed.push( { id : aId.Value } );
+				feedEvents.unsubscribed.push( { id : aFeed.resource.Value } );
 		},
 
 		addFeedBak : null,
@@ -254,10 +254,10 @@ var feedEvents = {
 			feedEvents.onAddFeed(aFeed);
 		},
 
-		deleteFeed : function(aId, aServer, aParentFolder) {
-			feedEvents.onDeleteFeed(aId, aServer, aParentFolder);
+		deleteFeed : function(aFeed) {
+			feedEvents.onDeleteFeed(aFeed);
 			FeedUtils.deleteFeed = feedEvents.deleteFeedBak;
-			FeedUtils.deleteFeed(aId, aServer, aParentFolder);
+			FeedUtils.deleteFeed(aFeed);
 			FeedUtils.deleteFeed = feedEvents.deleteFeed;
 		},
 

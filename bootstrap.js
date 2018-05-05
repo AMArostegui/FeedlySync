@@ -106,5 +106,5 @@ function syncTBFeedly() {
 }
 
 function runTests() {
-//	tests.begin();
+	tests.begin();
 }
