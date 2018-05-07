@@ -109,16 +109,19 @@ function getRootFolder() {
 
 	if (server === null) {
 		log.writeLn("getRootFolder. No incoming server. Unexpected situation. Account Key = " + accountKey);
+		setPref("synch.account", "");
 		return null;
 	}
 	if (server.type !== "rss") {
 		log.writeLn("getRootFolder. Wrong incoming server type. Unexpected situation. Account Key = " + accountKey);
+		setPref("synch.account", "");
 		return null;
 	}
 
 	let rootFolder = server.rootFolder;
 	if (rootFolder === null) {
 		log.writeLn("getRootFolder. No root folder. Unexpected situation. Account Key = " + accountKey);
+		setPref("synch.account", "");
 		return null;
 	}
 	return rootFolder;
