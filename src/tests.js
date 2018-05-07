@@ -69,7 +69,7 @@ var tests = {
 	importOpml : function() {
 		function onCompareOmplJsonFinished(result) {
 			if (result) {
-				log.writeLn("PASSED 3/" + tests.count + " : Import OPML", true);
+				log.writeLn("PASSED 3/" + tests.count + " : Import OPML locally", true);
 				tests.deleteAllLocal();
 			}
 			else {
@@ -148,7 +148,7 @@ var tests = {
 	subscribeRemote : function() {
 		function onCompareOmplJsonFinished(result) {
 			if (result) {
-				log.writeLn("PASSED 5/" + tests.count + " : Import OPML", true);
+				log.writeLn("PASSED 5/" + tests.count + " : Synchronize. Subscribe locally", true);
 				tests.end();
 			}
 			else {
@@ -168,6 +168,8 @@ var tests = {
 		for (var key in opml.dictionary) {
 			subscribe.push( { id : key, name : opml.dictionary[key].title, category : opml.dictionary[key].category } );
 		}
+
+		// After step 4, no remote subscriptions remain. We need first to subscribe again, then synchronize locally
 		synch.subscribe(subscribe, "Testing");
 		synch.onSubscribeFeedsFinished = function() {
 			synch.onUpdateFinished = function() {
