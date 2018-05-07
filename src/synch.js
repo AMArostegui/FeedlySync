@@ -623,12 +623,8 @@ var synch = {
 
 							// Subscribe
 							if (!FeedUtils.feedAlreadyExists(feedId, fldFeed.server)) {
-								let id = FeedUtils.rdf.GetResource(feedId);
-								let feedAux = new Feed(id, fldFeed);
-
-								// Title property seems to have been deprecated
-								//feedAux.title = feedName;
-
+								let feedAux = new Feed(feedId, fldFeed);
+								feedAux.title = feedName;
 								FeedUtils.addFeed(feedAux);
 								log.writeLn("synch.update. Svr=1 TB=0. Add to TB. Url: " + feedId + " Name: " + feedName);
 							}
