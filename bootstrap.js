@@ -60,7 +60,6 @@ function install(data) {
 }
 
 function uninstall() {
-	log.writeLn("Uninstall");
 }
 
 var { runOnLoad, runOnWindows, watchWindows } = require("window-utils");
