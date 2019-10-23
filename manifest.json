@@ -1,0 +1,21 @@
+{
+	"manifest_version":2,
+	"applications":{
+		"gecko":{
+			"id":"FeedlySync@AMArostegui",
+			"strict_min_version":"68.0"
+		}
+		
+	},
+	"name":"Feedly Synchronizer",
+	"description":"Synchronize your favorite RSS sources with Thundebird and Feedly",
+	"author":"Antonio Miras",
+	"version":"2.0.0",
+	"legacy":{
+		"type":"bootstrap",
+		"options":{
+			"page":"chrome://FeedlySync/content/options.xul",
+			"open_in_tab":false
+		}		
+	}
+}
